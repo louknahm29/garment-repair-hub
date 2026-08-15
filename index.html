@@ -72,21 +72,6 @@
                 <p id="loginError" class="text-[11px] text-rose-600 font-bold hidden"></p>
                 <button type="submit" id="loginSubmitBtn" class="btn-primary w-full text-sm">เข้าสู่ระบบ</button>
             </form>
-            <div class="border-t pt-3">
-                <p class="text-[9px] font-black text-slate-400 uppercase mb-1">บัญชีตัวอย่างสำหรับทดสอบ</p>
-                <div class="text-[10px] text-slate-500 space-y-0.5 leading-relaxed">
-                    <div>👑 admin / admin123 — ผู้ดูแลระบบ</div>
-                    <div>🙋 req05 / 1234 — ผู้ขออนุมัติตัด (Line 05)</div>
-                    <div>✅ appr05 / 1234 — ผู้อนุมัติ (Line 05)</div>
-                    <div>🙋 req12 / 1234 — ผู้ขออนุมัติตัด (Line 12)</div>
-                    <div>✅ appr12 / 1234 — ผู้อนุมัติ (Line 12)</div>
-                    <div>🙋 reqQC / 1234 — ผู้ขออนุมัติตัด (QC)</div>
-                    <div>✅ apprQC / 1234 — ผู้อนุมัติ (QC)</div>
-                    <div>✂️ cut01, cut02 / 1234 — แผนกตัด</div>
-                    <div>🏬 market01, market02 / 1234 — ซุปเปอร์มาร์เก็ต</div>
-                    <div>🧑‍💼 bu08 / 1234 — BU (ยื่นขอเองและอนุมัติเองได้ — Line 08)</div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -120,6 +105,9 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                         <span>สรุปปัญหา & Analytics</span>
                     </button>
+                    <button onclick="switchTab('holidays')" id="tab-holidays" class="nav-btn py-3 font-bold text-sm text-slate-400 transition flex items-center gap-1.5">
+                        <span>📅</span><span>วันหยุดบริษัท</span>
+                    </button>
                     <button onclick="switchTab('admin')" id="tab-admin" class="nav-btn py-3 font-bold text-sm text-slate-400 transition flex items-center gap-1.5 hidden">
                         <span>⚙️</span><span>Admin</span>
                     </button>
@@ -141,108 +129,138 @@
         <div id="section-records" class="tab-content space-y-6">
 
             <!-- KPI STATS SUMMARY BAR (exactly 2 rows) -->
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div onclick="filterByKpi('all')" class="card p-4 flex items-center gap-3 border-l-4 border-l-slate-400 cursor-pointer hover:shadow-md transition-shadow">
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">งานซ่อมกำลังดำเนินการ</p>
-                        <h4 id="kpiTotal" class="text-2xl font-black text-slate-800">0</h4>
+            <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
+                <div onclick="filterByKpi('all')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-slate-400">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-5 flex items-center justify-center bg-slate-100 rounded-lg text-slate-600 text-xs shrink-0">📦</span>
+                        <p class="text-[9px] font-bold uppercase text-slate-400 tracking-wider leading-tight">งานซ่อมกำลังดำเนินการ</p>
                     </div>
-                    <div class="p-3 bg-slate-100 rounded-xl text-slate-600">📦</div>
-                    <div class="border-l border-slate-200 pl-3 text-center shrink-0">
-                        <p class="text-[8px] font-bold uppercase text-rose-500 leading-tight">เกิน<br>Leadtime</p>
-                        <h4 id="kpiTotalOverdue" class="text-lg font-black text-rose-600">0</h4>
-                    </div>
-                </div>
-                <div onclick="filterByKpi('PendingApproval')" class="card p-4 flex items-center gap-3 border-l-4 border-l-amber-500 cursor-pointer hover:shadow-md transition-shadow">
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[10px] font-bold uppercase text-amber-600 tracking-wider">รอผู้อนุมัติ</p>
-                        <h4 id="kpiPending" class="text-2xl font-black text-amber-600">0</h4>
-                    </div>
-                    <div class="p-3 bg-amber-50 rounded-xl text-amber-600">⏳</div>
-                    <div class="border-l border-slate-200 pl-3 text-center shrink-0">
-                        <p class="text-[8px] font-bold uppercase text-rose-500 leading-tight">เกิน<br>Leadtime</p>
-                        <h4 id="kpiPendingOverdue" class="text-lg font-black text-rose-600">0</h4>
+                    <div class="flex items-end justify-between mt-1">
+                        <h4 id="kpiTotal" class="text-lg font-black text-slate-800 leading-none">0</h4>
+                        <div class="text-right border-l border-slate-200 pl-2 shrink-0">
+                            <p class="text-[7px] font-bold uppercase text-rose-500 leading-none">เกิน LT</p>
+                            <h4 id="kpiTotalOverdue" class="text-xs font-black text-rose-600 leading-none">0</h4>
+                        </div>
                     </div>
                 </div>
-                <div onclick="filterByKpi('Rejected')" class="card p-4 flex items-center gap-3 border-l-4 border-l-rose-400 cursor-pointer hover:shadow-md transition-shadow">
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[10px] font-bold uppercase text-rose-500 tracking-wider">ไม่อนุมัติ</p>
-                        <h4 id="kpiRejected" class="text-2xl font-black text-rose-500">0</h4>
+                <div onclick="filterByKpi('PendingApproval')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-amber-500">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-5 flex items-center justify-center bg-amber-50 rounded-lg text-amber-600 text-xs shrink-0">⏳</span>
+                        <p class="text-[9px] font-bold uppercase text-amber-600 tracking-wider leading-tight">Pending BU review<span class="block font-normal normal-case text-slate-400 text-[8px]">รอ BU ตรวจสอบ</span></p>
                     </div>
-                    <div class="p-3 bg-rose-50 rounded-xl text-rose-500">🚫</div>
-                    <div class="border-l border-slate-200 pl-3 text-center shrink-0">
-                        <p class="text-[8px] font-bold uppercase text-rose-500 leading-tight">เกิน<br>Leadtime</p>
-                        <h4 id="kpiRejectedOverdue" class="text-lg font-black text-rose-600">0</h4>
-                    </div>
-                </div>
-                <div onclick="filterByKpi('Approved')" class="card p-4 flex items-center gap-3 border-l-4 border-l-sky-500 cursor-pointer hover:shadow-md transition-shadow">
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[10px] font-bold uppercase text-sky-600 tracking-wider">อนุมัติแล้ว รอรับงานตัด</p>
-                        <h4 id="kpiApproved" class="text-2xl font-black text-sky-600">0</h4>
-                    </div>
-                    <div class="p-3 bg-sky-50 rounded-xl text-sky-600">📝</div>
-                    <div class="border-l border-slate-200 pl-3 text-center shrink-0">
-                        <p class="text-[8px] font-bold uppercase text-rose-500 leading-tight">เกิน<br>Leadtime</p>
-                        <h4 id="kpiApprovedOverdue" class="text-lg font-black text-rose-600">0</h4>
+                    <div class="flex items-end justify-between mt-1">
+                        <h4 id="kpiPending" class="text-lg font-black text-amber-600 leading-none">0</h4>
+                        <div class="text-right border-l border-slate-200 pl-2 shrink-0">
+                            <p class="text-[7px] font-bold uppercase text-rose-500 leading-none">เกิน LT</p>
+                            <h4 id="kpiPendingOverdue" class="text-xs font-black text-rose-600 leading-none">0</h4>
+                        </div>
                     </div>
                 </div>
-                <div onclick="filterByKpi('CuttingReceived')" class="card p-4 flex items-center gap-3 border-l-4 border-l-indigo-500 cursor-pointer hover:shadow-md transition-shadow">
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[10px] font-bold uppercase text-indigo-600 tracking-wider">กำลังตัดซ่อม</p>
-                        <h4 id="kpiCuttingReceived" class="text-2xl font-black text-indigo-600">0</h4>
+                <div onclick="filterByKpi('PendingFMApproval')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-orange-500">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-5 flex items-center justify-center bg-orange-50 rounded-lg text-orange-600 text-xs shrink-0">🗂️</span>
+                        <p class="text-[9px] font-bold uppercase text-orange-600 tracking-wider leading-tight">Pending FM approval<span class="block font-normal normal-case text-slate-400 text-[8px]">รอ FM อนุมัติ</span></p>
                     </div>
-                    <div class="p-3 bg-indigo-50 rounded-xl text-indigo-600">✂️</div>
-                    <div class="border-l border-slate-200 pl-3 text-center shrink-0">
-                        <p class="text-[8px] font-bold uppercase text-rose-500 leading-tight">เกิน<br>Leadtime</p>
-                        <h4 id="kpiCuttingReceivedOverdue" class="text-lg font-black text-rose-600">0</h4>
-                    </div>
-                </div>
-                <div onclick="filterByKpi('CuttingSent')" class="card p-4 flex items-center gap-3 border-l-4 border-l-purple-500 cursor-pointer hover:shadow-md transition-shadow">
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[10px] font-bold uppercase text-purple-600 tracking-wider whitespace-nowrap">ตัดเสร็จ รอ SM รับ</p>
-                        <h4 id="kpiCuttingSent" class="text-2xl font-black text-purple-600">0</h4>
-                    </div>
-                    <div class="p-3 bg-purple-50 rounded-xl text-purple-600">📦</div>
-                    <div class="border-l border-slate-200 pl-3 text-center shrink-0">
-                        <p class="text-[8px] font-bold uppercase text-rose-500 leading-tight">เกิน<br>Leadtime</p>
-                        <h4 id="kpiCuttingSentOverdue" class="text-lg font-black text-rose-600">0</h4>
+                    <div class="flex items-end justify-between mt-1">
+                        <h4 id="kpiPendingFM" class="text-lg font-black text-orange-600 leading-none">0</h4>
+                        <div class="text-right border-l border-slate-200 pl-2 shrink-0">
+                            <p class="text-[7px] font-bold uppercase text-rose-500 leading-none">เกิน LT</p>
+                            <h4 id="kpiPendingFMOverdue" class="text-xs font-black text-rose-600 leading-none">0</h4>
+                        </div>
                     </div>
                 </div>
-                <div onclick="filterByKpi('SupermarketReceived')" class="card p-4 flex items-center gap-3 border-l-4 border-l-teal-500 cursor-pointer hover:shadow-md transition-shadow">
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[10px] font-bold uppercase text-teal-600 tracking-wider whitespace-nowrap">SM รับแล้ว</p>
-                        <h4 id="kpiSupermarketReceived" class="text-2xl font-black text-teal-600">0</h4>
+                <div onclick="filterByKpi('anyRejected')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-rose-400">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-5 flex items-center justify-center bg-rose-50 rounded-lg text-rose-500 text-xs shrink-0">🚫</span>
+                        <p class="text-[9px] font-bold uppercase text-rose-500 tracking-wider leading-tight">Returned by BU or FM<span class="block font-normal normal-case text-slate-400 text-[8px]">ถูกตีกลับ (BU/FM)</span></p>
                     </div>
-                    <div class="p-3 bg-teal-50 rounded-xl text-teal-600">🏬</div>
-                    <div class="border-l border-slate-200 pl-3 text-center shrink-0">
-                        <p class="text-[8px] font-bold uppercase text-rose-500 leading-tight">เกิน<br>Leadtime</p>
-                        <h4 id="kpiSupermarketReceivedOverdue" class="text-lg font-black text-rose-600">0</h4>
+                    <h4 id="kpiRejected" class="text-lg font-black text-rose-500 leading-none mt-1">0</h4>
+                </div>
+                <div onclick="filterByKpi('Approved')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-sky-500">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-5 flex items-center justify-center bg-sky-50 rounded-lg text-sky-600 text-xs shrink-0">📝</span>
+                        <p class="text-[9px] font-bold uppercase text-sky-600 tracking-wider leading-tight">อนุมัติแล้ว รอรับงานตัด</p>
+                    </div>
+                    <div class="flex items-end justify-between mt-1">
+                        <h4 id="kpiApproved" class="text-lg font-black text-sky-600 leading-none">0</h4>
+                        <div class="text-right border-l border-slate-200 pl-2 shrink-0">
+                            <p class="text-[7px] font-bold uppercase text-rose-500 leading-none">เกิน LT</p>
+                            <h4 id="kpiApprovedOverdue" class="text-xs font-black text-rose-600 leading-none">0</h4>
+                        </div>
                     </div>
                 </div>
-                <div onclick="filterByKpi('SupermarketSent')" class="card p-4 flex items-center gap-3 border-l-4 border-l-cyan-500 cursor-pointer hover:shadow-md transition-shadow">
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[10px] font-bold uppercase text-cyan-600 tracking-wider whitespace-nowrap">ส่งเข้าไลน์ รอต้นทางรับ</p>
-                        <h4 id="kpiSupermarketSent" class="text-2xl font-black text-cyan-600">0</h4>
+                <div onclick="filterByKpi('CuttingReceived')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-indigo-500">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-5 flex items-center justify-center bg-indigo-50 rounded-lg text-indigo-600 text-xs shrink-0">✂️</span>
+                        <p class="text-[9px] font-bold uppercase text-indigo-600 tracking-wider leading-tight">กำลังตัดซ่อม</p>
                     </div>
-                    <div class="p-3 bg-cyan-50 rounded-xl text-cyan-600">🚚</div>
-                    <div class="border-l border-slate-200 pl-3 text-center shrink-0">
-                        <p class="text-[8px] font-bold uppercase text-rose-500 leading-tight">เกิน<br>Leadtime</p>
-                        <h4 id="kpiSupermarketSentOverdue" class="text-lg font-black text-rose-600">0</h4>
+                    <div class="flex items-end justify-between mt-1">
+                        <h4 id="kpiCuttingReceived" class="text-lg font-black text-indigo-600 leading-none">0</h4>
+                        <div class="text-right border-l border-slate-200 pl-2 shrink-0">
+                            <p class="text-[7px] font-bold uppercase text-rose-500 leading-none">เกิน LT</p>
+                            <h4 id="kpiCuttingReceivedOverdue" class="text-xs font-black text-rose-600 leading-none">0</h4>
+                        </div>
                     </div>
                 </div>
-                <div onclick="filterByKpi('overdue')" class="card p-4 flex items-center justify-between border-l-4 border-l-red-500 cursor-pointer hover:shadow-md transition-shadow">
-                    <div>
-                        <p class="text-[10px] font-bold uppercase text-red-600 tracking-wider">🚨 Alert: เกิน 2 วัน / เกินกำหนดวันที่ต้องการของ</p>
-                        <h4 id="kpiOverdue" class="text-2xl font-black text-red-600">0</h4>
+                <div onclick="filterByKpi('CuttingSent')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-purple-500">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-5 flex items-center justify-center bg-purple-50 rounded-lg text-purple-600 text-xs shrink-0">📦</span>
+                        <p class="text-[9px] font-bold uppercase text-purple-600 tracking-wider leading-tight">ตัดเสร็จ รอ SM รับ</p>
                     </div>
-                    <div class="p-3 bg-red-50 rounded-xl text-red-600">⚠️</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <h4 id="kpiCuttingSent" class="text-lg font-black text-purple-600 leading-none">0</h4>
+                        <div class="text-right border-l border-slate-200 pl-2 shrink-0">
+                            <p class="text-[7px] font-bold uppercase text-rose-500 leading-none">เกิน LT</p>
+                            <h4 id="kpiCuttingSentOverdue" class="text-xs font-black text-rose-600 leading-none">0</h4>
+                        </div>
+                    </div>
                 </div>
-                <div onclick="goToCompletedHistory()" class="card p-4 flex items-center justify-between border-l-4 border-l-emerald-500 cursor-pointer hover:shadow-md transition-shadow">
-                    <div>
-                        <p class="text-[10px] font-bold uppercase text-emerald-600 tracking-wider">เสร็จสมบูรณ์ทั้งหมด</p>
-                        <h4 id="kpiCompleted" class="text-2xl font-black text-emerald-600">0</h4>
+                <div onclick="filterByKpi('cuttingIssue')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-red-500">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-5 flex items-center justify-center bg-red-50 rounded-lg text-red-600 text-xs shrink-0">⚠️</span>
+                        <p class="text-[9px] font-bold uppercase text-red-600 tracking-wider leading-tight">Cutting issues<span class="block font-normal normal-case text-slate-400 text-[8px]">แผนกตัดแจ้งปัญหา</span></p>
                     </div>
-                    <div class="p-3 bg-emerald-50 rounded-xl text-emerald-600">✅</div>
+                    <h4 id="kpiCuttingIssue" class="text-lg font-black text-red-600 leading-none mt-1">0</h4>
+                </div>
+                <div onclick="filterByKpi('SupermarketReceived')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-teal-500">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-5 flex items-center justify-center bg-teal-50 rounded-lg text-teal-600 text-xs shrink-0">🏬</span>
+                        <p class="text-[9px] font-bold uppercase text-teal-600 tracking-wider leading-tight">SM รับแล้ว</p>
+                    </div>
+                    <div class="flex items-end justify-between mt-1">
+                        <h4 id="kpiSupermarketReceived" class="text-lg font-black text-teal-600 leading-none">0</h4>
+                        <div class="text-right border-l border-slate-200 pl-2 shrink-0">
+                            <p class="text-[7px] font-bold uppercase text-rose-500 leading-none">เกิน LT</p>
+                            <h4 id="kpiSupermarketReceivedOverdue" class="text-xs font-black text-rose-600 leading-none">0</h4>
+                        </div>
+                    </div>
+                </div>
+                <div onclick="filterByKpi('SupermarketSent')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-cyan-500">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-5 flex items-center justify-center bg-cyan-50 rounded-lg text-cyan-600 text-xs shrink-0">🚚</span>
+                        <p class="text-[9px] font-bold uppercase text-cyan-600 tracking-wider leading-tight">ส่งเข้าไลน์ รอต้นทางรับ</p>
+                    </div>
+                    <div class="flex items-end justify-between mt-1">
+                        <h4 id="kpiSupermarketSent" class="text-lg font-black text-cyan-600 leading-none">0</h4>
+                        <div class="text-right border-l border-slate-200 pl-2 shrink-0">
+                            <p class="text-[7px] font-bold uppercase text-rose-500 leading-none">เกิน LT</p>
+                            <h4 id="kpiSupermarketSentOverdue" class="text-xs font-black text-rose-600 leading-none">0</h4>
+                        </div>
+                    </div>
+                </div>
+                <div onclick="filterByKpi('overdue')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-red-500">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-5 flex items-center justify-center bg-red-50 rounded-lg text-red-600 text-xs shrink-0">⚠️</span>
+                        <p class="text-[9px] font-bold uppercase text-red-600 tracking-wider leading-tight">🚨 Alert: เกิน 2 วัน / เกินวันที่ต้องการของ</p>
+                    </div>
+                    <h4 id="kpiOverdue" class="text-lg font-black text-red-600 leading-none mt-1">0</h4>
+                </div>
+                <div onclick="goToCompletedHistory()" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-emerald-500">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-5 h-5 flex items-center justify-center bg-emerald-50 rounded-lg text-emerald-600 text-xs shrink-0">✅</span>
+                        <p class="text-[9px] font-bold uppercase text-emerald-600 tracking-wider leading-tight">เสร็จสมบูรณ์ทั้งหมด</p>
+                    </div>
+                    <h4 id="kpiCompleted" class="text-lg font-black text-emerald-600 leading-none mt-1">0</h4>
                 </div>
             </div>
 
@@ -279,8 +297,10 @@
                 <div class="w-auto min-w-[150px]">
                     <select id="filterStatus" onchange="filterData()" class="w-full text-xs bg-white">
                         <option value="all">ทุกสถานะ</option>
-                        <option value="PendingApproval">รอผู้อนุมัติ</option>
-                        <option value="Rejected">ไม่อนุมัติ</option>
+                        <option value="PendingApproval">รอ BU ตรวจสอบ</option>
+                        <option value="Rejected">BU ไม่ผ่านตรวจสอบ</option>
+                        <option value="PendingFMApproval">รอ Factory Manager อนุมัติ</option>
+                        <option value="FMRejected">Factory Manager ไม่อนุมัติ</option>
                         <option value="Approved">รอรับงานตัด</option>
                         <option value="CuttingReceived">กำลังตัดซ่อม</option>
                         <option value="CuttingSent">ตัดเสร็จ รอซุปเปอร์มาร์เก็ตรับ</option>
@@ -373,7 +393,7 @@
                 <div onclick="filterByKpi('overdue')" class="card p-5 bg-gradient-to-br from-red-50 to-white cursor-pointer hover:shadow-md transition-shadow">
                     <p class="text-xs font-bold text-red-600 uppercase">🚨 รายการที่เกินกำหนด (Alert)</p>
                     <h3 id="anaAlertCount" class="text-3xl font-black text-red-600 mt-2">0</h3>
-                    <p class="text-[11px] text-slate-500 mt-1">เกิน Leadtime 2 วัน หรือเกินวันที่ต้องการของ</p>
+                    <p class="text-[11px] text-slate-500 mt-1">เกิน Leadtime 2 วันทำการ (จ.-ส. 08:00-17:00) หรือเกินวันที่ต้องการของ</p>
                 </div>
                 <div onclick="goToCompletedHistory()" class="card p-5 bg-gradient-to-br from-emerald-50 to-white cursor-pointer hover:shadow-md transition-shadow">
                     <p class="text-xs font-bold text-emerald-600 uppercase">งานเสร็จสมบูรณ์สะสม</p>
@@ -407,7 +427,7 @@
             <div class="card overflow-hidden">
                 <div class="p-4 border-b bg-slate-50">
                     <h3 class="text-sm font-black text-slate-800">สรุปเวลาที่ใช้ในการทำงานแต่ละขั้นตอน (Process Duration Summary)</h3>
-                    <p class="text-[10px] text-slate-400">เวลาเฉลี่ยระหว่างแต่ละขั้นตอน คำนวณจากทุกรายการที่มีข้อมูลเวลาของทั้งสองปลายขั้นตอนนั้นๆ</p>
+                    <p class="text-[10px] text-slate-400">เวลาเฉลี่ยระหว่างแต่ละขั้นตอน (นับเฉพาะเวลาทำงานปกติ จ.-ส. 08:00-17:00) คำนวณจากทุกรายการที่มีข้อมูลเวลาของทั้งสองปลายขั้นตอนนั้นๆ</p>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 text-left">
@@ -426,31 +446,47 @@
             <!-- Charts Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="card p-6">
-                    <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-4 text-center">ปริมาณชิ้นงานเสียแยกตามแผนก (Pcs)</h3>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">ปริมาณชิ้นงานเสียแยกตามแผนก (Pcs)</h3>
+                        <button id="deptChartToggleBtn" onclick="toggleChartDetails('deptChart')" class="text-[10px] font-bold text-indigo-600 hover:underline whitespace-nowrap ml-1">Show details</button>
+                    </div>
                     <div class="chart-container">
                         <canvas id="deptChart"></canvas>
                     </div>
+                    <div id="deptChartDetails" class="hidden mt-3 text-xs text-slate-600 space-y-0.5 max-h-40 overflow-y-auto"></div>
                 </div>
                 <div class="card p-6">
-                    <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-4 text-center">สัดส่วนสาเหตุการสั่งซ่อม</h3>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">สัดส่วนสาเหตุการสั่งซ่อม</h3>
+                        <button id="reasonChartToggleBtn" onclick="toggleChartDetails('reasonChart')" class="text-[10px] font-bold text-indigo-600 hover:underline whitespace-nowrap ml-1">Show details</button>
+                    </div>
                     <div class="chart-container">
                         <canvas id="reasonChart"></canvas>
                     </div>
+                    <div id="reasonChartDetails" class="hidden mt-3 text-xs text-slate-600 space-y-0.5 max-h-40 overflow-y-auto"></div>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="card p-6">
-                    <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-4 text-center">แนวโน้มงานซ่อมรายเดือน (Total Pcs)</h3>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">แนวโน้มงานซ่อมรายเดือน (Total Pcs)</h3>
+                        <button id="monthlyChartToggleBtn" onclick="toggleChartDetails('monthlyChart')" class="text-[10px] font-bold text-indigo-600 hover:underline whitespace-nowrap ml-1">Show details</button>
+                    </div>
                     <div class="chart-container">
                         <canvas id="monthlyChart"></canvas>
                     </div>
+                    <div id="monthlyChartDetails" class="hidden mt-3 text-xs text-slate-600 space-y-0.5 max-h-40 overflow-y-auto"></div>
                 </div>
                 <div class="card p-6">
-                    <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-4 text-center">จำนวนชิ้นงานเสียแยกตามไลน์ผลิต (Sewing Line)</h3>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">จำนวนชิ้นงานเสียแยกตามไลน์ผลิต (Sewing Line)</h3>
+                        <button id="lineChartToggleBtn" onclick="toggleChartDetails('lineChart')" class="text-[10px] font-bold text-indigo-600 hover:underline whitespace-nowrap ml-1">Show details</button>
+                    </div>
                     <div class="chart-container">
                         <canvas id="lineChart"></canvas>
                     </div>
+                    <div id="lineChartDetails" class="hidden mt-3 text-xs text-slate-600 space-y-0.5 max-h-40 overflow-y-auto"></div>
                 </div>
             </div>
 
@@ -467,7 +503,8 @@
                                 <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">รหัส</th>
                                 <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">Style / Job</th>
                                 <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">แผนก/ไลน์</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ผู้อนุมัติ</th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ผู้ตรวจสอบ (BU)</th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ผู้อนุมัติ (FM)</th>
                                 <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">รับงานตัด</th>
                                 <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ตัดเสร็จ</th>
                                 <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">SM รับ</th>
@@ -476,6 +513,39 @@
                             </tr>
                         </thead>
                         <tbody id="completedHistoryBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: COMPANY HOLIDAYS -->
+        <div id="section-holidays" class="tab-content hidden space-y-6">
+            <div class="border-b pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">วันหยุดบริษัท</h2>
+                    <p class="text-slate-500 text-xs mt-0.5">รายการวันหยุดประจำปีตามประกาศของบริษัท — ระบบจะไม่นับวันเหล่านี้เป็นเวลาทำงานในการคำนวณ SLA/ระยะเวลาทุกจุด</p>
+                </div>
+                <button onclick="printCurrentPage()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1 no-print" title="พิมพ์หน้านี้">
+                    <span>🖨️ พิมพ์เอกสาร</span>
+                </button>
+            </div>
+
+            <div class="card overflow-hidden">
+                <div class="p-4 border-b bg-slate-50">
+                    <h3 class="text-sm font-black text-slate-800">เรื่อง วันหยุดประจำปี 2569</h3>
+                    <p class="text-[10px] text-slate-400">เวลาทำงานปกติ: จันทร์-เสาร์ 08:00-17:00 น. (ไม่รวมวันอาทิตย์และวันหยุดด้านล่าง)</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-left">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ลำดับ</th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">วัน</th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">วันที่</th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">วันสำคัญ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holidaysTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
                     </table>
                 </div>
             </div>
@@ -498,7 +568,7 @@
                 <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
                     <div>
                         <h3 class="text-sm font-black text-slate-800">จัดการผู้ใช้งาน (Users)</h3>
-                        <p class="text-[10px] text-slate-400">กำหนดบทบาทและขอบเขตไลน์/แผนกที่รับผิดชอบของผู้ใช้แต่ละคน (ผู้ใช้คนเดียวสามารถมีได้หลายบทบาท เช่น BU ที่ยื่นขอเองและอนุมัติเองได้)</p>
+                        <p class="text-[10px] text-slate-400">กำหนดบทบาทและขอบเขตไลน์/แผนกที่รับผิดชอบของผู้ใช้แต่ละคน (ผู้ใช้คนเดียวสามารถมีได้หลายบทบาท เช่น BU ที่ยื่นขอเองและตรวจสอบเองได้)</p>
                     </div>
                     <button onclick="openUserModal()" class="btn-primary text-xs">+ เพิ่มผู้ใช้</button>
                 </div>
@@ -568,11 +638,11 @@
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันที่ต้องการของ</label>
-                        <input type="datetime-local" id="fNeedDate" class="w-full text-xs">
+                        <input type="date" id="fNeedDate" class="w-full text-xs">
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันส่งออก</label>
-                        <input type="datetime-local" id="fShipOutDate" class="w-full text-xs">
+                        <input type="date" id="fShipOutDate" class="w-full text-xs">
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">แผนกที่แจ้ง *</label>
@@ -618,7 +688,7 @@
                         <label class="text-[10px] font-extrabold text-slate-600 block mb-1">PO No. (ถ้าทราบ)</label>
                         <input type="text" id="fPO" list="poList" placeholder="เช่น PO-88213" class="w-full text-xs bg-white">
                         <datalist id="poList"></datalist>
-                        <p class="text-[9px] text-slate-400 mt-1">ถ้ายังไม่ทราบ ผู้อนุมัติ (BU) จะเป็นผู้กรอก/ยืนยัน PO, Item และ Job No. ก่อนอนุมัติ</p>
+                        <p class="text-[9px] text-slate-400 mt-1">ถ้ายังไม่ทราบ ผู้ตรวจสอบ (BU) จะเป็นผู้กรอก/ยืนยัน PO, Item และ Job No. ก่อนส่งต่อให้ Factory Manager อนุมัติ</p>
                     </div>
                 </div>
 
@@ -638,11 +708,11 @@
                 <!-- Remark -->
                 <div>
                     <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">Remark เพิ่มเติม (ถ้ามี)</label>
-                    <textarea id="fRemark" rows="2" class="w-full text-xs" placeholder="รายละเอียดเพิ่มเติมเกี่ยวกับปัญหา หรือข้อความถึงผู้อนุมัติ/แผนกตัด..."></textarea>
+                    <textarea id="fRemark" rows="2" class="w-full text-xs" placeholder="รายละเอียดเพิ่มเติมเกี่ยวกับปัญหา หรือข้อความถึงผู้ตรวจสอบ/แผนกตัด..."></textarea>
                 </div>
 
                 <p class="text-[10px] text-slate-400 bg-slate-50 border border-slate-100 rounded-lg p-2.5">
-                    ℹ️ หลังบันทึก ระบบจะส่งใบสั่งซ่อมนี้ไปยัง <b>ผู้อนุมัติของแผนก/ไลน์ผลิต</b> ที่รับผิดชอบเพื่อตรวจสอบและอนุมัติก่อนส่งต่อให้แผนกตัดดำเนินการ (กรณี BU เป็นผู้ยื่นขอเอง ระบบอนุญาตให้ผู้ใช้ที่มีทั้งสิทธิ์ผู้ขอและผู้อนุมัติ ดำเนินการอนุมัติรายการของตนเองได้)
+                    ℹ️ หลังบันทึก ระบบจะส่งใบสั่งซ่อมนี้ไปยัง <b>ผู้ตรวจสอบ (BU) ของแผนก/ไลน์ผลิต</b> ที่รับผิดชอบเพื่อตรวจสอบก่อนส่งต่อให้ Factory Manager อนุมัติ และส่งต่อให้แผนกตัดดำเนินการ (กรณี BU เป็นผู้ยื่นขอเอง ระบบอนุญาตให้ผู้ใช้ที่มีทั้งสิทธิ์ผู้ขอและผู้ตรวจสอบ ดำเนินการตรวจสอบรายการของตนเองได้)
                 </p>
 
                 <!-- Buttons -->
@@ -659,20 +729,20 @@
         </div>
     </div>
 
-    <!-- MODAL: APPROVAL (หัวหน้าแผนก/ไลน์ หรือ BU) -->
+    <!-- MODAL: REVIEW (หัวหน้าแผนก/ไลน์ หรือ BU) -->
     <div id="approvalModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-amber-500 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
-                    <h3 class="font-bold text-base">พิจารณาอนุมัติใบสั่งซ่อม</h3>
-                    <p class="text-[10px] text-amber-100 uppercase font-semibold">Approver Decision</p>
+                    <h3 class="font-bold text-base">BU Review</h3>
+                    <p class="text-[10px] text-amber-100 uppercase font-semibold">ตรวจสอบใบสั่งซ่อม (BU)</p>
                 </div>
                 <button onclick="closeModal('approvalModal')" class="text-white hover:text-amber-100 text-lg">✕</button>
             </div>
             <div class="p-6 space-y-4 overflow-y-auto">
                 <div id="approvalItemInfo" class="p-3.5 bg-slate-50 rounded-xl text-xs border border-slate-100 space-y-1"></div>
                 <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 space-y-2">
-                    <p class="text-[10px] font-black text-sky-900 uppercase">ผู้อนุมัติ (BU) ต้องกรอก/ยืนยันข้อมูลนี้ให้ครบก่อนจึงจะอนุมัติได้ *</p>
+                    <p class="text-[10px] font-black text-sky-900 uppercase">ผู้ตรวจสอบ (BU) ต้องกรอก/ยืนยันข้อมูลนี้ให้ครบก่อนจึงจะผ่านการตรวจสอบได้ *</p>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div>
                             <label class="text-[9px] font-bold text-slate-500 block mb-1">PO No. *</label>
@@ -689,7 +759,7 @@
                     </div>
                 </div>
                 <div class="bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-900">
-                    ผู้อนุมัติ: <b id="approvalName">-</b><br>
+                    ผู้ตรวจสอบ: <b id="approvalName">-</b><br>
                     <span class="text-[10px] text-amber-700">ระบบจะบันทึกชื่อผู้ใช้และเวลาปัจจุบันโดยอัตโนมัติเมื่อกดยืนยัน (ไม่ต้องเซ็นชื่อในระบบ)</span>
                 </div>
                 <div>
@@ -698,8 +768,41 @@
                 </div>
                 <div class="pt-2 flex gap-2">
                     <button type="button" onclick="closeModal('approvalModal')" class="btn-ghost w-1/4 text-xs">ยกเลิก</button>
-                    <button type="button" onclick="submitApproval('Rejected')" class="btn-danger w-1/3 text-xs py-2.5">ไม่อนุมัติ</button>
-                    <button type="button" onclick="submitApproval('Approved')" class="btn-primary flex-1 text-xs py-2.5">อนุมัติ</button>
+                    <button type="button" onclick="submitApproval('Rejected')" class="btn-danger w-1/3 text-xs py-2.5">ไม่ผ่าน</button>
+                    <button type="button" onclick="submitApproval('Approved')" class="btn-primary flex-1 text-xs py-2.5">ผ่านตรวจสอบ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: FACTORY MANAGER APPROVAL -->
+    <div id="fmApprovalModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="bg-orange-500 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
+                <div>
+                    <h3 class="font-bold text-base">Factory Manager Decision</h3>
+                    <p class="text-[10px] text-orange-100 uppercase font-semibold">พิจารณาอนุมัติโดย Factory Manager</p>
+                </div>
+                <button onclick="closeModal('fmApprovalModal')" class="text-white hover:text-orange-100 text-lg">✕</button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto">
+                <div id="fmApprovalItemInfo" class="p-3.5 bg-slate-50 rounded-xl text-xs border border-slate-100 space-y-1"></div>
+                <div class="bg-orange-50 border border-orange-100 rounded-xl p-3 text-xs text-orange-900">
+                    ผู้อนุมัติ: <b id="fmApprovalName">-</b><br>
+                    <span class="text-[10px] text-orange-700">ระบบจะบันทึกชื่อผู้ใช้และเวลาปัจจุบันโดยอัตโนมัติเมื่อกดยืนยัน</span>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">Remark <span class="font-normal normal-case text-slate-400">(บังคับถ้าไม่อนุมัติ / required if rejecting)</span></label>
+                    <textarea id="fmApprovalRemark" rows="2" class="w-full text-xs" placeholder="เหตุผลกรณีไม่อนุมัติ"></textarea>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">📎 แนบรูป/ไฟล์เอกสารที่ปริ้นเซ็นต์แล้ว (ถ้ามี)</label>
+                    <input type="file" id="fmApprovalAttachment" accept="image/*,.pdf" class="w-full text-xs">
+                </div>
+                <div class="pt-2 flex gap-2">
+                    <button type="button" onclick="closeModal('fmApprovalModal')" class="btn-ghost w-1/4 text-xs">ยกเลิก</button>
+                    <button type="button" onclick="submitFMApproval('FMRejected')" class="btn-danger w-1/3 text-xs py-2.5">ไม่อนุมัติ</button>
+                    <button type="button" onclick="submitFMApproval('Approved')" class="btn-primary flex-1 text-xs py-2.5">อนุมัติ</button>
                 </div>
             </div>
         </div>
@@ -710,8 +813,8 @@
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-indigo-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
-                    <h3 id="actionModalTitle" class="font-bold text-base">จัดการโดยแผนกตัด</h3>
-                    <p class="text-[10px] text-indigo-200 uppercase font-semibold">Cutting Department Action</p>
+                    <h3 id="actionModalTitle" class="font-bold text-base">Cutting Department Action</h3>
+                    <p class="text-[10px] text-indigo-200 uppercase font-semibold">จัดการโดยแผนกตัด</p>
                 </div>
                 <button onclick="closeModal('actionModal')" class="text-white hover:text-indigo-200 text-lg">✕</button>
             </div>
@@ -737,6 +840,27 @@
                     <button type="button" onclick="closeModal('actionModal')" class="btn-ghost w-1/3 text-xs">ยกเลิก</button>
                     <button type="button" id="btnActionSave" onclick="saveAction()" class="btn-primary w-2/3 text-xs py-2.5">บันทึกการอัปเดต</button>
                 </div>
+
+                <div class="border-t pt-3">
+                    <button type="button" onclick="toggleCuttingIssuePanel()" class="text-[11px] font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1">
+                        <span>⚠️ Report a cutting issue</span>
+                        <span class="text-slate-400 font-normal normal-case">ไม่สามารถตัดงานได้ / แจ้งปัญหา</span>
+                    </button>
+                    <div id="cuttingIssuePanel" class="hidden mt-3 space-y-2.5 bg-rose-50 border border-rose-100 rounded-xl p-3">
+                        <div>
+                            <label class="text-[9px] font-bold text-rose-700 block mb-1">Reason<br><span class="font-normal normal-case text-rose-400">เหตุผลที่ตัดไม่ได้</span></label>
+                            <select id="cuttingIssueReason" class="w-full text-xs bg-white">
+                                <option value="">-- เลือกเหตุผล --</option>
+                                ${CUTTING_ISSUE_OPTIONS.map(c => `<option value="${c.value}">${c.label}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-bold text-rose-700 block mb-1">Remark</label>
+                            <textarea id="cuttingIssueRemark" rows="2" class="w-full text-xs bg-white" placeholder="รายละเอียดเพิ่มเติม"></textarea>
+                        </div>
+                        <button type="button" onclick="saveCuttingIssue()" class="btn-danger w-full text-xs py-2">บันทึกแจ้งปัญหา</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -746,8 +870,8 @@
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-teal-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
-                    <h3 id="marketModalTitle" class="font-bold text-base">ซุปเปอร์มาร์เก็ต</h3>
-                    <p class="text-[10px] text-teal-100 uppercase font-semibold">Supermarket Action</p>
+                    <h3 id="marketModalTitle" class="font-bold text-base">Supermarket Action</h3>
+                    <p class="text-[10px] text-teal-100 uppercase font-semibold">ซุปเปอร์มาร์เก็ต</p>
                 </div>
                 <button onclick="closeModal('marketModal')" class="text-white hover:text-teal-100 text-lg">✕</button>
             </div>
@@ -777,8 +901,8 @@
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-emerald-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
-                    <h3 class="font-bold text-base">ยืนยันการรับงานตัดเปลี่ยน (ต้นทาง)</h3>
-                    <p class="text-[10px] text-emerald-100 uppercase font-semibold">Confirm Receipt at Origin</p>
+                    <h3 class="font-bold text-base">Confirm Receipt at Origin</h3>
+                    <p class="text-[10px] text-emerald-100 uppercase font-semibold">ยืนยันการรับงานตัดเปลี่ยน (ต้นทาง)</p>
                 </div>
                 <button onclick="closeModal('receiveModal')" class="text-white hover:text-emerald-100 text-lg">✕</button>
             </div>
@@ -858,10 +982,11 @@
                     <input type="text" id="uName" class="w-full text-xs" required>
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">บทบาท (เลือกได้หลายอย่าง — เช่น BU ที่ยื่นขอเองและอนุมัติเอง ให้ติ๊กทั้งผู้ขอและผู้อนุมัติ) *</label>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">บทบาท (เลือกได้หลายอย่าง — เช่น BU ที่ยื่นขอเองและตรวจสอบเอง ให้ติ๊กทั้งผู้ขอและผู้ตรวจสอบ) *</label>
                     <div class="flex flex-wrap gap-3 text-xs bg-slate-50 p-2.5 rounded-lg border">
                         <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Requester"> ผู้ขออนุมัติตัด</label>
-                        <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Approver"> ผู้อนุมัติ</label>
+                        <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Approver"> ผู้ตรวจสอบ (BU)</label>
+                        <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="FactoryManager"> Factory Manager</label>
                         <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Cutting"> แผนกตัด</label>
                         <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Supermarket"> ซุปเปอร์มาร์เก็ต</label>
                         <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Admin"> ผู้ดูแลระบบ</label>
@@ -875,12 +1000,13 @@
                         <option value="LineLeader">หัวหน้าไลน์</option>
                         <option value="CuttingHead">หัวหน้าแผนกตัด</option>
                         <option value="SupermarketHead">หัวหน้าซุปเปอร์มาร์เก็ต</option>
+                        <option value="FactoryManager">Factory Manager</option>
                     </select>
                 </div>
                 <div>
                     <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ขอบเขต Line/แผนก (คั่นด้วยจุลภาค)</label>
                     <input type="text" id="uLines" placeholder="เช่น Line 05, Line 06 หรือ QC" class="w-full text-xs">
-                    <p class="text-[9px] text-slate-400 mt-1">ใช้สำหรับผู้ขออนุมัติตัด/ผู้อนุมัติ ไม่จำเป็นสำหรับแผนกตัด/ซุปเปอร์มาร์เก็ต/ผู้ดูแลระบบ</p>
+                    <p class="text-[9px] text-slate-400 mt-1">ใช้สำหรับผู้ขออนุมัติตัด/ผู้ตรวจสอบ (BU) ไม่จำเป็นสำหรับแผนกตัด/ซุปเปอร์มาร์เก็ต/ผู้ดูแลระบบ</p>
                 </div>
                 <div class="flex justify-end gap-2 pt-2 border-t">
                     <button type="button" onclick="closeModal('userModal')" class="btn-ghost text-xs">ยกเลิก</button>
@@ -975,6 +1101,80 @@
             return d ? d.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }) : '';
         }
 
+        // Parses a date-only "YYYY-MM-DD" (needDate/shipOutDate — no time component) as the
+        // END of that day in Bangkok, for SLA/overdue comparisons against a full timestamp.
+        function parseLocalDateEndOfDay(str) {
+            return str ? new Date(str + 'T23:59:59+07:00') : null;
+        }
+
+        // --- BUSINESS-HOURS DURATION (Mon-Sat 08:00-17:00 Bangkok, Sunday excluded) ---
+        // The factory's normal working hours; every SLA/duration figure in the app is measured
+        // in working time, not raw calendar time, so a request sitting overnight or over Sunday
+        // doesn't count against the 2-day turnaround target.
+        const WORK_START_HOUR = 8;
+        const WORK_END_HOUR = 17;
+        const WORK_HOURS_PER_DAY = WORK_END_HOUR - WORK_START_HOUR; // 9
+
+        // Official company holidays (ประกาศวันหยุดประจำปี) — "YYYY-MM-DD": ชื่อวันหยุด.
+        // Extend this object with more years as new announcements come out.
+        const COMPANY_HOLIDAYS_2026 = {
+            "2026-01-01": { weekday: "พฤหัสบดี", name: "วันขึ้นปีใหม่" },
+            "2026-03-03": { weekday: "อังคาร", name: "วันมาฆบูชา" },
+            "2026-04-13": { weekday: "จันทร์", name: "วันสงกรานต์" },
+            "2026-04-14": { weekday: "อังคาร", name: "วันสงกรานต์" },
+            "2026-04-15": { weekday: "พุธ", name: "วันสงกรานต์" },
+            "2026-05-01": { weekday: "ศุกร์", name: "วันแรงงานแห่งชาติ" },
+            "2026-06-03": { weekday: "พุธ", name: "วันเฉลิมพระชนมพรรษา สมเด็จพระนางเจ้าสุทิดา พัชรสุธาพิมลลักษณ พระบรมราชินี" },
+            "2026-07-28": { weekday: "อังคาร", name: "วันพระบรมราชสมภพ พระบาทสมเด็จพระปรเมนทรรามาธิบดีศรีสินทรมหาวชิราลงกรณ พระวชิรเกล้าเจ้าอยู่หัว" },
+            "2026-07-29": { weekday: "พุธ", name: "วันอาสาฬหบูชา" },
+            "2026-08-12": { weekday: "พุธ", name: "วันเฉลิมพระชนมพรรษา สมเด็จพระนางเจ้าสิริกิติ์ พระบรมราชินีนาถ พระบรมราชชนนีพันปีหลวง" },
+            "2026-10-13": { weekday: "อังคาร", name: "วันคล้ายวันสวรรคต พระบาทสมเด็จพระบรมชนกาธิเบศร มหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร" },
+            "2026-12-05": { weekday: "เสาร์", name: "วันคล้ายวันพระบรมราชสมภพ พระบาทสมเด็จพระบรมชนกาธิเบศร มหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร วันชาติ และวันพ่อแห่งชาติ" },
+            "2026-12-31": { weekday: "พฤหัสบดี", name: "วันสิ้นปี" }
+        };
+        const COMPANY_HOLIDAYS = { ...COMPANY_HOLIDAYS_2026 };
+
+        function isCompanyHoliday(d) {
+            const p = getBangkokParts(d);
+            return !!COMPANY_HOLIDAYS[`${p.year}-${p.month}-${p.day}`];
+        }
+
+        function getBangkokWeekday(d) {
+            // 0=Sun, 1=Mon, ..., 6=Sat, evaluated in Asia/Bangkok regardless of device timezone.
+            const map = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+            const label = new Intl.DateTimeFormat('en-US', { timeZone: BANGKOK_TZ, weekday: 'short' }).format(d);
+            return map[label];
+        }
+
+        // Total working milliseconds between two instants, walking day by day in Bangkok time
+        // and summing the overlap of each Mon-Sat 08:00-17:00 window with [start, end],
+        // skipping Sundays and official company holidays entirely.
+        function businessMsBetween(start, end) {
+            if (!(start instanceof Date) || !(end instanceof Date) || isNaN(start) || isNaN(end) || end <= start) return 0;
+            let totalMs = 0;
+            const startParts = getBangkokParts(start);
+            const endParts = getBangkokParts(end);
+            let dayCursor = parseLocalDateTime(`${startParts.year}-${startParts.month}-${startParts.day}T00:00`);
+            const lastDayMidnight = parseLocalDateTime(`${endParts.year}-${endParts.month}-${endParts.day}T00:00`);
+
+            while (dayCursor <= lastDayMidnight) {
+                if (getBangkokWeekday(dayCursor) !== 0 && !isCompanyHoliday(dayCursor)) { // skip Sunday and company holidays
+                    const p = getBangkokParts(dayCursor);
+                    const dateStr = `${p.year}-${p.month}-${p.day}`;
+                    const workStart = parseLocalDateTime(`${dateStr}T${String(WORK_START_HOUR).padStart(2, '0')}:00`);
+                    const workEnd = parseLocalDateTime(`${dateStr}T${String(WORK_END_HOUR).padStart(2, '0')}:00`);
+                    const overlapStart = start > workStart ? start : workStart;
+                    const overlapEnd = end < workEnd ? end : workEnd;
+                    if (overlapEnd > overlapStart) totalMs += (overlapEnd - overlapStart);
+                }
+                dayCursor = new Date(dayCursor.getTime() + 24 * 60 * 60 * 1000); // Bangkok has no DST — safe to step by 24h
+            }
+            return totalMs;
+        }
+
+        function businessHoursBetween(start, end) { return businessMsBetween(start, end) / 36e5; }
+        function businessDaysBetween(start, end) { return businessHoursBetween(start, end) / WORK_HOURS_PER_DAY; }
+
         async function apiGetAll(sheetName) {
             const res = await fetch(`${API_BASE_URL}?sheet=${encodeURIComponent(sheetName)}`);
             const data = await res.json();
@@ -994,6 +1194,15 @@
         function apiReplaceAll(sheetName, rows) { return apiPost({ sheet: sheetName, action: 'replaceAll', rows }); }
         function apiAppend(sheetName, row) { return apiPost({ sheet: sheetName, action: 'append', row }); }
         const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', 'ST', 'MT', 'LT', 'XLT', '2XLT', '3XLT', '4XLT'];
+        const PART_NAME_OPTIONS = [
+            { value: 'Front', label: 'ชิ้นหน้า (Front)' },
+            { value: 'Back', label: 'ชิ้นหลัง (Back)' },
+            { value: 'Sleeve', label: 'แขนซ้าย-ขวา (Left-Right Sleeve)' },
+            { value: 'SidePanel', label: 'ชิ้นแต่งข้าง (Side Panel)' },
+            { value: 'NeckTape', label: 'เทปดามคอ (Neck Tape)' },
+            { value: 'NeckBinding', label: 'กุ้นคอ (Neck Binding)' }
+        ];
+        const PART_NAME_LABELS = Object.fromEntries(PART_NAME_OPTIONS.map(p => [p.value, p.label]));
         const REASON_OPTIONS = [
             { value: 'Fabric Defect', label: 'ผ้ามีตำหนิ (Fabric Defect)' },
             { value: 'Cutting Error', label: 'ตัดผิดสเปก / ตัดเสีย (Cutting Error)' },
@@ -1003,6 +1212,14 @@
             { value: 'Incomplete Work', label: 'งานไม่ครบ (Incomplete Work)' }
         ];
         const REASON_LABELS = Object.fromEntries(REASON_OPTIONS.map(r => [r.value, r.label]));
+        const CUTTING_ISSUE_OPTIONS = [
+            { value: 'NoFabric', label: 'ผ้าไม่พอ / ผ้าหมด (Out of Fabric)' },
+            { value: 'WrongSpec', label: 'สเปกไม่ตรง (Wrong Spec)' },
+            { value: 'MachineDown', label: 'เครื่องจักรขัดข้อง (Machine Down)' },
+            { value: 'WaitingInfo', label: 'รอข้อมูลเพิ่มเติมจากผู้แจ้ง/BU (Waiting for Info)' },
+            { value: 'Other', label: 'อื่นๆ (Other)' }
+        ];
+        const CUTTING_ISSUE_LABELS = Object.fromEntries(CUTTING_ISSUE_OPTIONS.map(c => [c.value, c.label]));
 
         function escapeHtml(str) {
             return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1050,82 +1267,106 @@
             { username: 'cut02', password: '1234', name: 'สุรชัย (แผนกตัด)', roles: ['Cutting'], lines: [], position: 'CuttingHead' },
             { username: 'market01', password: '1234', name: 'สมหญิง (ซุปเปอร์มาร์เก็ต)', roles: ['Supermarket'], lines: [], position: 'SupermarketHead' },
             { username: 'market02', password: '1234', name: 'อรทัย (ซุปเปอร์มาร์เก็ต)', roles: ['Supermarket'], lines: [], position: 'SupermarketHead' },
-            { username: 'bu08', password: '1234', name: 'ปิยะดา (BU Line 08 — ยื่นขอเองและอนุมัติเอง)', roles: ['Requester', 'Approver'], lines: ['Line 08'], position: 'BU' }
+            { username: 'bu08', password: '1234', name: 'ปิยะดา (BU Line 08 — ยื่นขอเองและตรวจสอบเอง)', roles: ['Requester', 'Approver'], lines: ['Line 08'], position: 'BU' },
+            { username: 'fm01', password: '1234', name: 'ประเสริฐ (Factory Manager)', roles: ['FactoryManager'], lines: [], position: 'FactoryManager' }
         ];
 
         // --- DEFAULT REPAIR RECORDS (workflow schema) ---
         const defaultRepairs = [
             {
-                id: "R-8821", date: "2026-08-01T08:45", needDate: "2026-08-03T17:00", shipOutDate: "2026-08-04T09:00", dept: "Sewing", line: "Line 05",
+                id: "R-8821", date: "2026-08-01T08:45", needDate: "2026-08-03", shipOutDate: "2026-08-04", dept: "Sewing", line: "Line 05",
                 style: "TSH-2026", job: "J-001", item: "T-Shirt Standard", color: "Navy Blue", po: "PO-70011", remark: "",
                 status: "Received", archived: true, requesterUser: "req05",
                 approval: { by: "appr05", name: "เกรียงศักดิ์ (หัวหน้าไลน์ 05)", decision: "Approved", ts: "2026-08-01T09:10:00" },
+                fmApproval: { by: "fm01", name: "ประเสริฐ (Factory Manager)", decision: "Approved", remark: "", ts: "2026-08-01T09:40:00" },
                 cuttingReceive: { by: "cut01", name: "ธนกฤต (แผนกตัด)", ts: "2026-08-01T10:00:00" },
                 cuttingSend: { by: "cut01", name: "ธนกฤต (แผนกตัด)", ts: "2026-08-02T09:00:00", finishDate: "2026-08-02" },
                 supermarketReceive: { by: "market01", name: "สมหญิง (ซุปเปอร์มาร์เก็ต)", ts: "2026-08-02T11:00:00" },
                 supermarketSend: { by: "market01", name: "สมหญิง (ซุปเปอร์มาร์เก็ต)", ts: "2026-08-02T13:00:00" },
                 originReceive: { by: "req05", name: "สมชาย ใจดี (Line Leader 05)", ts: "2026-08-02T15:30:00" },
-                parts: [{ name: "ตัวหน้า (Front Body)", size: "M", qty: 10, sample: true, reason: "Fabric Defect" }]
+                cuttingIssue: null,
+                parts: [{ name: "Front", size: "M", qty: 10, sample: true, reason: "Fabric Defect" }]
             },
             {
-                id: "R-9012", date: "2026-08-05T13:20", needDate: "2026-08-08T17:00", shipOutDate: "2026-08-09T09:00", dept: "QC", line: "-",
+                id: "R-9012", date: "2026-08-05T13:20", needDate: "2026-08-08", shipOutDate: "2026-08-09", dept: "QC", line: "-",
                 style: "POLO-V1", job: "J-042", item: "Polo Shirt", color: "White", po: "", remark: "ลูกค้าเร่งด่วน โปรดตรวจสอบก่อน",
                 status: "PendingApproval", archived: false, requesterUser: "reqQC",
-                approval: null, cuttingReceive: null, cuttingSend: null, supermarketReceive: null, supermarketSend: null, originReceive: null,
-                parts: [{ name: "ชิ้นแขนซ้าย (Left Sleeve)", size: "L", qty: 4, sample: false, reason: "Sewing Error" }]
+                approval: null, fmApproval: null, cuttingReceive: null, cuttingSend: null, supermarketReceive: null, supermarketSend: null, originReceive: null,
+                cuttingIssue: null,
+                parts: [{ name: "Sleeve", size: "L", qty: 4, sample: false, reason: "Sewing Error" }]
             },
             {
-                id: "R-9104", date: "2026-08-08T08:15", needDate: "2026-08-11T17:00", shipOutDate: "2026-08-13T09:00", dept: "Sewing", line: "Line 12",
+                id: "R-9104", date: "2026-08-08T08:15", needDate: "2026-08-11", shipOutDate: "2026-08-13", dept: "Sewing", line: "Line 12",
                 style: "JKT-PRO", job: "J-108", item: "Jacket Zip", color: "Black", po: "PO-70120", remark: "",
                 status: "CuttingReceived", archived: false, requesterUser: "req12",
                 approval: { by: "appr12", name: "สุนิสา (QC Manager)", decision: "Approved", ts: "2026-08-08T09:00:00" },
+                fmApproval: { by: "fm01", name: "ประเสริฐ (Factory Manager)", decision: "Approved", remark: "", ts: "2026-08-08T09:30:00" },
                 cuttingReceive: { by: "cut02", name: "สุรชัย (แผนกตัด)", ts: "2026-08-08T13:00:00" },
                 cuttingSend: null, supermarketReceive: null, supermarketSend: null, originReceive: null,
+                cuttingIssue: { reason: "NoFabric", remark: "ผ้าสี Black ในสต็อกไม่พอสำหรับตัดจำนวนนี้ รอผ้าเข้าเพิ่ม", by: "cut02", name: "สุรชัย (แผนกตัด)", ts: "2026-08-08T14:00:00" },
                 parts: [
                     { name: "ปกเสื้อ (Collar)", size: "XL", qty: 12, sample: true, reason: "Cutting Error" },
                     { name: "สาบหน้า (Placket)", size: "XL", qty: 12, sample: false, reason: "Fabric Defect" }
                 ]
             },
             {
-                id: "R-9205", date: "2026-08-06T08:30", needDate: "2026-08-09T17:00", shipOutDate: "2026-08-10T09:00", dept: "Sewing", line: "Line 05",
+                id: "R-9205", date: "2026-08-06T08:30", needDate: "2026-08-09", shipOutDate: "2026-08-10", dept: "Sewing", line: "Line 05",
                 style: "TSH-BLU2", job: "J-210", item: "T-Shirt Standard", color: "Sky Blue", po: "PO-70088", remark: "",
                 status: "CuttingSent", archived: false, requesterUser: "req05",
                 approval: { by: "appr05", name: "เกรียงศักดิ์ (หัวหน้าไลน์ 05)", decision: "Approved", ts: "2026-08-06T09:00:00" },
+                fmApproval: { by: "fm01", name: "ประเสริฐ (Factory Manager)", decision: "Approved", remark: "", ts: "2026-08-06T09:30:00" },
                 cuttingReceive: { by: "cut01", name: "ธนกฤต (แผนกตัด)", ts: "2026-08-06T10:00:00" },
                 cuttingSend: { by: "cut01", name: "ธนกฤต (แผนกตัด)", ts: "2026-08-08T11:00:00", finishDate: "2026-08-08" },
                 supermarketReceive: null, supermarketSend: null, originReceive: null,
-                parts: [{ name: "ตัวหน้า (Front Body)", size: "L", qty: 8, sample: false, reason: "Missing" }]
+                cuttingIssue: null,
+                parts: [{ name: "Front", size: "L", qty: 8, sample: false, reason: "Missing" }]
             },
             {
-                id: "R-9410", date: "2026-08-09T09:15", needDate: "2026-08-12T17:00", shipOutDate: "2026-08-14T09:00", dept: "Sewing", line: "Line 08",
-                style: "JKT-BLK2", job: "J-305", item: "Jacket Panel", color: "Black", po: "PO-70199", remark: "BU ยื่นขอเองและอนุมัติเอง (ตัวอย่าง)",
-                status: "Approved", archived: false, requesterUser: "bu08",
-                approval: { by: "bu08", name: "ปิยะดา (BU Line 08 — ยื่นขอเองและอนุมัติเอง)", decision: "Approved", ts: "2026-08-09T09:30:00" },
+                id: "R-9410", date: "2026-08-09T09:15", needDate: "2026-08-12", shipOutDate: "2026-08-14", dept: "Sewing", line: "Line 08",
+                style: "JKT-BLK2", job: "J-305", item: "Jacket Panel", color: "Black", po: "PO-70199", remark: "BU ยื่นขอเองและตรวจสอบเอง (ตัวอย่าง)",
+                status: "PendingFMApproval", archived: false, requesterUser: "bu08",
+                approval: { by: "bu08", name: "ปิยะดา (BU Line 08 — ยื่นขอเองและตรวจสอบเอง)", decision: "Approved", ts: "2026-08-09T09:30:00" },
+                fmApproval: null,
                 cuttingReceive: null, cuttingSend: null, supermarketReceive: null, supermarketSend: null, originReceive: null,
-                parts: [{ name: "แผงหลัง (Back Panel)", size: "L", qty: 6, sample: false, reason: "Cutting Error" }]
+                cuttingIssue: null,
+                parts: [{ name: "Back", size: "L", qty: 6, sample: false, reason: "Cutting Error" }]
             },
             {
-                id: "R-9501", date: "2026-08-07T08:00", needDate: "2026-08-10T17:00", shipOutDate: "2026-08-11T09:00", dept: "Sewing", line: "Line 12",
+                id: "R-9501", date: "2026-08-07T08:00", needDate: "2026-08-10", shipOutDate: "2026-08-11", dept: "Sewing", line: "Line 12",
                 style: "TSH-GRN1", job: "J-410", item: "T-Shirt Standard", color: "Green", po: "PO-70210", remark: "",
                 status: "SupermarketReceived", archived: false, requesterUser: "req12",
                 approval: { by: "appr12", name: "สุนิสา (QC Manager)", decision: "Approved", ts: "2026-08-07T09:00:00" },
+                fmApproval: { by: "fm01", name: "ประเสริฐ (Factory Manager)", decision: "Approved", remark: "", ts: "2026-08-07T09:30:00" },
                 cuttingReceive: { by: "cut02", name: "สุรชัย (แผนกตัด)", ts: "2026-08-07T10:00:00" },
                 cuttingSend: { by: "cut02", name: "สุรชัย (แผนกตัด)", ts: "2026-08-08T09:00:00", finishDate: "2026-08-08" },
                 supermarketReceive: { by: "market02", name: "อรทัย (ซุปเปอร์มาร์เก็ต)", ts: "2026-08-08T11:00:00" },
                 supermarketSend: null, originReceive: null,
-                parts: [{ name: "แขนเสื้อ (Sleeve)", size: "M", qty: 5, sample: false, reason: "Sewing Error" }]
+                cuttingIssue: null,
+                parts: [{ name: "Sleeve", size: "M", qty: 5, sample: false, reason: "Sewing Error" }]
             },
             {
-                id: "R-9502", date: "2026-08-07T07:45", needDate: "2026-08-09T17:00", shipOutDate: "2026-08-10T09:00", dept: "Sewing", line: "Line 05",
+                id: "R-9502", date: "2026-08-07T07:45", needDate: "2026-08-09", shipOutDate: "2026-08-10", dept: "Sewing", line: "Line 05",
                 style: "TSH-YEL1", job: "J-415", item: "T-Shirt Standard", color: "Yellow", po: "PO-70215", remark: "",
                 status: "SupermarketSent", archived: false, requesterUser: "req05",
                 approval: { by: "appr05", name: "เกรียงศักดิ์ (หัวหน้าไลน์ 05)", decision: "Approved", ts: "2026-08-07T08:30:00" },
+                fmApproval: { by: "fm01", name: "ประเสริฐ (Factory Manager)", decision: "Approved", remark: "", ts: "2026-08-07T09:00:00" },
                 cuttingReceive: { by: "cut01", name: "ธนกฤต (แผนกตัด)", ts: "2026-08-07T09:30:00" },
                 cuttingSend: { by: "cut01", name: "ธนกฤต (แผนกตัด)", ts: "2026-08-08T08:00:00", finishDate: "2026-08-08" },
                 supermarketReceive: { by: "market01", name: "สมหญิง (ซุปเปอร์มาร์เก็ต)", ts: "2026-08-08T10:00:00" },
                 supermarketSend: { by: "market01", name: "สมหญิง (ซุปเปอร์มาร์เก็ต)", ts: "2026-08-08T14:00:00" },
                 originReceive: null,
+                cuttingIssue: null,
                 parts: [{ name: "ปกเสื้อ (Collar)", size: "S", qty: 3, sample: false, reason: "Stain" }]
+            },
+            {
+                id: "R-9601", date: "2026-08-10T09:00", needDate: "2026-08-13", shipOutDate: "2026-08-14", dept: "Sewing", line: "Line 12",
+                style: "JKT-GRY1", job: "J-501", item: "Jacket Zip", color: "Grey", po: "PO-70301", remark: "",
+                status: "FMRejected", archived: false, requesterUser: "req12",
+                approval: { by: "appr12", name: "สุนิสา (QC Manager)", decision: "Approved", ts: "2026-08-10T09:30:00" },
+                fmApproval: { by: "fm01", name: "ประเสริฐ (Factory Manager)", decision: "Rejected", remark: "จำนวนที่ขอตัดเปลี่ยนเกินงบซ่อมของไลน์นี้ในเดือนนี้ กรุณาแบ่งรอบหรือขออนุมัติเพิ่มเติมจากบัญชี", ts: "2026-08-10T11:00:00" },
+                cuttingReceive: null, cuttingSend: null, supermarketReceive: null, supermarketSend: null, originReceive: null,
+                cuttingIssue: null,
+                parts: [{ name: "SidePanel", size: "L", qty: 20, sample: false, reason: "Cutting Error" }]
             }
         ];
 
@@ -1237,7 +1478,7 @@
         }
 
         function resetToDefaultData() {
-            if (!hasRole(currentUser, 'Admin')) { showToast('เฉพาะแอดมินเท่านั้นที่รีเซ็ตข้อมูลได้', 'warning'); return; }
+            if (!isPrimaryAdmin(currentUser)) { showToast('เฉพาะบัญชี admin เท่านั้นที่รีเซ็ตข้อมูลได้', 'warning'); return; }
             if (confirm("ต้องการรีเซ็ตกลับเป็นข้อมูลตัวอย่างเริ่มต้นใช่หรือไม่?")) {
                 repairs = JSON.parse(JSON.stringify(defaultRepairs));
                 autoSave(true);
@@ -1255,6 +1496,9 @@
 
         // --- AUTH & PERMISSIONS ---
         function hasRole(user, role) { return !!user && Array.isArray(user.roles) && user.roles.includes(role); }
+        // A handful of actions (reset demo data, editing completed/archived history) are
+        // restricted to the single canonical "admin" account, not every Admin-role user.
+        function isPrimaryAdmin(user) { return !!user && user.username === 'admin'; }
         function scopeKeyOf(item) { return item.dept === 'Sewing' ? item.line : item.dept; }
         function scopesOf(user) { return (user && user.lines) || []; }
 
@@ -1270,6 +1514,10 @@
             // who submits their own requests) is allowed to approve their own submissions.
             return hasRole(user, 'Approver') && scopesOf(user).includes(scopeKeyOf(item));
         }
+        // Factory Manager approves plant-wide (not scoped to a line/dept), unlike BU's canApprove.
+        function canFMApprove(user) {
+            return !!user && (hasRole(user, 'Admin') || hasRole(user, 'FactoryManager'));
+        }
         function canCuttingAct(user) {
             return !!user && (hasRole(user, 'Admin') || hasRole(user, 'Cutting'));
         }
@@ -1283,8 +1531,10 @@
         }
         function canEditRecord(user, item) {
             if (!user) return false;
+            // Completed/archived history is locked down to the single admin account only.
+            if (item.archived) return isPrimaryAdmin(user);
             if (hasRole(user, 'Admin')) return true;
-            const editableStatus = item.status === 'PendingApproval' || item.status === 'Rejected';
+            const editableStatus = item.status === 'PendingApproval' || item.status === 'Rejected' || item.status === 'FMRejected';
             return editableStatus && hasRole(user, 'Requester') && scopesOf(user).includes(scopeKeyOf(item));
         }
         function canDelete(user) { return !!user && hasRole(user, 'Admin'); }
@@ -1321,6 +1571,34 @@
             logAction('Login', '-', `${u.name} เข้าสู่ระบบ`);
             showApp();
         };
+        // Explicit Enter-key safety net alongside the form's native submit-on-Enter behavior,
+        // so login only proceeds via the submit handler above (which validates username/password)
+        // regardless of any device/browser quirk that might otherwise skip native form submission.
+        ['loginUsername', 'loginPassword'].forEach(id => {
+            document.getElementById(id).addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('loginForm').requestSubmit();
+                }
+            });
+        });
+
+        // Force English letters to uppercase as they're typed, in every text field across the
+        // app (Style, Job, Item, Color, PO No., Remark, etc.) — .toUpperCase() only affects
+        // Latin a-z, so Thai text and numbers are left untouched. Excludes username/password
+        // fields specifically: usernames are stored mixed-case (e.g. "LEAN-BEEM", "req05") and
+        // login is an exact match, so forcing case there would break authentication.
+        const UPPERCASE_EXCLUDED_IDS = new Set(['loginUsername', 'loginPassword', 'uUsername', 'uPassword']);
+        document.addEventListener('input', (e) => {
+            const el = e.target;
+            const isTextField = (el.tagName === 'INPUT' && el.type === 'text') || el.tagName === 'TEXTAREA';
+            if (!isTextField || UPPERCASE_EXCLUDED_IDS.has(el.id)) return;
+            const upper = el.value.toUpperCase();
+            if (upper === el.value) return;
+            const { selectionStart, selectionEnd } = el;
+            el.value = upper;
+            if (selectionStart !== null && selectionEnd !== null) el.setSelectionRange(selectionStart, selectionEnd);
+        });
 
         function logout() {
             if (currentUser) logAction('Logout', '-', `${currentUser.name} ออกจากระบบ`);
@@ -1381,7 +1659,7 @@
             document.getElementById('currentUserName').innerText = currentUser.name;
             document.getElementById('currentUserRole').innerText = currentUser.roles.join(' / ');
             document.getElementById('tab-admin').classList.toggle('hidden', !hasRole(currentUser, 'Admin'));
-            document.getElementById('btnResetData').classList.toggle('hidden', !hasRole(currentUser, 'Admin'));
+            document.getElementById('btnResetData').classList.toggle('hidden', !isPrimaryAdmin(currentUser));
             populateLines();
             renderTable();
             switchTab('records');
@@ -1411,6 +1689,11 @@
                 document.getElementById('tab-analytics').classList.remove('text-slate-400');
                 renderCharts();
                 renderCompletedHistory();
+            } else if (tab === 'holidays') {
+                document.getElementById('section-holidays').classList.remove('hidden');
+                document.getElementById('tab-holidays').classList.add('nav-active');
+                document.getElementById('tab-holidays').classList.remove('text-slate-400');
+                renderHolidaysTable();
             } else if (tab === 'admin') {
                 if (!hasRole(currentUser, 'Admin')) { showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'warning'); return; }
                 document.getElementById('section-admin').classList.remove('hidden');
@@ -1497,7 +1780,10 @@
             div.innerHTML = `
                 <div class="sm:col-span-5">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">ชื่อชิ้นส่วน *</label>
-                    <input type="text" class="pName w-full text-xs" placeholder="เช่น ตัวหน้า, ปกเสื้อ, แขน" value="${escapeHtml(name)}" required>
+                    <select class="pName w-full text-xs" required>
+                        ${name && !PART_NAME_OPTIONS.some(p => p.value === name) ? `<option value="${escapeHtml(name)}" selected>${escapeHtml(name)} (เดิม)</option>` : ''}
+                        ${PART_NAME_OPTIONS.map(p => `<option value="${p.value}" ${p.value === name ? 'selected' : ''}>${p.label}</option>`).join('')}
+                    </select>
                 </div>
                 <div class="sm:col-span-2">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">ไซส์ *</label>
@@ -1541,10 +1827,10 @@
             document.getElementById('fDate').value = toLocalDateTimeInputValue(new Date());
             const need = new Date();
             need.setDate(need.getDate() + 3);
-            document.getElementById('fNeedDate').value = toLocalDateTimeInputValue(need);
+            document.getElementById('fNeedDate').value = toLocalDateInputValue(need);
             const shipOut = new Date();
             shipOut.setDate(shipOut.getDate() + 4);
-            document.getElementById('fShipOutDate').value = toLocalDateTimeInputValue(shipOut);
+            document.getElementById('fShipOutDate').value = toLocalDateInputValue(shipOut);
             document.getElementById('fStyle').value = 'TSH-2026';
             document.getElementById('fJob').value = 'J-' + Math.floor(100 + Math.random() * 900);
             document.getElementById('fItem').value = 'T-Shirt Standard';
@@ -1560,27 +1846,31 @@
             if (!item.approval || !item.approval.ts) return null;
             const start = new Date(item.approval.ts);
             const end = item.originReceive && item.originReceive.ts ? new Date(item.originReceive.ts) : new Date();
-            const diffDays = (end - start) / (1000 * 60 * 60 * 24);
+            // Measured in working time (Mon-Sat 08:00-17:00 Bangkok), not raw calendar time —
+            // a request sitting overnight or over Sunday doesn't count against the 2-day target.
+            const diffDays = businessDaysBetween(start, end);
             const overdue = diffDays > LEADTIME_DAYS;
             return { days: diffDays, overdue };
         }
 
         // Combines the 2-day leadtime SLA and the requester's need-date into one Alert signal
         function alertInfo(item) {
-            if (item.archived || item.status === 'Rejected') return null;
+            if (item.archived || item.status === 'Rejected' || item.status === 'FMRejected') return null;
             const reasons = [];
             const lt = leadtimeInfo(item);
-            if (lt && lt.overdue) reasons.push(`เกิน Leadtime (${lt.days.toFixed(1)}/${LEADTIME_DAYS} วัน)`);
+            if (lt && lt.overdue) reasons.push(`เกิน Leadtime (${lt.days.toFixed(1)}/${LEADTIME_DAYS} วันทำการ)`);
             if (item.needDate) {
-                const need = parseLocalDateTime(item.needDate);
-                if (new Date() > need) reasons.push(`เกินกำหนดวันที่ต้องการของ (${fmtDT(item.needDate)})`);
+                const need = parseLocalDateEndOfDay(item.needDate);
+                if (new Date() > need) reasons.push(`เกินกำหนดวันที่ต้องการของ (${escapeHtml(item.needDate)})`);
             }
             return reasons.length ? reasons : null;
         }
 
         const STATUS_LABELS = {
-            PendingApproval: 'รอผู้อนุมัติ',
-            Rejected: 'ไม่อนุมัติ',
+            PendingApproval: 'รอ BU ตรวจสอบ',
+            Rejected: 'BU ไม่ผ่านตรวจสอบ',
+            PendingFMApproval: 'รอ Factory Manager อนุมัติ',
+            FMRejected: 'Factory Manager ไม่อนุมัติ',
             Approved: 'รอรับงานตัด',
             CuttingReceived: 'กำลังตัดซ่อม',
             CuttingSent: 'ตัดเสร็จ รอซุปเปอร์มาร์เก็ตรับ',
@@ -1591,6 +1881,8 @@
         const STATUS_STYLES = {
             PendingApproval: 'bg-amber-100 text-amber-800 border border-amber-200',
             Rejected: 'bg-rose-100 text-rose-800 border border-rose-200',
+            PendingFMApproval: 'bg-orange-100 text-orange-800 border border-orange-200',
+            FMRejected: 'bg-red-100 text-red-800 border border-red-200',
             Approved: 'bg-sky-100 text-sky-800 border border-sky-200',
             CuttingReceived: 'bg-indigo-100 text-indigo-800 border border-indigo-200',
             CuttingSent: 'bg-purple-100 text-purple-800 border border-purple-200',
@@ -1611,10 +1903,12 @@
             };
             setKpi('kpiTotal', active);
             setKpi('kpiPending', byStatus('PendingApproval'));
-            setKpi('kpiRejected', byStatus('Rejected'));
+            setKpi('kpiPendingFM', byStatus('PendingFMApproval'));
+            document.getElementById('kpiRejected').innerText = active.filter(r => r.status === 'Rejected' || r.status === 'FMRejected').length;
             setKpi('kpiApproved', byStatus('Approved'));
             setKpi('kpiCuttingReceived', byStatus('CuttingReceived'));
             setKpi('kpiCuttingSent', byStatus('CuttingSent'));
+            document.getElementById('kpiCuttingIssue').innerText = active.filter(r => r.cuttingIssue).length;
             setKpi('kpiSupermarketReceived', byStatus('SupermarketReceived'));
             setKpi('kpiSupermarketSent', byStatus('SupermarketSent'));
             document.getElementById('kpiOverdue').innerText = active.filter(r => alertInfo(r)).length;
@@ -1635,7 +1929,9 @@
                 // Row 1: the single status-transition action, sized/styled like the status-pill
                 let statusRow = '';
                 if (item.status === 'PendingApproval' && canApprove(currentUser, item)) {
-                    statusRow = statusActionBtn('พิจารณา', `openApprovalModal('${item.id}')`, 'bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200');
+                    statusRow = statusActionBtn('ตรวจสอบ (BU)', `openApprovalModal('${item.id}')`, 'bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200');
+                } else if (item.status === 'PendingFMApproval' && canFMApprove(currentUser)) {
+                    statusRow = statusActionBtn('พิจารณา (FM)', `openFMApprovalModal('${item.id}')`, 'bg-orange-100 text-orange-800 border border-orange-200 hover:bg-orange-200');
                 } else if (item.status === 'Approved' && canCuttingAct(currentUser)) {
                     statusRow = statusActionBtn('รับงานตัด', `openActionModal('${item.id}')`, 'bg-sky-100 text-sky-800 border border-sky-200 hover:bg-sky-200');
                 } else if (item.status === 'CuttingReceived' && canCuttingAct(currentUser)) {
@@ -1666,7 +1962,7 @@
                     <tr class="hover:bg-slate-50/80 transition-colors">
                         <td class="px-5 py-4">
                             <div class="text-xs font-black text-slate-800">${escapeHtml(item.id)}</div>
-                            <div class="text-[11px] font-bold text-rose-600 mt-0.5">${item.needDate ? 'รับ: ' + fmtDT(item.needDate) : 'ไม่ระบุวันที่ต้องการของ'}</div>
+                            <div class="text-[11px] font-bold text-rose-600 mt-0.5">${item.needDate ? 'รับ: ' + escapeHtml(item.needDate) : 'ไม่ระบุวันที่ต้องการของ'}</div>
                             <div class="text-[9px] text-slate-400">แจ้ง: ${fmtDT(item.date)}</div>
                         </td>
                         <td class="px-5 py-4">
@@ -1687,7 +1983,7 @@
                             <div class="space-y-0.5 mb-1">
                                 ${item.parts.map(p => `
                                     <div class="text-[10px] text-slate-600 flex items-center gap-1 flex-wrap">
-                                        <span>• ${escapeHtml(p.name)} (${escapeHtml(p.size)}) x${p.qty}</span>
+                                        <span>• ${escapeHtml(PART_NAME_LABELS[p.name] || p.name)} (${escapeHtml(p.size)}) x${p.qty}</span>
                                         ${p.sample ? '<span class="text-[8px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold">มีชิ้นงานเสียแนบ</span>' : ''}
                                         ${p.reason ? `<span class="text-[8px] bg-rose-50 text-rose-600 px-1 rounded font-bold">${escapeHtml(REASON_LABELS[p.reason] || p.reason)}</span>` : ''}
                                     </div>
@@ -1696,6 +1992,7 @@
                         </td>
                         <td class="px-5 py-4">
                             <span class="status-pill ${STATUS_STYLES[item.status]}">${STATUS_LABELS[item.status]}</span>
+                            ${item.cuttingIssue ? `<div class="text-[9px] font-bold text-rose-600 mt-1 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5 inline-block">⚠️ Cutting issue<span class="block font-normal normal-case">แผนกตัดแจ้งปัญหา</span></div>` : ''}
                             ${item.approval && item.approval.name ? `<div class="text-[9px] mt-1 font-bold text-slate-500">อนุมัติโดย: ${escapeHtml(item.approval.name)}</div>` : ''}
                             ${item.cuttingReceive && item.cuttingReceive.name ? `<div class="text-[9px] text-slate-500">รับงาน: ${escapeHtml(item.cuttingReceive.name)}</div>` : ''}
                         </td>
@@ -1717,6 +2014,16 @@
             if (status === 'overdue') {
                 document.getElementById('filterStatus').value = 'all';
                 renderTable(repairs.filter(r => !r.archived).filter(r => alertInfo(r)));
+                return;
+            }
+            if (status === 'anyRejected') {
+                document.getElementById('filterStatus').value = 'all';
+                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'Rejected' || r.status === 'FMRejected'));
+                return;
+            }
+            if (status === 'cuttingIssue') {
+                document.getElementById('filterStatus').value = 'all';
+                renderTable(repairs.filter(r => !r.archived).filter(r => r.cuttingIssue));
                 return;
             }
             document.getElementById('filterStatus').value = status;
@@ -1880,7 +2187,7 @@
                     showToast('คุณไม่มีสิทธิ์แก้ไขรายการนี้', 'warning');
                     return;
                 }
-                const wasRejected = existing.status === 'Rejected';
+                const wasRejected = existing.status === 'Rejected' || existing.status === 'FMRejected';
                 const newFields = {
                     date: document.getElementById('fDate').value,
                     needDate: document.getElementById('fNeedDate').value,
@@ -1897,8 +2204,11 @@
                 repairs[editIndex] = {
                     ...existing,
                     ...newFields,
+                    // Resubmitting after either rejection sends it back to BU for a fresh look,
+                    // since the underlying data changed — clears both approval stages.
                     status: wasRejected ? 'PendingApproval' : existing.status,
-                    approval: wasRejected ? null : existing.approval
+                    approval: wasRejected ? null : existing.approval,
+                    fmApproval: wasRejected ? null : existing.fmApproval
                 };
                 logAction(wasRejected ? 'Resubmit' : 'Edit', existing.id, `${wasRejected ? 'แก้ไขและส่งขออนุมัติใหม่' : 'แก้ไขข้อมูล'}${diffText ? ' — ' + diffText : ' (ไม่มีการเปลี่ยนแปลงฟิลด์หลัก)'}`);
                 showToast(wasRejected ? 'แก้ไขและส่งขออนุมัติใหม่เรียบร้อยแล้ว' : 'อัปเดตข้อมูลใบสั่งซ่อมเรียบร้อยแล้ว', 'success');
@@ -1924,11 +2234,12 @@
                     supermarketReceive: null,
                     supermarketSend: null,
                     originReceive: null,
+                    cuttingIssue: null,
                     parts: parts
                 };
                 repairs.unshift(newItem);
                 logAction('Create', newItem.id, `สร้างใบสั่งซ่อมใหม่ (${newItem.style}/${newItem.job})`);
-                showToast(`สร้างใบสั่งซ่อม ${newItem.id} เรียบร้อยแล้ว รอผู้อนุมัติ`, 'success');
+                showToast(`สร้างใบสั่งซ่อม ${newItem.id} เรียบร้อยแล้ว รอ BU ตรวจสอบ`, 'success');
             }
 
             autoSave();
@@ -1939,9 +2250,22 @@
         // Full job-detail block shown in every handoff modal, so each step can verify completeness before acting
         // Full job-detail block shown in every handoff modal for review before receiving/sending
         // work on — each topic on its own line, ordered PO No. -> Job No. -> Item as requested.
+        // Shared "cutting dept flagged an issue" banner, shown wherever a record is reviewed
+        // so other departments notice it before acting on the job.
+        function cuttingIssueBadge(item) {
+            if (!item.cuttingIssue) return '';
+            const ci = item.cuttingIssue;
+            return `<div class="bg-rose-50 border border-rose-200 rounded-lg p-2 text-rose-800 text-[11px] font-bold mb-1">
+                ⚠️ Cutting issue: ${escapeHtml(CUTTING_ISSUE_LABELS[ci.reason] || ci.reason || '-')}
+                <span class="block font-normal normal-case text-rose-500">แผนกตัดแจ้งปัญหา${ci.name ? ' โดย ' + escapeHtml(ci.name) : ''}</span>
+                ${ci.remark ? `<span class="block font-normal mt-0.5">${escapeHtml(ci.remark)}</span>` : ''}
+            </div>`;
+        }
+
         function buildInfoBlock(item) {
             const totalQty = item.parts.reduce((sum, p) => sum + parseInt(p.qty || 0), 0);
             return `
+                ${cuttingIssueBadge(item)}
                 <div class="font-bold text-slate-800 mb-1">รหัสใบสั่งซ่อม: ${escapeHtml(item.id)}</div>
                 <div><b>PO No.:</b> ${item.po ? escapeHtml(item.po) : '<span class="text-amber-600 font-bold">ยังไม่ระบุ</span>'}</div>
                 <div><b>Job No.:</b> ${escapeHtml(item.job)}</div>
@@ -1953,11 +2277,11 @@
                 <div><b>ผู้ขอ:</b> ${escapeHtml(item.requesterUser)}</div>
                 <div><b>จำนวนรวม:</b> ${totalQty} ชิ้น</div>
                 <div><b>สาเหตุการสั่งซ่อม:</b> ${escapeHtml([...new Set(item.parts.map(p => REASON_LABELS[p.reason] || p.reason).filter(Boolean))].join(', '))}</div>
-                <div class="${item.needDate ? 'text-rose-600 font-bold' : ''}"><b>วันที่ต้องการของ:</b> ${item.needDate ? fmtDT(item.needDate) : 'ไม่ระบุ'}</div>
-                <div><b>วันส่งออก:</b> ${item.shipOutDate ? fmtDT(item.shipOutDate) : 'ไม่ระบุ'}</div>
+                <div class="${item.needDate ? 'text-rose-600 font-bold' : ''}"><b>วันที่ต้องการของ:</b> ${item.needDate ? escapeHtml(item.needDate) : 'ไม่ระบุ'}</div>
+                <div><b>วันส่งออก:</b> ${item.shipOutDate ? escapeHtml(item.shipOutDate) : 'ไม่ระบุ'}</div>
                 <div class="border-t border-slate-200 pt-1.5 mt-1.5">
                     <div class="font-bold text-slate-600 mb-0.5">รายการชิ้นส่วนที่ต้องตรวจสอบ:</div>
-                    ${item.parts.map(p => `<div>• ${escapeHtml(p.name)} (${escapeHtml(p.size)}) x${p.qty} ${p.sample ? '<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold">มีชิ้นงานเสียแนบ</span>' : ''} ${p.reason ? `<span class="text-[9px] bg-rose-50 text-rose-600 px-1 rounded font-bold">${escapeHtml(REASON_LABELS[p.reason] || p.reason)}</span>` : ''}</div>`).join('')}
+                    ${item.parts.map(p => `<div>• ${escapeHtml(PART_NAME_LABELS[p.name] || p.name)} (${escapeHtml(p.size)}) x${p.qty} ${p.sample ? '<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold">มีชิ้นงานเสียแนบ</span>' : ''} ${p.reason ? `<span class="text-[9px] bg-rose-50 text-rose-600 px-1 rounded font-bold">${escapeHtml(REASON_LABELS[p.reason] || p.reason)}</span>` : ''}</div>`).join('')}
                 </div>
                 ${item.remark ? `<div class="border-t border-slate-200 pt-1.5 mt-1.5 text-amber-700"><b>Remark:</b> ${escapeHtml(item.remark)}</div>` : ''}
             `;
@@ -1967,7 +2291,7 @@
         function openApprovalModal(id) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
-            if (!canApprove(currentUser, item)) { showToast('คุณไม่มีสิทธิ์อนุมัติรายการนี้', 'warning'); return; }
+            if (!canApprove(currentUser, item)) { showToast('คุณไม่มีสิทธิ์ตรวจสอบรายการนี้', 'warning'); return; }
             activeActionId = id;
             document.getElementById('approvalItemInfo').innerHTML = buildInfoBlock(item);
             document.getElementById('approvalPO').value = item.po || '';
@@ -1994,7 +2318,9 @@
             repairs[idx].po = po;
             repairs[idx].item = itemField || repairs[idx].item;
             repairs[idx].job = jobField || repairs[idx].job;
-            repairs[idx].status = decision;
+            // BU approval no longer goes straight to "ready for cutting" — it now routes to
+            // Factory Manager for a second approval first.
+            repairs[idx].status = decision === 'Approved' ? 'PendingFMApproval' : 'Rejected';
             repairs[idx].approval = {
                 by: currentUser.username,
                 name: currentUser.name,
@@ -2004,9 +2330,48 @@
             };
             autoSave();
             renderTable();
-            logAction(decision === 'Approved' ? 'Approve' : 'Reject', repairs[idx].id, `${currentUser.name} ${decision === 'Approved' ? `อนุมัติใบสั่งซ่อม (PO: ${po}, Item: ${itemField}, Job: ${jobField})` : 'ไม่อนุมัติใบสั่งซ่อม'}`);
-            showToast(decision === 'Approved' ? 'อนุมัติใบสั่งซ่อมเรียบร้อยแล้ว' : 'ปฏิเสธใบสั่งซ่อมเรียบร้อยแล้ว', decision === 'Approved' ? 'success' : 'info');
+            logAction(decision === 'Approved' ? 'Approve' : 'Reject', repairs[idx].id, `${currentUser.name} ${decision === 'Approved' ? `ตรวจสอบผ่านใบสั่งซ่อม (PO: ${po}, Item: ${itemField}, Job: ${jobField}) — ส่งต่อให้ Factory Manager อนุมัติ` : 'ตรวจสอบไม่ผ่าน — ไม่ส่งต่อ'}`);
+            showToast(decision === 'Approved' ? 'ตรวจสอบผ่านแล้ว ส่งต่อให้ Factory Manager อนุมัติต่อ' : 'บันทึกผลไม่ผ่านการตรวจสอบเรียบร้อยแล้ว', decision === 'Approved' ? 'success' : 'info');
             closeModal('approvalModal');
+        }
+
+        // --- FACTORY MANAGER APPROVAL ---
+        function openFMApprovalModal(id) {
+            const item = repairs.find(r => r.id === id);
+            if (!item) return;
+            if (!canFMApprove(currentUser)) { showToast('คุณไม่มีสิทธิ์อนุมัติรายการนี้ (เฉพาะ Factory Manager)', 'warning'); return; }
+            activeActionId = id;
+            document.getElementById('fmApprovalItemInfo').innerHTML = buildInfoBlock(item);
+            document.getElementById('fmApprovalRemark').value = '';
+            document.getElementById('fmApprovalName').innerText = `${currentUser.name} (${currentUser.username})`;
+            document.getElementById('fmApprovalModal').classList.replace('hidden', 'flex');
+        }
+
+        async function submitFMApproval(decision) {
+            const idx = repairs.findIndex(r => r.id === activeActionId);
+            if (idx === -1) return;
+
+            const remark = document.getElementById('fmApprovalRemark').value.trim();
+            if (decision === 'FMRejected' && !remark) {
+                showToast('กรุณาระบุ Remark เหตุผลที่ไม่อนุมัติ', 'warning');
+                return;
+            }
+
+            const attachment = await fileToDataURL(document.getElementById('fmApprovalAttachment'));
+            repairs[idx].status = decision;
+            repairs[idx].fmApproval = {
+                by: currentUser.username,
+                name: currentUser.name,
+                decision: decision === 'Approved' ? 'Approved' : 'Rejected',
+                remark: remark,
+                attachment: attachment,
+                ts: getLocalTime()
+            };
+            autoSave();
+            renderTable();
+            logAction(decision === 'Approved' ? 'FMApprove' : 'FMReject', repairs[idx].id, `${currentUser.name} (Factory Manager) ${decision === 'Approved' ? 'อนุมัติใบสั่งซ่อม' : `ไม่อนุมัติใบสั่งซ่อม — ${remark}`}`);
+            showToast(decision === 'Approved' ? 'Factory Manager อนุมัติแล้ว รอแผนกตัดรับงาน' : 'บันทึกการไม่อนุมัติเรียบร้อยแล้ว', decision === 'Approved' ? 'success' : 'info');
+            closeModal('fmApprovalModal');
         }
 
         // --- CUTTING ACTION (receive / ส่งงานที่ตัดเสร็จ) ---
@@ -2038,7 +2403,30 @@
                 saveBtn.innerText = 'ตัดเสร็จ';
             }
 
+            document.getElementById('cuttingIssuePanel').classList.add('hidden');
+            document.getElementById('cuttingIssueReason').value = '';
+            document.getElementById('cuttingIssueRemark').value = '';
+
             document.getElementById('actionModal').classList.replace('hidden', 'flex');
+        }
+
+        function toggleCuttingIssuePanel() {
+            document.getElementById('cuttingIssuePanel').classList.toggle('hidden');
+        }
+
+        function saveCuttingIssue() {
+            const idx = repairs.findIndex(r => r.id === activeActionId);
+            if (idx === -1) return;
+            const reason = document.getElementById('cuttingIssueReason').value;
+            const remark = document.getElementById('cuttingIssueRemark').value.trim();
+            if (!reason && !remark) { showToast('กรุณาเลือกเหตุผลและ/หรือระบุ Remark', 'warning'); return; }
+
+            repairs[idx].cuttingIssue = { reason, remark, by: currentUser.username, name: currentUser.name, ts: getLocalTime() };
+            autoSave();
+            renderTable();
+            logAction('CuttingIssue', repairs[idx].id, `${currentUser.name} แจ้งปัญหาแผนกตัด: ${CUTTING_ISSUE_LABELS[reason] || reason || '-'}${remark ? ' — ' + remark : ''}`);
+            showToast('บันทึกการแจ้งปัญหาเรียบร้อย', 'success');
+            closeModal('actionModal');
         }
 
         async function saveAction() {
@@ -2060,6 +2448,9 @@
                 logAction('CuttingSend', repairs[idx].id, `${currentUser.name} ตัดเสร็จ`);
                 showToast('บันทึกตัดเสร็จเรียบร้อย', 'success');
             }
+
+            // A successful receive/send means the job is moving again — clear any earlier "cannot cut" flag.
+            repairs[idx].cuttingIssue = null;
 
             autoSave();
             renderTable();
@@ -2183,6 +2574,8 @@
                         </div>
                     </div>
 
+                    ${cuttingIssueBadge(item)}
+
                     <div class="grid grid-cols-2 gap-2 text-[11px]">
                         <div><b>PO No.:</b> ${item.po ? escapeHtml(item.po) : 'ยังไม่ระบุ'}</div>
                         <div><b>Job No:</b> ${escapeHtml(item.job)}</div>
@@ -2192,8 +2585,8 @@
                         <div><b>แผนกที่แจ้ง:</b> ${escapeHtml(item.dept)}</div>
                         <div><b>ไลน์ผลิต:</b> ${escapeHtml(item.line)}</div>
                         <div><b>สถานะ:</b> ${STATUS_LABELS[item.status] || item.status}</div>
-                        <div class="col-span-2 text-rose-600 font-bold"><b>วันที่ต้องการของ:</b> ${item.needDate ? fmtDT(item.needDate) : 'ไม่ระบุ'}</div>
-                        <div class="col-span-2"><b>วันส่งออก:</b> ${item.shipOutDate ? fmtDT(item.shipOutDate) : 'ไม่ระบุ'}</div>
+                        <div class="col-span-2 text-rose-600 font-bold"><b>วันที่ต้องการของ:</b> ${item.needDate ? escapeHtml(item.needDate) : 'ไม่ระบุ'}</div>
+                        <div class="col-span-2"><b>วันส่งออก:</b> ${item.shipOutDate ? escapeHtml(item.shipOutDate) : 'ไม่ระบุ'}</div>
                     </div>
 
                     <div class="border-t pt-2">
@@ -2211,7 +2604,7 @@
                             <tbody>
                                 ${item.parts.map(p => `
                                     <tr>
-                                        <td class="p-1 border font-medium">${escapeHtml(p.name)}</td>
+                                        <td class="p-1 border font-medium">${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}</td>
                                         <td class="p-1 border">${escapeHtml(p.size)}</td>
                                         <td class="p-1 border text-center font-bold">${p.qty}</td>
                                         <td class="p-1 border text-center">${p.sample ? 'มี' : 'ไม่มี'}</td>
@@ -2225,7 +2618,8 @@
                     ${item.remark ? `<div class="border-t pt-2 text-[11px]"><b>Remark:</b> ${escapeHtml(item.remark)}</div>` : ''}
 
                     <div class="border-t pt-3 grid grid-cols-2 sm:grid-cols-3 gap-3 text-[10px] text-slate-500">
-                        ${confirmBlock(item.approval, item.approval && item.approval.name, 'ผู้อนุมัติ')}
+                        ${confirmBlock(item.approval, item.approval && item.approval.name, 'ผู้ตรวจสอบ (BU)')}
+                        ${confirmBlock(item.fmApproval, item.fmApproval && item.fmApproval.name, 'ผู้อนุมัติ (FM)')}
                         ${confirmBlock(item.cuttingReceive, item.cuttingReceive && item.cuttingReceive.name, 'ผู้รับงานตัด')}
                         ${confirmBlock(item.cuttingSend, item.cuttingSend && item.cuttingSend.name, 'ผู้ตัดเสร็จ')}
                         ${confirmBlock(item.supermarketReceive, item.supermarketReceive && item.supermarketReceive.name, 'ซุปเปอร์มาร์เก็ตรับ')}
@@ -2239,24 +2633,60 @@
         }
 
         // --- READ-ONLY DETAIL VIEW ---
-        function timelineRow(stepLabel, step) {
+        // Formats a business-hours duration for display, picking a sensible unit.
+        function formatBusinessDuration(hours) {
+            if (hours < 1) return `${Math.round(hours * 60)} นาที`;
+            if (hours < WORK_HOURS_PER_DAY) return `${hours.toFixed(1)} ชม.`;
+            return `${(hours / WORK_HOURS_PER_DAY).toFixed(1)} วันทำการ`;
+        }
+
+        // prevTs (a Date, or null for the first step) is the moment the previous stage finished —
+        // used to show how long THIS step took to happen, in working time (Mon-Sat 08:00-17:00).
+        function timelineRow(stepLabel, step, prevTs) {
             if (!step) {
                 return `<div class="flex items-center gap-2 py-2 text-slate-400 text-[11px]"><span class="w-2 h-2 rounded-full bg-slate-200"></span> ${stepLabel}: ยังไม่ถึงขั้นตอนนี้</div>`;
             }
             const attachmentHtml = step.attachment
                 ? `<a href="${step.attachment}" target="_blank" class="text-indigo-600 text-[10px] font-bold hover:underline">📎 เปิดไฟล์แนบ</a>`
                 : '';
+            let durationHtml = '';
+            if (prevTs && step.ts) {
+                const hrs = businessHoursBetween(prevTs, new Date(step.ts));
+                durationHtml = `<span class="ml-2 text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded whitespace-nowrap">⏱ ${formatBusinessDuration(hrs)}</span>`;
+            }
             return `
                 <div class="flex items-start gap-3 py-2 border-b border-slate-100 last:border-b-0">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 mt-1.5"></span>
                     <div class="flex-1">
-                        <div class="text-xs font-bold text-slate-800">${stepLabel}</div>
+                        <div class="text-xs font-bold text-slate-800 flex items-center flex-wrap">${stepLabel}${durationHtml}</div>
                         <div class="text-[11px] text-slate-500">${escapeHtml(step.name || '-')} ${step.decision ? `(${escapeHtml(step.decision)})` : ''}</div>
                         <div class="text-[10px] text-slate-400">${step.ts ? new Date(step.ts).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }) : '-'}</div>
+                        ${step.remark ? `<div class="text-[10px] text-amber-700 bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5 mt-1"><b>Remark:</b> ${escapeHtml(step.remark)}</div>` : ''}
                         ${attachmentHtml ? `<div class="mt-1">${attachmentHtml}</div>` : ''}
                     </div>
                 </div>
             `;
+        }
+
+        // Builds the full timeline HTML for a record, threading each step's finish time
+        // through as the "previous" reference point for the next step's duration.
+        function renderTimelineSequence(item) {
+            const steps = [
+                { label: 'ผู้ตรวจสอบ (BU)', step: item.approval },
+                { label: 'Factory Manager อนุมัติ', step: item.fmApproval },
+                { label: 'รับงานตัด (แผนกตัด)', step: item.cuttingReceive },
+                { label: 'ตัดเสร็จ', step: item.cuttingSend },
+                { label: 'ซุปเปอร์มาร์เก็ตรับงาน', step: item.supermarketReceive },
+                { label: 'ส่งงานเข้าไลน์ (ซุปเปอร์มาร์เก็ต)', step: item.supermarketSend },
+                { label: 'ต้นทางยืนยันรับงาน', step: item.originReceive },
+            ];
+            let prevTs = item.date ? parseLocalDateTime(item.date) : null;
+            let html = '';
+            steps.forEach(({ label, step }) => {
+                html += timelineRow(label, step, prevTs);
+                if (step && step.ts) prevTs = new Date(step.ts);
+            });
+            return html;
         }
 
         function openDetailModal(id) {
@@ -2274,10 +2704,12 @@
                     </div>
                     <div class="text-right text-[11px] text-slate-400">
                         <div>แจ้ง: ${fmtDT(item.date)}</div>
-                        <div class="text-rose-500 font-bold">ต้องการของ: ${item.needDate ? fmtDT(item.needDate) : 'ไม่ระบุ'}</div>
-                        <div>วันส่งออก: ${item.shipOutDate ? fmtDT(item.shipOutDate) : 'ไม่ระบุ'}</div>
+                        <div class="text-rose-500 font-bold">ต้องการของ: ${item.needDate ? escapeHtml(item.needDate) : 'ไม่ระบุ'}</div>
+                        <div>วันส่งออก: ${item.shipOutDate ? escapeHtml(item.shipOutDate) : 'ไม่ระบุ'}</div>
                     </div>
                 </div>
+
+                ${cuttingIssueBadge(item)}
 
                 <div class="grid grid-cols-2 gap-3 text-xs">
                     <div class="bg-slate-50 rounded-lg p-3 border border-slate-100"><b>รวมจำนวน:</b> ${totalQty} ชิ้น</div>
@@ -2289,19 +2721,14 @@
                 <div>
                     <h4 class="text-xs font-black text-slate-700 uppercase mb-2">รายการชิ้นส่วน</h4>
                     <div class="space-y-1">
-                        ${item.parts.map(p => `<div class="text-xs text-slate-600 bg-slate-50 rounded px-2 py-1">• ${escapeHtml(p.name)} (${escapeHtml(p.size)}) x${p.qty} ${p.sample ? '<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold">มีชิ้นงานเสียแนบ</span>' : ''} ${p.reason ? `<span class="text-[9px] bg-rose-50 text-rose-600 px-1 rounded font-bold">${escapeHtml(REASON_LABELS[p.reason] || p.reason)}</span>` : ''}</div>`).join('')}
+                        ${item.parts.map(p => `<div class="text-xs text-slate-600 bg-slate-50 rounded px-2 py-1">• ${escapeHtml(PART_NAME_LABELS[p.name] || p.name)} (${escapeHtml(p.size)}) x${p.qty} ${p.sample ? '<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold">มีชิ้นงานเสียแนบ</span>' : ''} ${p.reason ? `<span class="text-[9px] bg-rose-50 text-rose-600 px-1 rounded font-bold">${escapeHtml(REASON_LABELS[p.reason] || p.reason)}</span>` : ''}</div>`).join('')}
                     </div>
                 </div>
 
                 <div>
                     <h4 class="text-xs font-black text-slate-700 uppercase mb-1">ไทม์ไลน์การทำงาน (ดูอย่างเดียว)</h4>
                     <div class="bg-white border border-slate-100 rounded-lg px-3">
-                        ${timelineRow('ผู้อนุมัติ', item.approval)}
-                        ${timelineRow('รับงานตัด (แผนกตัด)', item.cuttingReceive)}
-                        ${timelineRow('ตัดเสร็จ', item.cuttingSend)}
-                        ${timelineRow('ซุปเปอร์มาร์เก็ตรับงาน', item.supermarketReceive)}
-                        ${timelineRow('ส่งงานเข้าไลน์ (ซุปเปอร์มาร์เก็ต)', item.supermarketSend)}
-                        ${timelineRow('ต้นทางยืนยันรับงาน', item.originReceive)}
+                        ${renderTimelineSequence(item)}
                     </div>
                 </div>
 
@@ -2335,7 +2762,7 @@
             const withNeedDate = repairs.filter(r => r.archived && r.needDate && r.originReceive && r.originReceive.ts);
             let ontime = 0, delay = 0;
             withNeedDate.forEach(r => {
-                const need = parseLocalDateTime(r.needDate);
+                const need = parseLocalDateEndOfDay(r.needDate);
                 const done = new Date(r.originReceive.ts);
                 if (done <= need) ontime++; else delay++;
             });
@@ -2359,8 +2786,9 @@
             const body = document.getElementById('processDurationBody');
             if (!body) return;
             const stages = [
-                { label: 'แจ้งซ่อม → อนุมัติ', from: r => r.date ? parseLocalDateTime(r.date) : null, to: r => r.approval && r.approval.ts ? new Date(r.approval.ts) : null },
-                { label: 'อนุมัติ → รับงานตัด', from: r => r.approval && r.approval.ts ? new Date(r.approval.ts) : null, to: r => r.cuttingReceive && r.cuttingReceive.ts ? new Date(r.cuttingReceive.ts) : null },
+                { label: 'แจ้งซ่อม → BU ตรวจสอบ', from: r => r.date ? parseLocalDateTime(r.date) : null, to: r => r.approval && r.approval.ts ? new Date(r.approval.ts) : null },
+                { label: 'BU ตรวจสอบ → FM อนุมัติ', from: r => r.approval && r.approval.ts ? new Date(r.approval.ts) : null, to: r => r.fmApproval && r.fmApproval.ts ? new Date(r.fmApproval.ts) : null },
+                { label: 'FM อนุมัติ → รับงานตัด', from: r => r.fmApproval && r.fmApproval.ts ? new Date(r.fmApproval.ts) : null, to: r => r.cuttingReceive && r.cuttingReceive.ts ? new Date(r.cuttingReceive.ts) : null },
                 { label: 'รับงานตัด → ตัดเสร็จ', from: r => r.cuttingReceive && r.cuttingReceive.ts ? new Date(r.cuttingReceive.ts) : null, to: r => r.cuttingSend && r.cuttingSend.ts ? new Date(r.cuttingSend.ts) : null },
                 { label: 'ตัดเสร็จ → ซุปเปอร์มาร์เก็ตรับ', from: r => r.cuttingSend && r.cuttingSend.ts ? new Date(r.cuttingSend.ts) : null, to: r => r.supermarketReceive && r.supermarketReceive.ts ? new Date(r.supermarketReceive.ts) : null },
                 { label: 'ซุปเปอร์มาร์เก็ตรับ → ส่งเข้าไลน์', from: r => r.supermarketReceive && r.supermarketReceive.ts ? new Date(r.supermarketReceive.ts) : null, to: r => r.supermarketSend && r.supermarketSend.ts ? new Date(r.supermarketSend.ts) : null },
@@ -2368,19 +2796,19 @@
                 { label: 'รวมทั้งกระบวนการ (แจ้งซ่อม → รับงานสมบูรณ์)', from: r => r.date ? parseLocalDateTime(r.date) : null, to: r => r.originReceive && r.originReceive.ts ? new Date(r.originReceive.ts) : null },
             ];
 
+            // Averages are measured in working time (Mon-Sat 08:00-17:00 Bangkok), matching
+            // the 2-day Leadtime SLA — not raw calendar time.
             const rows = stages.map(stage => {
                 let count = 0, totalHours = 0;
                 repairs.forEach(r => {
                     const from = stage.from(r), to = stage.to(r);
                     if (from && to && to >= from) {
-                        totalHours += (to - from) / 36e5;
+                        totalHours += businessHoursBetween(from, to);
                         count++;
                     }
                 });
                 const avgHours = count ? totalHours / count : 0;
-                const avgLabel = !count ? '-' : avgHours >= 24
-                    ? `${(avgHours / 24).toFixed(1)} วัน`
-                    : `${avgHours.toFixed(1)} ชม.`;
+                const avgLabel = count ? formatBusinessDuration(avgHours) : '-';
                 return { label: stage.label, count, avgLabel };
             });
 
@@ -2426,45 +2854,103 @@
 
             Object.keys(myCharts).forEach(key => { if (myCharts[key]) myCharts[key].destroy(); });
 
+            const deptLabels = Object.keys(deptMap).length ? Object.keys(deptMap) : ['Sewing', 'QC', 'Finishing'];
+            const deptData = Object.keys(deptMap).length ? Object.values(deptMap) : [0, 0, 0];
             const deptCtx = document.getElementById('deptChart').getContext('2d');
             myCharts.deptChart = new Chart(deptCtx, {
                 type: 'bar',
                 data: {
-                    labels: Object.keys(deptMap).length ? Object.keys(deptMap) : ['Sewing', 'QC', 'Finishing'],
-                    datasets: [{ label: 'จำนวนชิ้นงานเสีย (Pcs)', data: Object.keys(deptMap).length ? Object.values(deptMap) : [0, 0, 0], backgroundColor: ['#6366f1', '#ec4899', '#06b6d4'] }]
+                    labels: deptLabels,
+                    datasets: [{ label: 'จำนวนชิ้นงานเสีย (Pcs)', data: deptData, backgroundColor: ['#6366f1', '#ec4899', '#06b6d4', '#f59e0b', '#10b981'] }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
+            renderChartDetailsList('deptChart', deptLabels, deptData);
 
+            const reasonLabels = Object.keys(reasonMap).length ? Object.keys(reasonMap).map(k => REASON_LABELS[k] || k) : ['Fabric Defect', 'Cutting Error', 'Sewing Error'];
+            const reasonData = Object.keys(reasonMap).length ? Object.values(reasonMap) : [1, 1, 1];
             const reasonCtx = document.getElementById('reasonChart').getContext('2d');
             myCharts.reasonChart = new Chart(reasonCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: Object.keys(reasonMap).length ? Object.keys(reasonMap) : ['Fabric Defect', 'Cutting Error', 'Sewing Error'],
-                    datasets: [{ data: Object.keys(reasonMap).length ? Object.values(reasonMap) : [1, 1, 1], backgroundColor: ['#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#6366f1'] }]
+                    labels: reasonLabels,
+                    datasets: [{ data: reasonData, backgroundColor: ['#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#6366f1'] }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
+            renderChartDetailsList('reasonChart', reasonLabels, reasonData);
 
+            // Real monthly trend derived from each record's actual report date — was
+            // previously hardcoded fake numbers ([42, 68, totalPcs]) for the first two months.
+            const THAI_MONTHS_ABBR = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            const monthlyMap = {};
+            repairs.forEach(r => {
+                const d = r.date ? parseLocalDateTime(r.date) : null;
+                if (!d) return;
+                const p = getBangkokParts(d);
+                const key = `${p.year}-${p.month}`;
+                const pcs = r.parts.reduce((sum, pt) => sum + parseInt(pt.qty || 0), 0);
+                monthlyMap[key] = (monthlyMap[key] || 0) + pcs;
+            });
+            const monthlyKeys = Object.keys(monthlyMap).sort();
+            const monthlyLabels = monthlyKeys.map(k => {
+                const [y, m] = k.split('-');
+                return `${THAI_MONTHS_ABBR[parseInt(m, 10) - 1]} ${y}`;
+            });
+            const monthlyData = monthlyKeys.map(k => monthlyMap[k]);
+
+            const monthlyChartLabels = monthlyLabels.length ? monthlyLabels : ['-'];
+            const monthlyChartData = monthlyData.length ? monthlyData : [0];
             const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
             myCharts.monthlyChart = new Chart(monthlyCtx, {
                 type: 'line',
                 data: {
-                    labels: ['มิ.ย.', 'ก.ค.', 'ส.ค.'],
-                    datasets: [{ label: 'ชิ้นงานเสียรวม (Pcs)', data: [42, 68, totalPcs], borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.3 }]
+                    labels: monthlyChartLabels,
+                    datasets: [{ label: 'ชิ้นงานเสียรวม (Pcs)', data: monthlyChartData, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true, tension: 0.3 }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
+            renderChartDetailsList('monthlyChart', monthlyChartLabels, monthlyChartData);
 
+            // Sort by the numeric part of the line name (e.g. "Line 05" before "Line 12"),
+            // instead of insertion order, so bars read left-to-right in line number order.
+            const sortedLineKeys = Object.keys(lineMap).sort((a, b) => {
+                const numA = parseInt((a.match(/\d+/) || [0])[0], 10);
+                const numB = parseInt((b.match(/\d+/) || [0])[0], 10);
+                return numA - numB;
+            });
+            const lineLabels = sortedLineKeys.length ? sortedLineKeys : ['Line 05', 'Line 12'];
+            const lineData = sortedLineKeys.length ? sortedLineKeys.map(k => lineMap[k]) : [0, 0];
             const lineCtx = document.getElementById('lineChart').getContext('2d');
             myCharts.lineChart = new Chart(lineCtx, {
                 type: 'bar',
                 data: {
-                    labels: Object.keys(lineMap).length ? Object.keys(lineMap) : ['Line 05', 'Line 12'],
-                    datasets: [{ label: 'จำนวนชิ้นงานเสีย (Pcs)', data: Object.keys(lineMap).length ? Object.values(lineMap) : [0, 0], backgroundColor: '#8b5cf6' }]
+                    labels: lineLabels,
+                    datasets: [{ label: 'จำนวนชิ้นงานเสีย (Pcs)', data: lineData, backgroundColor: '#8b5cf6' }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
+            renderChartDetailsList('lineChart', lineLabels, lineData);
+        }
+
+        function toggleChartDetails(chartId) {
+            const el = document.getElementById(chartId + 'Details');
+            if (!el) return;
+            el.classList.toggle('hidden');
+            const btn = document.getElementById(chartId + 'ToggleBtn');
+            if (btn) btn.innerText = el.classList.contains('hidden') ? 'Show details' : 'Hide details';
+        }
+
+        function renderChartDetailsList(chartId, labels, data) {
+            const el = document.getElementById(chartId + 'Details');
+            if (!el) return;
+            if (!labels.length) { el.innerHTML = '<div class="text-slate-400">ไม่มีข้อมูล</div>'; return; }
+            el.innerHTML = labels.map((l, i) => `
+                <div class="flex justify-between border-b border-slate-50 py-0.5">
+                    <span>${escapeHtml(String(l))}</span>
+                    <span class="font-bold text-slate-700">${data[i]}</span>
+                </div>
+            `).join('');
         }
 
         function historyStageCell(step) {
@@ -2475,12 +2961,32 @@
             `;
         }
 
+        function renderHolidaysTable() {
+            const tbody = document.getElementById('holidaysTableBody');
+            if (!tbody) return;
+            const THAI_MONTHS_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+            const sortedDates = Object.keys(COMPANY_HOLIDAYS).sort();
+            tbody.innerHTML = sortedDates.map((dateStr, i) => {
+                const h = COMPANY_HOLIDAYS[dateStr];
+                const [y, m, d] = dateStr.split('-');
+                return `
+                    <tr class="hover:bg-slate-50/80">
+                        <td class="px-4 py-3 text-xs font-bold text-slate-800">${i + 1}</td>
+                        <td class="px-4 py-3 text-xs text-slate-600">${escapeHtml(h.weekday)}</td>
+                        <td class="px-4 py-3 text-xs text-slate-600">${parseInt(d, 10)} ${THAI_MONTHS_FULL[parseInt(m, 10) - 1]} ${parseInt(y, 10) + 543}</td>
+                        <td class="px-4 py-3 text-xs text-slate-700">${escapeHtml(h.name)}</td>
+                    </tr>
+                `;
+            }).join('') || `<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400 text-xs">ยังไม่มีข้อมูลวันหยุด</td></tr>`;
+        }
+
         function renderCompletedHistory() {
             const tbody = document.getElementById('completedHistoryBody');
             if (!tbody) return;
             const archivedItems = repairs.filter(r => r.archived);
             if (archivedItems.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-8 text-center text-slate-400 text-xs">ยังไม่มีรายการที่เสร็จสมบูรณ์</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-slate-400 text-xs">ยังไม่มีรายการที่เสร็จสมบูรณ์</td></tr>`;
                 return;
             }
             tbody.innerHTML = archivedItems.map(item => `
@@ -2492,6 +2998,7 @@
                     </td>
                     <td class="px-4 py-3 text-[11px] text-slate-500">${escapeHtml(item.dept)} ${item.line !== '-' ? '/ ' + escapeHtml(item.line) : ''}</td>
                     <td class="px-4 py-3">${historyStageCell(item.approval)}</td>
+                    <td class="px-4 py-3">${historyStageCell(item.fmApproval)}</td>
                     <td class="px-4 py-3">${historyStageCell(item.cuttingReceive)}</td>
                     <td class="px-4 py-3">${historyStageCell(item.cuttingSend)}</td>
                     <td class="px-4 py-3">${historyStageCell(item.supermarketReceive)}</td>
@@ -2502,7 +3009,7 @@
         }
 
         // --- ADMIN: USERS ---
-        const POSITION_LABELS = { BU: 'BU', LineLeader: 'หัวหน้าไลน์', CuttingHead: 'หัวหน้าแผนกตัด', SupermarketHead: 'หัวหน้าซุปเปอร์มาร์เก็ต' };
+        const POSITION_LABELS = { BU: 'BU', LineLeader: 'หัวหน้าไลน์', CuttingHead: 'หัวหน้าแผนกตัด', SupermarketHead: 'หัวหน้าซุปเปอร์มาร์เก็ต', FactoryManager: 'Factory Manager' };
 
         function renderUsersTable() {
             const tbody = document.getElementById('usersTableBody');
@@ -2609,7 +3116,7 @@
         // --- CSV Export ---
         function exportCSV() {
             let csvContent = "data:text/csv;charset=utf-8,﻿";
-            csvContent += "ID,วันที่แจ้ง,วันที่ต้องการ,วันส่งออก,แผนก,ไลน์ผลิต,ผู้ขอ,Style,Job,Item,Color,PO No.,สาเหตุ (รายชิ้น),Remark,Alert,สถานะ,ผู้อนุมัติ,วันที่อนุมัติ,ผู้รับงานตัด,ผู้ตัดเสร็จ,ผู้รับงาน (ซุปเปอร์มาร์เก็ต),ผู้ส่งงานเข้าไลน์ (ซุปเปอร์มาร์เก็ต),ผู้รับงานต้นทาง\n";
+            csvContent += "ID,วันที่แจ้ง,วันที่ต้องการ,วันส่งออก,แผนก,ไลน์ผลิต,ผู้ขอ,Style,Job,Item,Color,PO No.,สาเหตุ (รายชิ้น),Remark,Alert,สถานะ,ผู้ตรวจสอบ (BU),วันที่ตรวจสอบ (BU),ผู้อนุมัติ (FM),วันที่อนุมัติ (FM),Remark (FM),ปัญหาแผนกตัด,ผู้รับงานตัด,ผู้ตัดเสร็จ,ผู้รับงาน (ซุปเปอร์มาร์เก็ต),ผู้ส่งงานเข้าไลน์ (ซุปเปอร์มาร์เก็ต),ผู้รับงานต้นทาง\n";
             repairs.forEach(r => {
                 const partReasons = [...new Set(r.parts.map(p => REASON_LABELS[p.reason] || p.reason).filter(Boolean))].join(' / ');
                 const row = [
@@ -2619,6 +3126,9 @@
                     `"${(alertInfo(r) || []).join(' / ')}"`,
                     r.status,
                     `"${(r.approval && r.approval.name) || ''}"`, (r.approval && r.approval.ts) || '',
+                    `"${(r.fmApproval && r.fmApproval.name) || ''}"`, (r.fmApproval && r.fmApproval.ts) || '',
+                    `"${((r.fmApproval && r.fmApproval.remark) || '').replace(/"/g, "'")}"`,
+                    `"${r.cuttingIssue ? (CUTTING_ISSUE_LABELS[r.cuttingIssue.reason] || r.cuttingIssue.reason || '') + (r.cuttingIssue.remark ? ' - ' + r.cuttingIssue.remark.replace(/"/g, "'") : '') : ''}"`,
                     `"${(r.cuttingReceive && r.cuttingReceive.name) || ''}"`,
                     `"${(r.cuttingSend && r.cuttingSend.name) || ''}"`,
                     `"${(r.supermarketReceive && r.supermarketReceive.name) || ''}"`,
