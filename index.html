@@ -564,15 +564,15 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันที่แจ้งซ่อม</label>
-                        <input type="date" id="fDate" class="w-full text-xs" required>
+                        <input type="datetime-local" id="fDate" class="w-full text-xs" required>
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันที่ต้องการของ</label>
-                        <input type="date" id="fNeedDate" class="w-full text-xs">
+                        <input type="datetime-local" id="fNeedDate" class="w-full text-xs">
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันส่งออก</label>
-                        <input type="date" id="fShipOutDate" class="w-full text-xs">
+                        <input type="datetime-local" id="fShipOutDate" class="w-full text-xs">
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">แผนกที่แจ้ง *</label>
@@ -951,6 +951,30 @@
             return `${p.year}-${p.month}-${p.day}`;
         }
 
+        // "YYYY-MM-DDTHH:mm" in Asia/Bangkok — for <input type="datetime-local">.value.
+        function toLocalDateTimeInputValue(d) {
+            const p = getBangkokParts(d);
+            return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+        }
+
+        // Parses a stored "YYYY-MM-DDTHH:mm" (no seconds/offset) as Bangkok time — appending
+        // ":00+07:00" explicitly so it's interpreted the same everywhere, regardless of the
+        // parsing device's own timezone (a bare "YYYY-MM-DDTHH:mm" would otherwise be parsed
+        // as THAT device's local time per the JS spec). Falls back to plain new Date() parsing
+        // for any already-qualified string (has a "Z" or +/-HH:mm offset) — e.g. stray legacy
+        // values the backend hadn't yet normalized.
+        function parseLocalDateTime(str) {
+            if (!str) return null;
+            if (/(Z|[+-]\d{2}:?\d{2})$/.test(str)) return new Date(str);
+            return new Date(str + ':00+07:00');
+        }
+
+        // Formats a stored "YYYY-MM-DDTHH:mm" for display as Bangkok date+time.
+        function fmtDT(str) {
+            const d = parseLocalDateTime(str);
+            return d ? d.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }) : '';
+        }
+
         async function apiGetAll(sheetName) {
             const res = await fetch(`${API_BASE_URL}?sheet=${encodeURIComponent(sheetName)}`);
             const data = await res.json();
@@ -1032,7 +1056,7 @@
         // --- DEFAULT REPAIR RECORDS (workflow schema) ---
         const defaultRepairs = [
             {
-                id: "R-8821", date: "2026-08-01", needDate: "2026-08-03", shipOutDate: "2026-08-04", dept: "Sewing", line: "Line 05",
+                id: "R-8821", date: "2026-08-01T08:45", needDate: "2026-08-03T17:00", shipOutDate: "2026-08-04T09:00", dept: "Sewing", line: "Line 05",
                 style: "TSH-2026", job: "J-001", item: "T-Shirt Standard", color: "Navy Blue", po: "PO-70011", remark: "",
                 status: "Received", archived: true, requesterUser: "req05",
                 approval: { by: "appr05", name: "เกรียงศักดิ์ (หัวหน้าไลน์ 05)", decision: "Approved", ts: "2026-08-01T09:10:00" },
@@ -1044,14 +1068,14 @@
                 parts: [{ name: "ตัวหน้า (Front Body)", size: "M", qty: 10, sample: true, reason: "Fabric Defect" }]
             },
             {
-                id: "R-9012", date: "2026-08-05", needDate: "2026-08-08", shipOutDate: "2026-08-09", dept: "QC", line: "-",
+                id: "R-9012", date: "2026-08-05T13:20", needDate: "2026-08-08T17:00", shipOutDate: "2026-08-09T09:00", dept: "QC", line: "-",
                 style: "POLO-V1", job: "J-042", item: "Polo Shirt", color: "White", po: "", remark: "ลูกค้าเร่งด่วน โปรดตรวจสอบก่อน",
                 status: "PendingApproval", archived: false, requesterUser: "reqQC",
                 approval: null, cuttingReceive: null, cuttingSend: null, supermarketReceive: null, supermarketSend: null, originReceive: null,
                 parts: [{ name: "ชิ้นแขนซ้าย (Left Sleeve)", size: "L", qty: 4, sample: false, reason: "Sewing Error" }]
             },
             {
-                id: "R-9104", date: "2026-08-08", needDate: "2026-08-11", shipOutDate: "2026-08-13", dept: "Sewing", line: "Line 12",
+                id: "R-9104", date: "2026-08-08T08:15", needDate: "2026-08-11T17:00", shipOutDate: "2026-08-13T09:00", dept: "Sewing", line: "Line 12",
                 style: "JKT-PRO", job: "J-108", item: "Jacket Zip", color: "Black", po: "PO-70120", remark: "",
                 status: "CuttingReceived", archived: false, requesterUser: "req12",
                 approval: { by: "appr12", name: "สุนิสา (QC Manager)", decision: "Approved", ts: "2026-08-08T09:00:00" },
@@ -1063,7 +1087,7 @@
                 ]
             },
             {
-                id: "R-9205", date: "2026-08-06", needDate: "2026-08-09", shipOutDate: "2026-08-10", dept: "Sewing", line: "Line 05",
+                id: "R-9205", date: "2026-08-06T08:30", needDate: "2026-08-09T17:00", shipOutDate: "2026-08-10T09:00", dept: "Sewing", line: "Line 05",
                 style: "TSH-BLU2", job: "J-210", item: "T-Shirt Standard", color: "Sky Blue", po: "PO-70088", remark: "",
                 status: "CuttingSent", archived: false, requesterUser: "req05",
                 approval: { by: "appr05", name: "เกรียงศักดิ์ (หัวหน้าไลน์ 05)", decision: "Approved", ts: "2026-08-06T09:00:00" },
@@ -1073,7 +1097,7 @@
                 parts: [{ name: "ตัวหน้า (Front Body)", size: "L", qty: 8, sample: false, reason: "Missing" }]
             },
             {
-                id: "R-9410", date: "2026-08-09", needDate: "2026-08-12", shipOutDate: "2026-08-14", dept: "Sewing", line: "Line 08",
+                id: "R-9410", date: "2026-08-09T09:15", needDate: "2026-08-12T17:00", shipOutDate: "2026-08-14T09:00", dept: "Sewing", line: "Line 08",
                 style: "JKT-BLK2", job: "J-305", item: "Jacket Panel", color: "Black", po: "PO-70199", remark: "BU ยื่นขอเองและอนุมัติเอง (ตัวอย่าง)",
                 status: "Approved", archived: false, requesterUser: "bu08",
                 approval: { by: "bu08", name: "ปิยะดา (BU Line 08 — ยื่นขอเองและอนุมัติเอง)", decision: "Approved", ts: "2026-08-09T09:30:00" },
@@ -1081,7 +1105,7 @@
                 parts: [{ name: "แผงหลัง (Back Panel)", size: "L", qty: 6, sample: false, reason: "Cutting Error" }]
             },
             {
-                id: "R-9501", date: "2026-08-07", needDate: "2026-08-10", shipOutDate: "2026-08-11", dept: "Sewing", line: "Line 12",
+                id: "R-9501", date: "2026-08-07T08:00", needDate: "2026-08-10T17:00", shipOutDate: "2026-08-11T09:00", dept: "Sewing", line: "Line 12",
                 style: "TSH-GRN1", job: "J-410", item: "T-Shirt Standard", color: "Green", po: "PO-70210", remark: "",
                 status: "SupermarketReceived", archived: false, requesterUser: "req12",
                 approval: { by: "appr12", name: "สุนิสา (QC Manager)", decision: "Approved", ts: "2026-08-07T09:00:00" },
@@ -1092,7 +1116,7 @@
                 parts: [{ name: "แขนเสื้อ (Sleeve)", size: "M", qty: 5, sample: false, reason: "Sewing Error" }]
             },
             {
-                id: "R-9502", date: "2026-08-07", needDate: "2026-08-09", shipOutDate: "2026-08-10", dept: "Sewing", line: "Line 05",
+                id: "R-9502", date: "2026-08-07T07:45", needDate: "2026-08-09T17:00", shipOutDate: "2026-08-10T09:00", dept: "Sewing", line: "Line 05",
                 style: "TSH-YEL1", job: "J-415", item: "T-Shirt Standard", color: "Yellow", po: "PO-70215", remark: "",
                 status: "SupermarketSent", archived: false, requesterUser: "req05",
                 approval: { by: "appr05", name: "เกรียงศักดิ์ (หัวหน้าไลน์ 05)", decision: "Approved", ts: "2026-08-07T08:30:00" },
@@ -1514,13 +1538,13 @@
         }
 
         function fillDemoData() {
-            document.getElementById('fDate').value = toLocalDateInputValue(new Date());
+            document.getElementById('fDate').value = toLocalDateTimeInputValue(new Date());
             const need = new Date();
             need.setDate(need.getDate() + 3);
-            document.getElementById('fNeedDate').value = toLocalDateInputValue(need);
+            document.getElementById('fNeedDate').value = toLocalDateTimeInputValue(need);
             const shipOut = new Date();
             shipOut.setDate(shipOut.getDate() + 4);
-            document.getElementById('fShipOutDate').value = toLocalDateInputValue(shipOut);
+            document.getElementById('fShipOutDate').value = toLocalDateTimeInputValue(shipOut);
             document.getElementById('fStyle').value = 'TSH-2026';
             document.getElementById('fJob').value = 'J-' + Math.floor(100 + Math.random() * 900);
             document.getElementById('fItem').value = 'T-Shirt Standard';
@@ -1548,8 +1572,8 @@
             const lt = leadtimeInfo(item);
             if (lt && lt.overdue) reasons.push(`เกิน Leadtime (${lt.days.toFixed(1)}/${LEADTIME_DAYS} วัน)`);
             if (item.needDate) {
-                const need = new Date(item.needDate + 'T23:59:59+07:00');
-                if (new Date() > need) reasons.push(`เกินกำหนดวันที่ต้องการของ (${item.needDate})`);
+                const need = parseLocalDateTime(item.needDate);
+                if (new Date() > need) reasons.push(`เกินกำหนดวันที่ต้องการของ (${fmtDT(item.needDate)})`);
             }
             return reasons.length ? reasons : null;
         }
@@ -1642,8 +1666,8 @@
                     <tr class="hover:bg-slate-50/80 transition-colors">
                         <td class="px-5 py-4">
                             <div class="text-xs font-black text-slate-800">${escapeHtml(item.id)}</div>
-                            <div class="text-[11px] font-bold text-rose-600 mt-0.5">${item.needDate ? 'รับ: ' + escapeHtml(item.needDate) : 'ไม่ระบุวันที่ต้องการของ'}</div>
-                            <div class="text-[9px] text-slate-400">แจ้ง: ${escapeHtml(item.date)}</div>
+                            <div class="text-[11px] font-bold text-rose-600 mt-0.5">${item.needDate ? 'รับ: ' + fmtDT(item.needDate) : 'ไม่ระบุวันที่ต้องการของ'}</div>
+                            <div class="text-[9px] text-slate-400">แจ้ง: ${fmtDT(item.date)}</div>
                         </td>
                         <td class="px-5 py-4">
                             <div class="text-xs font-bold text-slate-800">${escapeHtml(item.style)}</div>
@@ -1784,7 +1808,7 @@
             document.getElementById('editItemIndex').value = "-1";
             document.getElementById('formModalTitle').innerText = "แจ้งซ่อมงาน / ขอตัดเปลี่ยนใหม่";
             document.getElementById('repairForm').reset();
-            document.getElementById('fDate').value = toLocalDateInputValue(new Date());
+            document.getElementById('fDate').value = toLocalDateTimeInputValue(new Date());
             document.getElementById('partsContainer').innerHTML = '';
             addPartRow();
             applyUserScopeToForm();
@@ -1929,8 +1953,8 @@
                 <div><b>ผู้ขอ:</b> ${escapeHtml(item.requesterUser)}</div>
                 <div><b>จำนวนรวม:</b> ${totalQty} ชิ้น</div>
                 <div><b>สาเหตุการสั่งซ่อม:</b> ${escapeHtml([...new Set(item.parts.map(p => REASON_LABELS[p.reason] || p.reason).filter(Boolean))].join(', '))}</div>
-                <div class="${item.needDate ? 'text-rose-600 font-bold' : ''}"><b>วันที่ต้องการของ:</b> ${item.needDate ? escapeHtml(item.needDate) : 'ไม่ระบุ'}</div>
-                <div><b>วันส่งออก:</b> ${item.shipOutDate ? escapeHtml(item.shipOutDate) : 'ไม่ระบุ'}</div>
+                <div class="${item.needDate ? 'text-rose-600 font-bold' : ''}"><b>วันที่ต้องการของ:</b> ${item.needDate ? fmtDT(item.needDate) : 'ไม่ระบุ'}</div>
+                <div><b>วันส่งออก:</b> ${item.shipOutDate ? fmtDT(item.shipOutDate) : 'ไม่ระบุ'}</div>
                 <div class="border-t border-slate-200 pt-1.5 mt-1.5">
                     <div class="font-bold text-slate-600 mb-0.5">รายการชิ้นส่วนที่ต้องตรวจสอบ:</div>
                     ${item.parts.map(p => `<div>• ${escapeHtml(p.name)} (${escapeHtml(p.size)}) x${p.qty} ${p.sample ? '<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold">มีชิ้นงานเสียแนบ</span>' : ''} ${p.reason ? `<span class="text-[9px] bg-rose-50 text-rose-600 px-1 rounded font-bold">${escapeHtml(REASON_LABELS[p.reason] || p.reason)}</span>` : ''}</div>`).join('')}
@@ -2155,7 +2179,7 @@
                         </div>
                         <div class="text-right">
                             <span class="font-black text-sm text-indigo-600">${escapeHtml(item.id)}</span>
-                            <p class="text-[9px] text-slate-400">วันที่แจ้ง: ${escapeHtml(item.date)}</p>
+                            <p class="text-[9px] text-slate-400">วันที่แจ้ง: ${fmtDT(item.date)}</p>
                         </div>
                     </div>
 
@@ -2168,8 +2192,8 @@
                         <div><b>แผนกที่แจ้ง:</b> ${escapeHtml(item.dept)}</div>
                         <div><b>ไลน์ผลิต:</b> ${escapeHtml(item.line)}</div>
                         <div><b>สถานะ:</b> ${STATUS_LABELS[item.status] || item.status}</div>
-                        <div class="col-span-2 text-rose-600 font-bold"><b>วันที่ต้องการของ:</b> ${item.needDate ? escapeHtml(item.needDate) : 'ไม่ระบุ'}</div>
-                        <div class="col-span-2"><b>วันส่งออก:</b> ${item.shipOutDate ? escapeHtml(item.shipOutDate) : 'ไม่ระบุ'}</div>
+                        <div class="col-span-2 text-rose-600 font-bold"><b>วันที่ต้องการของ:</b> ${item.needDate ? fmtDT(item.needDate) : 'ไม่ระบุ'}</div>
+                        <div class="col-span-2"><b>วันส่งออก:</b> ${item.shipOutDate ? fmtDT(item.shipOutDate) : 'ไม่ระบุ'}</div>
                     </div>
 
                     <div class="border-t pt-2">
@@ -2249,9 +2273,9 @@
                         <div class="text-xs text-slate-500">แผนก: ${escapeHtml(item.dept)} ${item.line !== '-' ? '| ไลน์: ' + escapeHtml(item.line) : ''} | ผู้ขอ: ${escapeHtml(item.requesterUser)}</div>
                     </div>
                     <div class="text-right text-[11px] text-slate-400">
-                        <div>แจ้ง: ${escapeHtml(item.date)}</div>
-                        <div class="text-rose-500 font-bold">ต้องการของ: ${item.needDate ? escapeHtml(item.needDate) : 'ไม่ระบุ'}</div>
-                        <div>วันส่งออก: ${item.shipOutDate ? escapeHtml(item.shipOutDate) : 'ไม่ระบุ'}</div>
+                        <div>แจ้ง: ${fmtDT(item.date)}</div>
+                        <div class="text-rose-500 font-bold">ต้องการของ: ${item.needDate ? fmtDT(item.needDate) : 'ไม่ระบุ'}</div>
+                        <div>วันส่งออก: ${item.shipOutDate ? fmtDT(item.shipOutDate) : 'ไม่ระบุ'}</div>
                     </div>
                 </div>
 
@@ -2311,7 +2335,7 @@
             const withNeedDate = repairs.filter(r => r.archived && r.needDate && r.originReceive && r.originReceive.ts);
             let ontime = 0, delay = 0;
             withNeedDate.forEach(r => {
-                const need = new Date(r.needDate + 'T23:59:59+07:00');
+                const need = parseLocalDateTime(r.needDate);
                 const done = new Date(r.originReceive.ts);
                 if (done <= need) ontime++; else delay++;
             });
@@ -2335,13 +2359,13 @@
             const body = document.getElementById('processDurationBody');
             if (!body) return;
             const stages = [
-                { label: 'แจ้งซ่อม → อนุมัติ', from: r => r.date ? new Date(r.date + 'T00:00:00+07:00') : null, to: r => r.approval && r.approval.ts ? new Date(r.approval.ts) : null },
+                { label: 'แจ้งซ่อม → อนุมัติ', from: r => r.date ? parseLocalDateTime(r.date) : null, to: r => r.approval && r.approval.ts ? new Date(r.approval.ts) : null },
                 { label: 'อนุมัติ → รับงานตัด', from: r => r.approval && r.approval.ts ? new Date(r.approval.ts) : null, to: r => r.cuttingReceive && r.cuttingReceive.ts ? new Date(r.cuttingReceive.ts) : null },
                 { label: 'รับงานตัด → ตัดเสร็จ', from: r => r.cuttingReceive && r.cuttingReceive.ts ? new Date(r.cuttingReceive.ts) : null, to: r => r.cuttingSend && r.cuttingSend.ts ? new Date(r.cuttingSend.ts) : null },
                 { label: 'ตัดเสร็จ → ซุปเปอร์มาร์เก็ตรับ', from: r => r.cuttingSend && r.cuttingSend.ts ? new Date(r.cuttingSend.ts) : null, to: r => r.supermarketReceive && r.supermarketReceive.ts ? new Date(r.supermarketReceive.ts) : null },
                 { label: 'ซุปเปอร์มาร์เก็ตรับ → ส่งเข้าไลน์', from: r => r.supermarketReceive && r.supermarketReceive.ts ? new Date(r.supermarketReceive.ts) : null, to: r => r.supermarketSend && r.supermarketSend.ts ? new Date(r.supermarketSend.ts) : null },
                 { label: 'ส่งเข้าไลน์ → ต้นทางรับงาน', from: r => r.supermarketSend && r.supermarketSend.ts ? new Date(r.supermarketSend.ts) : null, to: r => r.originReceive && r.originReceive.ts ? new Date(r.originReceive.ts) : null },
-                { label: 'รวมทั้งกระบวนการ (แจ้งซ่อม → รับงานสมบูรณ์)', from: r => r.date ? new Date(r.date + 'T00:00:00+07:00') : null, to: r => r.originReceive && r.originReceive.ts ? new Date(r.originReceive.ts) : null },
+                { label: 'รวมทั้งกระบวนการ (แจ้งซ่อม → รับงานสมบูรณ์)', from: r => r.date ? parseLocalDateTime(r.date) : null, to: r => r.originReceive && r.originReceive.ts ? new Date(r.originReceive.ts) : null },
             ];
 
             const rows = stages.map(stage => {
