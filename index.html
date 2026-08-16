@@ -15,7 +15,7 @@
         .chart-container { position: relative; width: 100%; height: 280px; margin: auto; }
         .nav-active { border-bottom: 3px solid #4f46e5; color: #4f46e5; }
         .card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.03); }
-        .status-pill { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
+        .status-pill { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: inline-block; white-space: nowrap; }
         /* !important beats Tailwind's Preflight reset (which zeroes form-element padding and
            would otherwise load after this stylesheet and win the cascade tie). */
         input, select, textarea { border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem !important; outline: none; transition: all 0.2s; }
@@ -58,7 +58,7 @@
             <div class="text-center space-y-1">
                 <div class="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-extrabold text-lg mx-auto shadow-lg shadow-indigo-200">GH</div>
                 <h1 class="text-lg font-black text-slate-800">Garment Repair Hub</h1>
-                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">เข้าสู่ระบบเพื่อใช้งาน</p>
+                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">เข้าสู่ระบบเพื่อใช้งาน <span class="font-normal normal-case opacity-70">(Sign in to continue)</span></p>
             </div>
             <form id="loginForm" class="space-y-3">
                 <div>
@@ -70,7 +70,7 @@
                     <input type="password" id="loginPassword" class="w-full text-sm" required autocomplete="current-password">
                 </div>
                 <p id="loginError" class="text-[11px] text-rose-600 font-bold hidden"></p>
-                <button type="submit" id="loginSubmitBtn" class="btn-primary w-full text-sm">เข้าสู่ระบบ</button>
+                <button type="submit" id="loginSubmitBtn" class="btn-primary w-full text-sm">เข้าสู่ระบบ <span class="text-[10px] font-normal opacity-70">(Login)</span></button>
             </form>
         </div>
     </div>
@@ -99,25 +99,38 @@
                 <div class="flex space-x-2 sm:space-x-6">
                     <button onclick="switchTab('records')" id="tab-records" class="nav-btn py-3 font-bold text-sm nav-active transition flex items-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-                        <span>คิวงานซ่อม</span>
+                        <span>คิวงานซ่อม<span class="block text-[8px] font-normal normal-case opacity-70">Repair Queue</span></span>
                     </button>
                     <button onclick="switchTab('analytics')" id="tab-analytics" class="nav-btn py-3 font-bold text-sm text-slate-400 transition flex items-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                        <span>สรุปปัญหา & Analytics</span>
+                        <span>สรุปปัญหา & Analytics<span class="block text-[8px] font-normal normal-case opacity-70">Analytics</span></span>
                     </button>
                     <button onclick="switchTab('holidays')" id="tab-holidays" class="nav-btn py-3 font-bold text-sm text-slate-400 transition flex items-center gap-1.5">
-                        <span>📅</span><span>วันหยุดบริษัท</span>
+                        <span>📅</span><span>วันหยุด & Workflow</span>
                     </button>
                     <button onclick="switchTab('admin')" id="tab-admin" class="nav-btn py-3 font-bold text-sm text-slate-400 transition flex items-center gap-1.5 hidden">
                         <span>⚙️</span><span>Admin</span>
                     </button>
                 </div>
                 <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <button onclick="toggleNotifPanel()" class="btn-ghost text-sm w-8 h-8 flex items-center justify-center relative" title="การแจ้งเตือน">
+                            🔔
+                            <span id="notifBadge" class="hidden absolute -top-1 -right-1 bg-rose-600 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">0</span>
+                        </button>
+                        <div id="notifPanel" class="hidden absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-xl shadow-2xl border border-slate-200 z-50">
+                            <div class="p-2.5 border-b border-slate-100 flex items-center justify-between">
+                                <span class="text-xs font-black text-slate-700">การแจ้งเตือน</span>
+                                <button onclick="markAllNotifsRead()" class="text-[10px] text-indigo-600 font-bold hover:underline">อ่านทั้งหมด (Mark all read)</button>
+                            </div>
+                            <div id="notifList" class="divide-y divide-slate-50"></div>
+                        </div>
+                    </div>
                     <div class="text-right">
                         <div id="currentUserName" class="text-xs font-bold text-slate-700">-</div>
                         <div id="currentUserRole" class="text-[9px] text-slate-400 uppercase font-bold">-</div>
                     </div>
-                    <button onclick="logout()" class="btn-ghost text-xs">ออกจากระบบ</button>
+                    <button onclick="logout()" class="btn-ghost text-xs">ออกจากระบบ <span class="text-[9px] font-normal opacity-70">(Logout)</span></button>
                 </div>
             </div>
         </div>
@@ -146,7 +159,7 @@
                 <div onclick="filterByKpi('PendingApproval')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-amber-500">
                     <div class="flex items-center gap-1.5">
                         <span class="w-5 h-5 flex items-center justify-center bg-amber-50 rounded-lg text-amber-600 text-xs shrink-0">⏳</span>
-                        <p class="text-[9px] font-bold uppercase text-amber-600 tracking-wider leading-tight">Pending BU review<span class="block font-normal normal-case text-slate-400 text-[8px]">รอ BU ตรวจสอบ</span></p>
+                        <p class="text-[9px] font-bold uppercase text-amber-600 tracking-wider leading-tight">รอ BU ตรวจสอบ<span class="block font-normal normal-case text-slate-400 text-[8px]">Pending BU review</span></p>
                     </div>
                     <div class="flex items-end justify-between mt-1">
                         <h4 id="kpiPending" class="text-lg font-black text-amber-600 leading-none">0</h4>
@@ -159,7 +172,7 @@
                 <div onclick="filterByKpi('PendingFMApproval')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-orange-500">
                     <div class="flex items-center gap-1.5">
                         <span class="w-5 h-5 flex items-center justify-center bg-orange-50 rounded-lg text-orange-600 text-xs shrink-0">🗂️</span>
-                        <p class="text-[9px] font-bold uppercase text-orange-600 tracking-wider leading-tight">Pending FM approval<span class="block font-normal normal-case text-slate-400 text-[8px]">รอ FM อนุมัติ</span></p>
+                        <p class="text-[9px] font-bold uppercase text-orange-600 tracking-wider leading-tight">รอ FM อนุมัติ<span class="block font-normal normal-case text-slate-400 text-[8px]">Pending FM approval</span></p>
                     </div>
                     <div class="flex items-end justify-between mt-1">
                         <h4 id="kpiPendingFM" class="text-lg font-black text-orange-600 leading-none">0</h4>
@@ -172,7 +185,7 @@
                 <div onclick="filterByKpi('anyRejected')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-rose-400">
                     <div class="flex items-center gap-1.5">
                         <span class="w-5 h-5 flex items-center justify-center bg-rose-50 rounded-lg text-rose-500 text-xs shrink-0">🚫</span>
-                        <p class="text-[9px] font-bold uppercase text-rose-500 tracking-wider leading-tight">Returned by BU or FM<span class="block font-normal normal-case text-slate-400 text-[8px]">ถูกตีกลับ (BU/FM)</span></p>
+                        <p class="text-[9px] font-bold uppercase text-rose-500 tracking-wider leading-tight">ถูกตีกลับ (BU/FM)<span class="block font-normal normal-case text-slate-400 text-[8px]">Returned by BU or FM</span></p>
                     </div>
                     <h4 id="kpiRejected" class="text-lg font-black text-rose-500 leading-none mt-1">0</h4>
                 </div>
@@ -218,7 +231,7 @@
                 <div onclick="filterByKpi('cuttingIssue')" class="card p-2 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-red-500">
                     <div class="flex items-center gap-1.5">
                         <span class="w-5 h-5 flex items-center justify-center bg-red-50 rounded-lg text-red-600 text-xs shrink-0">⚠️</span>
-                        <p class="text-[9px] font-bold uppercase text-red-600 tracking-wider leading-tight">Cutting issues<span class="block font-normal normal-case text-slate-400 text-[8px]">แผนกตัดแจ้งปัญหา</span></p>
+                        <p class="text-[9px] font-bold uppercase text-red-600 tracking-wider leading-tight">แผนกตัดแจ้งปัญหา<span class="block font-normal normal-case text-slate-400 text-[8px]">Cutting issues</span></p>
                     </div>
                     <h4 id="kpiCuttingIssue" class="text-lg font-black text-red-600 leading-none mt-1">0</h4>
                 </div>
@@ -270,18 +283,21 @@
                     <p class="text-slate-500 text-xs mt-0.5">ติดตามสถานะใบแจ้งตัดซ่อม การอนุมัติ การรับ-ส่งงานของแผนกตัด</p>
                 </div>
                 <div class="flex flex-wrap gap-2 no-print">
+                    <button id="btnManualRefresh" onclick="manualRefresh()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1" title="ดึงข้อมูลล่าสุดจากระบบ">
+                        <span>🔃 Refresh</span>
+                    </button>
                     <button onclick="printCurrentPage()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1" title="พิมพ์หน้านี้">
-                        <span>🖨️ พิมพ์เอกสาร</span>
+                        <span>🖨️ พิมพ์เอกสาร <span class="text-[9px] font-normal opacity-70">(Print)</span></span>
                     </button>
                     <button id="btnResetData" onclick="resetToDefaultData()" class="btn-ghost text-xs text-slate-500 hover:text-rose-600 flex items-center gap-1 hidden" title="คืนค่าข้อมูลตัวอย่างเริ่มต้น (Admin เท่านั้น)">
-                        <span>🔄 รีเซ็ตข้อมูล</span>
+                        <span>🔄 รีเซ็ตข้อมูล <span class="text-[9px] font-normal opacity-70">(Reset)</span></span>
                     </button>
                     <button onclick="exportCSV()" class="btn-secondary text-xs flex items-center gap-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        <span>ส่งออก CSV</span>
+                        <span>ส่งออก CSV <span class="text-[9px] font-normal opacity-70">(Export)</span></span>
                     </button>
                     <button onclick="openFormModal()" class="btn-primary shadow-lg shadow-indigo-200 flex items-center gap-1 text-sm">
-                        <span>+ สร้างใบสั่งซ่อมใหม่</span>
+                        <span>+ สร้างใบสั่งซ่อมใหม่ <span class="text-[9px] font-normal opacity-70">(New Request)</span></span>
                     </button>
                 </div>
             </div>
@@ -290,27 +306,27 @@
             <div class="card p-4 bg-slate-50/80 flex flex-wrap gap-3 items-center">
                 <div class="flex-1 min-w-[220px]">
                     <div class="relative">
-                        <input type="text" id="searchInput" placeholder="ค้นหา Style, Job No., สี, สาเหตุ หรือ ID..." class="w-full pl-9 pr-3 text-xs bg-white">
+                        <input type="text" id="searchInput" placeholder="ค้นหา (Search) Style, Job No., สี, สาเหตุ หรือ ID..." class="w-full pl-9 pr-3 text-xs bg-white">
                         <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
                 </div>
                 <div class="w-auto min-w-[150px]">
                     <select id="filterStatus" onchange="filterData()" class="w-full text-xs bg-white">
-                        <option value="all">ทุกสถานะ</option>
-                        <option value="PendingApproval">รอ BU ตรวจสอบ</option>
-                        <option value="Rejected">BU ไม่ผ่านตรวจสอบ</option>
-                        <option value="PendingFMApproval">รอ Factory Manager อนุมัติ</option>
-                        <option value="FMRejected">Factory Manager ไม่อนุมัติ</option>
-                        <option value="Approved">รอรับงานตัด</option>
-                        <option value="CuttingReceived">กำลังตัดซ่อม</option>
-                        <option value="CuttingSent">ตัดเสร็จ รอซุปเปอร์มาร์เก็ตรับ</option>
-                        <option value="SupermarketReceived">ซุปเปอร์มาร์เก็ตรับแล้ว</option>
-                        <option value="SupermarketSent">ส่งเข้าไลน์แล้ว รอต้นทางรับ</option>
+                        <option value="all">ทุกสถานะ (All Status)</option>
+                        <option value="PendingApproval">รอ BU ตรวจสอบ (Pending BU)</option>
+                        <option value="Rejected">BU ไม่ผ่านตรวจสอบ (BU Rejected)</option>
+                        <option value="PendingFMApproval">รอ Factory Manager อนุมัติ (Pending FM)</option>
+                        <option value="FMRejected">Factory Manager ไม่อนุมัติ (FM Rejected)</option>
+                        <option value="Approved">รอรับงานตัด (Approved)</option>
+                        <option value="CuttingReceived">กำลังตัดซ่อม (Cutting)</option>
+                        <option value="CuttingSent">ตัดเสร็จ รอซุปเปอร์มาร์เก็ตรับ (Cutting Done)</option>
+                        <option value="SupermarketReceived">ซุปเปอร์มาร์เก็ตรับแล้ว (SM Received)</option>
+                        <option value="SupermarketSent">ส่งเข้าไลน์แล้ว รอต้นทางรับ (Sent to Line)</option>
                     </select>
                 </div>
                 <div class="w-auto min-w-[140px]">
                     <select id="filterDept" onchange="filterData()" class="w-full text-xs bg-white">
-                        <option value="all">ทุกแผนกที่แจ้ง</option>
+                        <option value="all">ทุกแผนกที่แจ้ง (All Depts)</option>
                         <option value="Sewing">แผนกเย็บ (Sewing)</option>
                         <option value="QC">แผนก QC/QA</option>
                         <option value="Finishing">แผนก Finishing</option>
@@ -319,7 +335,7 @@
                     </select>
                 </div>
                 <button onclick="resetFilters()" class="text-xs text-slate-500 hover:text-indigo-600 font-bold px-2 py-1">
-                    ล้างตัวกรอง
+                    ล้างตัวกรอง <span class="text-[9px] font-normal opacity-70">(Clear Filters)</span>
                 </button>
             </div>
 
@@ -329,13 +345,13 @@
                     <table class="min-w-full divide-y divide-slate-200 text-left">
                         <thead class="bg-slate-50">
                             <tr>
-                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">รหัส & วันกำหนดรับ</th>
-                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">ข้อมูลสินค้า / Job</th>
-                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">แผนก / ไลน์ผลิต & ผู้ขอ</th>
-                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">ชิ้นส่วน & สาเหตุ</th>
-                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">สถานะงาน</th>
-                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Alert</th>
-                                <th class="px-5 py-3.5 text-center text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">การจัดการ</th>
+                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">รหัส & วันกำหนดรับ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">ID & Due Date</span></th>
+                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">ข้อมูลสินค้า / Job<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Product Info</span></th>
+                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">แผนก / ไลน์ผลิต & ผู้ขอ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Dept / Line & Requester</span></th>
+                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">ชิ้นส่วน & สาเหตุ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Parts & Reason</span></th>
+                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">สถานะงาน<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Status</span></th>
+                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">Alert</th>
+                                <th class="px-5 py-3.5 text-center text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">การจัดการ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Actions</span></th>
                             </tr>
                         </thead>
                         <tbody id="repairTableBody" class="divide-y divide-slate-100 bg-white">
@@ -351,15 +367,15 @@
         <div id="section-analytics" class="tab-content hidden space-y-6">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4">
                 <div>
-                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">รายงานสรุปปัญหาการสั่งซ่อม (Defect Analytics)</h2>
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">รายงานสรุปปัญหาการสั่งซ่อม<span class="block text-xs font-semibold text-slate-400 normal-case mt-0.5">Defect Analytics</span></h2>
                     <p class="text-slate-500 text-xs mt-0.5">วิเคราะห์สาเหตุ ปริมาณงานเสียแยกตามแผนกและไลน์ผลิต เพื่อใช้วางแผนป้องกัน — คลิกที่การ์ดเพื่อดูรายการที่เกี่ยวข้อง</p>
                 </div>
                 <div class="mt-2 md:mt-0 flex items-center gap-2 no-print">
                     <span class="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-lg">
-                        📊 อัปเดตข้อมูลแบบเรียลไทม์
+                        📊 อัปเดตข้อมูลแบบเรียลไทม์ <span class="text-[9px] font-normal opacity-70">(Live Data)</span>
                     </span>
                     <button onclick="printCurrentPage()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1" title="พิมพ์หน้านี้">
-                        <span>🖨️ พิมพ์เอกสาร</span>
+                        <span>🖨️ พิมพ์เอกสาร <span class="text-[9px] font-normal opacity-70">(Print)</span></span>
                     </button>
                 </div>
             </div>
@@ -367,44 +383,44 @@
             <!-- Analytics Key Indicators (clickable) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="card p-5 bg-gradient-to-br from-indigo-50 to-white">
-                    <p class="text-xs font-bold text-indigo-600 uppercase">ยอดรวมชิ้นส่วนงานเสียสะสม</p>
+                    <p class="text-xs font-bold text-indigo-600 uppercase">ยอดรวมชิ้นส่วนงานเสียสะสม <span class="font-normal normal-case opacity-70">(Total Defect Pcs)</span></p>
                     <h3 id="anaTotalPcs" class="text-3xl font-black text-slate-800 mt-2">0 <span class="text-sm font-normal text-slate-500">ชิ้น</span></h3>
-                    <p class="text-[11px] text-slate-500 mt-1">จากรายการสั่งซ่อมทั้งหมดในระบบ</p>
+                    <p class="text-[11px] text-slate-500 mt-1">จากรายการสั่งซ่อมทั้งหมดในระบบ <span class="opacity-70">(From all repair records)</span></p>
                 </div>
                 <div id="anaTopReasonCard" class="card p-5 bg-gradient-to-br from-rose-50 to-white cursor-pointer hover:shadow-md transition-shadow">
-                    <p class="text-xs font-bold text-rose-600 uppercase">สาเหตุยอดนิยมอันดับ 1 (คลิกเพื่อดูรายการ)</p>
+                    <p class="text-xs font-bold text-rose-600 uppercase">สาเหตุยอดนิยมอันดับ 1 <span class="font-normal normal-case opacity-70">(Top Reason — click to view)</span></p>
                     <h3 id="anaTopReason" class="text-xl font-black text-slate-800 mt-2">-</h3>
-                    <p class="text-[11px] text-slate-500 mt-1">สาเหตุที่พบความเสียหายบ่อยที่สุด</p>
+                    <p class="text-[11px] text-slate-500 mt-1">สาเหตุที่พบความเสียหายบ่อยที่สุด <span class="opacity-70">(Most frequent cause)</span></p>
                 </div>
                 <div id="anaTopDeptCard" class="card p-5 bg-gradient-to-br from-sky-50 to-white cursor-pointer hover:shadow-md transition-shadow">
-                    <p class="text-xs font-bold text-sky-600 uppercase">แผนกที่แจ้งสั่งซ่อมมากที่สุด (คลิกเพื่อดูรายการ)</p>
+                    <p class="text-xs font-bold text-sky-600 uppercase">แผนกที่แจ้งสั่งซ่อมมากที่สุด <span class="font-normal normal-case opacity-70">(Top Reporting Dept — click to view)</span></p>
                     <h3 id="anaTopDept" class="text-xl font-black text-slate-800 mt-2">-</h3>
-                    <p class="text-[11px] text-slate-500 mt-1">แผนกที่ส่งรายการซ่อมสูงสุด</p>
+                    <p class="text-[11px] text-slate-500 mt-1">แผนกที่ส่งรายการซ่อมสูงสุด <span class="opacity-70">(Dept with most requests)</span></p>
                 </div>
             </div>
 
             <!-- Analytics Process KPI row (clickable) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div onclick="filterByKpi('all')" class="card p-5 bg-gradient-to-br from-slate-50 to-white cursor-pointer hover:shadow-md transition-shadow">
-                    <p class="text-xs font-bold text-slate-500 uppercase">งานที่กำลังดำเนินการทั้งหมด</p>
+                    <p class="text-xs font-bold text-slate-500 uppercase">งานที่กำลังดำเนินการทั้งหมด <span class="font-normal normal-case opacity-70">(All Active Jobs)</span></p>
                     <h3 id="anaActiveCount" class="text-3xl font-black text-slate-800 mt-2">0</h3>
-                    <p class="text-[11px] text-slate-500 mt-1">คลิกเพื่อไปที่คิวงานซ่อม</p>
+                    <p class="text-[11px] text-slate-500 mt-1">คลิกเพื่อไปที่คิวงานซ่อม <span class="opacity-70">(Click to view Queue)</span></p>
                 </div>
                 <div onclick="filterByKpi('overdue')" class="card p-5 bg-gradient-to-br from-red-50 to-white cursor-pointer hover:shadow-md transition-shadow">
                     <p class="text-xs font-bold text-red-600 uppercase">🚨 รายการที่เกินกำหนด (Alert)</p>
                     <h3 id="anaAlertCount" class="text-3xl font-black text-red-600 mt-2">0</h3>
-                    <p class="text-[11px] text-slate-500 mt-1">เกิน Leadtime 2 วันทำการ (จ.-ส. 08:00-17:00) หรือเกินวันที่ต้องการของ</p>
+                    <p class="text-[11px] text-slate-500 mt-1">เกิน Leadtime 2 วันทำการ (จ.-ส. 08:00-17:00) หรือเกินวันที่ต้องการของ <span class="opacity-70">(Overdue 2 business days or past need date)</span></p>
                 </div>
                 <div onclick="goToCompletedHistory()" class="card p-5 bg-gradient-to-br from-emerald-50 to-white cursor-pointer hover:shadow-md transition-shadow">
-                    <p class="text-xs font-bold text-emerald-600 uppercase">งานเสร็จสมบูรณ์สะสม</p>
+                    <p class="text-xs font-bold text-emerald-600 uppercase">งานเสร็จสมบูรณ์สะสม <span class="font-normal normal-case opacity-70">(Total Completed)</span></p>
                     <h3 id="anaCompletedCount" class="text-3xl font-black text-emerald-600 mt-2">0</h3>
-                    <p class="text-[11px] text-slate-500 mt-1">คลิกเพื่อดูประวัติงานที่เสร็จสมบูรณ์</p>
+                    <p class="text-[11px] text-slate-500 mt-1">คลิกเพื่อดูประวัติงานที่เสร็จสมบูรณ์ <span class="opacity-70">(Click to view Completed History)</span></p>
                 </div>
             </div>
 
             <!-- Ontime vs Delay Summary (based on completed jobs vs their need-date) -->
             <div class="card p-6">
-                <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-4">สรุปการส่งมอบ: Ontime - Delay (จากงานที่เสร็จสมบูรณ์และมีวันที่ต้องการของ)</h3>
+                <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-4">สรุปการส่งมอบ: Ontime - Delay <span class="font-normal normal-case opacity-70">(from completed jobs with a need date)</span></h3>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
                         <p class="text-[10px] font-bold uppercase text-emerald-600">Ontime</p>
@@ -433,9 +449,9 @@
                     <table class="min-w-full divide-y divide-slate-200 text-left">
                         <thead class="bg-slate-50">
                             <tr>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ขั้นตอน</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">จำนวนรายการ</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">เวลาเฉลี่ย</th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">ขั้นตอน<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Step</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">จำนวนรายการ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Count</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">เวลาเฉลี่ย<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Avg Time</span></th>
                             </tr>
                         </thead>
                         <tbody id="processDurationBody" class="divide-y divide-slate-100 bg-white"></tbody>
@@ -447,7 +463,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="card p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">ปริมาณชิ้นงานเสียแยกตามแผนก (Pcs)</h3>
+                        <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">ปริมาณชิ้นงานเสียแยกตามแผนก <span class="font-normal normal-case opacity-70">(Defect Pcs by Dept)</span></h3>
                         <button id="deptChartToggleBtn" onclick="toggleChartDetails('deptChart')" class="text-[10px] font-bold text-indigo-600 hover:underline whitespace-nowrap ml-1">Show details</button>
                     </div>
                     <div class="chart-container">
@@ -457,7 +473,7 @@
                 </div>
                 <div class="card p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">สัดส่วนสาเหตุการสั่งซ่อม</h3>
+                        <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">สัดส่วนสาเหตุการสั่งซ่อม <span class="font-normal normal-case opacity-70">(Reason Breakdown)</span></h3>
                         <button id="reasonChartToggleBtn" onclick="toggleChartDetails('reasonChart')" class="text-[10px] font-bold text-indigo-600 hover:underline whitespace-nowrap ml-1">Show details</button>
                     </div>
                     <div class="chart-container">
@@ -470,7 +486,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="card p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">แนวโน้มงานซ่อมรายเดือน (Total Pcs)</h3>
+                        <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">แนวโน้มงานซ่อมรายเดือน <span class="font-normal normal-case opacity-70">(Monthly Trend)</span> (Total Pcs)</h3>
                         <button id="monthlyChartToggleBtn" onclick="toggleChartDetails('monthlyChart')" class="text-[10px] font-bold text-indigo-600 hover:underline whitespace-nowrap ml-1">Show details</button>
                     </div>
                     <div class="chart-container">
@@ -480,7 +496,7 @@
                 </div>
                 <div class="card p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">จำนวนชิ้นงานเสียแยกตามไลน์ผลิต (Sewing Line)</h3>
+                        <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">จำนวนชิ้นงานเสียแยกตามไลน์ผลิต <span class="font-normal normal-case opacity-70">(Defect Pcs by Line)</span></h3>
                         <button id="lineChartToggleBtn" onclick="toggleChartDetails('lineChart')" class="text-[10px] font-bold text-indigo-600 hover:underline whitespace-nowrap ml-1">Show details</button>
                     </div>
                     <div class="chart-container">
@@ -493,23 +509,24 @@
             <!-- Completed / Archived history -->
             <div class="card overflow-hidden">
                 <div class="p-4 border-b bg-slate-50">
-                    <h3 class="text-sm font-black text-slate-800">ประวัติงานที่เสร็จสมบูรณ์ (ต้นทางรับงานแล้ว)</h3>
-                    <p class="text-[10px] text-slate-400">รายการที่ผ่านครบทุกขั้นตอนเรียบร้อยแล้ว (คลิกแถวเพื่อดูรายละเอียด)</p>
+                    <h3 class="text-sm font-black text-slate-800">ประวัติงานที่เสร็จสมบูรณ์ <span class="font-normal normal-case text-slate-400 text-xs">(Completed History)</span> (ต้นทางรับงานแล้ว)</h3>
+                    <p class="text-[10px] text-slate-400">รายการที่ผ่านครบทุกขั้นตอนเรียบร้อยแล้ว (คลิกแถวเพื่อดูรายละเอียด) <span class="opacity-70">(fully completed records — click a row for details)</span></p>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 text-left">
                         <thead class="bg-slate-50">
                             <tr>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">รหัส</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">Style / Job</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">แผนก/ไลน์</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ผู้ตรวจสอบ (BU)</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ผู้อนุมัติ (FM)</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">รับงานตัด</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ตัดเสร็จ</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">SM รับ</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ส่งเข้าไลน์</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ต้นทางรับงาน</th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">รหัส<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">ID</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">Style / Job</th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">แผนก/ไลน์<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Dept/Line</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">ผู้ตรวจสอบ (BU)<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">BU Reviewer</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">ผู้อนุมัติ (FM)<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">FM Approver</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">รับงานตัด<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Cutting Received</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">ตัดเสร็จ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Cutting Done</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">SM รับ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Supermarket Received</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">ส่งเข้าไลน์<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Sent to Line</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">ต้นทางรับงาน<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Origin Received</span></th>
+                                <th class="px-4 py-3 text-center text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">จัดการ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Actions</span></th>
                             </tr>
                         </thead>
                         <tbody id="completedHistoryBody" class="divide-y divide-slate-100 bg-white"></tbody>
@@ -522,27 +539,160 @@
         <div id="section-holidays" class="tab-content hidden space-y-6">
             <div class="border-b pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
                 <div>
-                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">วันหยุดบริษัท</h2>
-                    <p class="text-slate-500 text-xs mt-0.5">รายการวันหยุดประจำปีตามประกาศของบริษัท — ระบบจะไม่นับวันเหล่านี้เป็นเวลาทำงานในการคำนวณ SLA/ระยะเวลาทุกจุด</p>
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">ขั้นตอนการทำงาน และวันหยุดบริษัท<span class="block text-xs font-semibold text-slate-400 normal-case mt-0.5">Workflow & Company Holidays</span></h2>
+                    <p class="text-slate-500 text-xs mt-0.5">ขั้นตอนการซ่อมงาน/ตัดเปลี่ยนในไลน์ผลิต และรายการวันหยุดประจำปีตามประกาศของบริษัท (ระบบจะไม่นับวันหยุดด้านล่างเป็นเวลาทำงานในการคำนวณ SLA/ระยะเวลาทุกจุด)</p>
                 </div>
                 <button onclick="printCurrentPage()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1 no-print" title="พิมพ์หน้านี้">
-                    <span>🖨️ พิมพ์เอกสาร</span>
+                    <span>🖨️ พิมพ์เอกสาร <span class="text-[9px] font-normal opacity-70">(Print)</span></span>
                 </button>
             </div>
 
             <div class="card overflow-hidden">
                 <div class="p-4 border-b bg-slate-50">
-                    <h3 class="text-sm font-black text-slate-800">เรื่อง วันหยุดประจำปี 2569</h3>
-                    <p class="text-[10px] text-slate-400">เวลาทำงานปกติ: จันทร์-เสาร์ 08:00-17:00 น. (ไม่รวมวันอาทิตย์และวันหยุดด้านล่าง)</p>
+                    <h3 class="text-sm font-black text-slate-800">การซ่อมงาน / ตัดเปลี่ยนในไลน์ผลิต<span class="block text-[10px] font-semibold text-slate-400 normal-case mt-0.5">Workflow</span></h3>
+                    <p class="text-[10px] text-slate-400 mt-0.5">แจ้งงาน → ตรวจสอบ (BU) → อนุมัติ (FM) → ตัด → ส่งมอบ → รับงาน</p>
+                </div>
+                <div class="overflow-x-auto p-4">
+                    <div id="workflowDiagram" class="relative" style="width:1200px; height:700px; min-width:1200px;">
+                        <svg viewBox="0 0 1200 700" class="absolute inset-0 w-full h-full" style="pointer-events:none;">
+                            <defs>
+                                <marker id="wfArrowBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3730a3"/></marker>
+                                <marker id="wfArrowGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#047857"/></marker>
+                                <marker id="wfArrowRose" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#be123c"/></marker>
+                                <marker id="wfArrowAmber" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#b45309"/></marker>
+                            </defs>
+                            <!-- 1 -> 2 -->
+                            <path d="M195,120 H225" stroke="#3730a3" stroke-width="2" fill="none" marker-end="url(#wfArrowBlue)"/>
+                            <!-- 2 -> D1 -->
+                            <path d="M405,120 H445" stroke="#3730a3" stroke-width="2" fill="none" marker-end="url(#wfArrowBlue)"/>
+                            <!-- D1 -> 3 (อนุมัติ) -->
+                            <path d="M580,120 H645" stroke="#047857" stroke-width="2" fill="none" marker-end="url(#wfArrowGreen)"/>
+                            <text x="600" y="112" font-size="10" fill="#047857" font-weight="700">อนุมัติ (Approved)</text>
+                            <!-- D1 -> 2.2 (ไม่อนุมัติ) -->
+                            <path d="M510,155 V255 H360" stroke="#be123c" stroke-width="2" fill="none" marker-end="url(#wfArrowRose)"/>
+                            <text x="515" y="200" font-size="10" fill="#be123c" font-weight="700">ไม่อนุมัติ (Rejected)</text>
+                            <!-- 2.2 -> back to 2 -->
+                            <path d="M320,255 V155" stroke="#be123c" stroke-width="2" fill="none" marker-end="url(#wfArrowRose)"/>
+                            <!-- 3 -> D2 -->
+                            <path d="M825,120 H865" stroke="#047857" stroke-width="2" fill="none" marker-end="url(#wfArrowGreen)"/>
+                            <!-- D2 -> 4 (อนุมัติ, long way around) -->
+                            <path d="M1000,85 V45 H140 V395" stroke="#047857" stroke-width="2" fill="none" marker-end="url(#wfArrowGreen)"/>
+                            <text x="900" y="38" font-size="10" fill="#047857" font-weight="700">อนุมัติ (Approved)</text>
+                            <!-- D2 -> 3.2 (ไม่อนุมัติ) -->
+                            <path d="M935,155 V255 H780" stroke="#be123c" stroke-width="2" fill="none" marker-end="url(#wfArrowRose)"/>
+                            <text x="940" y="200" font-size="10" fill="#be123c" font-weight="700">ไม่อนุมัติ (Rejected)</text>
+                            <!-- 3.2 -> back to 3 -->
+                            <path d="M740,255 V155" stroke="#be123c" stroke-width="2" fill="none" marker-end="url(#wfArrowRose)"/>
+                            <!-- 4 -> 5 -->
+                            <path d="M195,430 H225" stroke="#3730a3" stroke-width="2" fill="none" marker-end="url(#wfArrowBlue)"/>
+                            <!-- 5 -> D3 -->
+                            <path d="M405,430 H445" stroke="#3730a3" stroke-width="2" fill="none" marker-end="url(#wfArrowBlue)"/>
+                            <!-- D3 -> 5.1 (มี) -->
+                            <path d="M580,430 H645" stroke="#b45309" stroke-width="2" fill="none" marker-end="url(#wfArrowAmber)"/>
+                            <text x="600" y="422" font-size="10" fill="#b45309" font-weight="700">มี (Yes)</text>
+                            <!-- 5.1 -> 6 -->
+                            <path d="M845,430 H875" stroke="#b45309" stroke-width="2" fill="none" marker-end="url(#wfArrowAmber)"/>
+                            <!-- D3 -> 6 (ไม่มี, bypass 5.1) -->
+                            <path d="M510,465 V510 H955 V465" stroke="#b45309" stroke-width="2" fill="none" marker-end="url(#wfArrowAmber)"/>
+                            <text x="700" y="524" font-size="10" fill="#b45309" font-weight="700">ไม่มี (No)</text>
+                            <!-- 6 -> 7 -->
+                            <path d="M955,465 V570 H545" stroke="#047857" stroke-width="2" fill="none" marker-end="url(#wfArrowGreen)"/>
+                            <!-- 7 -> 8 -->
+                            <path d="M650,605 H685" stroke="#047857" stroke-width="2" fill="none" marker-end="url(#wfArrowGreen)"/>
+                            <!-- 8 -> End -->
+                            <path d="M895,605 H930" stroke="#047857" stroke-width="2" fill="none" marker-end="url(#wfArrowGreen)"/>
+                        </svg>
+
+                        <!-- Node 1 -->
+                        <div class="absolute bg-white border-2 border-slate-300 rounded-xl p-2 flex items-center gap-2" style="left:20px; top:85px; width:175px; height:70px;">
+                            <span class="shrink-0 w-6 h-6 rounded-full bg-slate-500 text-white text-[11px] font-black flex items-center justify-center">1</span>
+                            <div class="text-[11px] leading-tight"><b>หัวหน้าไลน์</b><span class="block text-slate-500 font-normal">แจ้งรายการและรายละเอียดในการซ่อมงาน (Line Leader)</span></div>
+                        </div>
+                        <!-- Node 2 -->
+                        <div class="absolute bg-indigo-50 border-2 border-indigo-300 rounded-xl p-2 flex items-center gap-2" style="left:225px; top:85px; width:180px; height:70px;">
+                            <span class="shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white text-[11px] font-black flex items-center justify-center">2</span>
+                            <div class="text-[11px] leading-tight"><b>BU</b><span class="block text-indigo-700 font-normal">ตรวจสอบข้อมูลรายการสั่งซ่อม (Review request)</span></div>
+                        </div>
+                        <!-- Diamond 1 -->
+                        <div class="absolute flex items-center justify-center bg-amber-50 border-2 border-amber-400 text-[11px] font-bold text-amber-700 text-center" style="left:445px; top:70px; width:135px; height:100px; transform: rotate(45deg); border-radius: 12px;">
+                            <span style="transform: rotate(-45deg);">BU<br>อนุมัติ? (Approved?)</span>
+                        </div>
+                        <!-- Node 3 -->
+                        <div class="absolute bg-emerald-50 border-2 border-emerald-400 rounded-xl p-2 flex items-center gap-2" style="left:645px; top:85px; width:180px; height:70px;">
+                            <span class="shrink-0 w-6 h-6 rounded-full bg-emerald-600 text-white text-[11px] font-black flex items-center justify-center">3</span>
+                            <div class="text-[11px] leading-tight"><b>FM</b><span class="block text-emerald-700 font-normal">ตรวจสอบรายการสั่งซ่อม (Review request)</span></div>
+                        </div>
+                        <!-- Diamond 2 -->
+                        <div class="absolute flex items-center justify-center bg-amber-50 border-2 border-amber-400 text-[11px] font-bold text-amber-700 text-center" style="left:870px; top:70px; width:135px; height:100px; transform: rotate(45deg); border-radius: 12px;">
+                            <span style="transform: rotate(-45deg);">FM<br>อนุมัติ? (Approved?)</span>
+                        </div>
+
+                        <!-- Node 2.2 -->
+                        <div class="absolute bg-rose-50 border-2 border-rose-300 rounded-xl p-2 flex items-center gap-2" style="left:225px; top:220px; width:220px; height:70px;">
+                            <span class="shrink-0 w-6 h-6 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center">2.2</span>
+                            <div class="text-[11px] leading-tight"><b>หัวหน้าไลน์</b><span class="block text-rose-600 font-normal">ตรวจสอบ/แก้ไขรายละเอียดในรายการสั่งซ่อม (Line Leader)</span></div>
+                        </div>
+                        <!-- Node 3.2 -->
+                        <div class="absolute bg-rose-50 border-2 border-rose-300 rounded-xl p-2 flex items-center gap-2" style="left:645px; top:220px; width:220px; height:70px;">
+                            <span class="shrink-0 w-6 h-6 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center">3.2</span>
+                            <div class="text-[11px] leading-tight"><b>BU</b><span class="block text-rose-600 font-normal">ตรวจสอบรายการสั่งซ่อมอีกครั้ง (Review again)</span></div>
+                        </div>
+
+                        <!-- Node 4 -->
+                        <div class="absolute bg-indigo-50 border-2 border-indigo-300 rounded-xl p-2 flex items-center gap-2" style="left:20px; top:395px; width:175px; height:70px;">
+                            <span class="shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white text-[11px] font-black flex items-center justify-center">4</span>
+                            <div class="text-[11px] leading-tight"><b>แผนกตัด</b><span class="block text-indigo-700 font-normal">รับงานสั่งซ่อมจากการอนุมัติของ FM (Cutting Dept)</span></div>
+                        </div>
+                        <!-- Node 5 -->
+                        <div class="absolute bg-indigo-50 border-2 border-indigo-300 rounded-xl p-2 flex items-center gap-2" style="left:225px; top:395px; width:180px; height:70px;">
+                            <span class="shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white text-[11px] font-black flex items-center justify-center">5</span>
+                            <div class="text-[11px] leading-tight"><b>โต๊ะตัด</b><span class="block text-indigo-700 font-normal">ตัดงานเสร็จแล้ว (Cutting Table — done cutting)</span></div>
+                        </div>
+                        <!-- Diamond 3 -->
+                        <div class="absolute flex items-center justify-center bg-amber-50 border-2 border-amber-400 text-[10px] font-bold text-amber-700 text-center" style="left:445px; top:380px; width:135px; height:100px; transform: rotate(45deg); border-radius: 12px;">
+                            <span style="transform: rotate(-45deg);">มีงาน ปัก/พิมพ์/<br>เอ็ม ภายนอก? (Embellishment needed?)</span>
+                        </div>
+                        <!-- Node 5.1 -->
+                        <div class="absolute bg-amber-50 border-2 border-amber-300 rounded-xl p-2 flex items-center gap-2" style="left:645px; top:395px; width:200px; height:70px;">
+                            <span class="shrink-0 w-6 h-6 rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center">5.1</span>
+                            <div class="text-[11px] leading-tight"><b>แผนกที่เกี่ยวข้อง <span class="font-normal opacity-70">(Related Dept)</span></b><span class="block text-amber-700 font-normal">ปัก / พิมพ์ / เอ็ม (Embroidery/Print/Emb, if any)</span></div>
+                        </div>
+                        <!-- Node 6 -->
+                        <div class="absolute bg-emerald-50 border-2 border-emerald-400 rounded-xl p-2 flex items-center gap-2" style="left:875px; top:395px; width:190px; height:70px;">
+                            <span class="shrink-0 w-6 h-6 rounded-full bg-emerald-600 text-white text-[11px] font-black flex items-center justify-center">6</span>
+                            <div class="text-[11px] leading-tight"><b>ซุปเปอร์มาร์เก็ต</b><span class="block text-emerald-700 font-normal">รับงานซ่อม (Supermarket)</span></div>
+                        </div>
+
+                        <!-- Node 7 -->
+                        <div class="absolute bg-emerald-50 border-2 border-emerald-400 rounded-xl p-2 flex items-center gap-2" style="left:335px; top:570px; width:210px; height:70px;">
+                            <span class="shrink-0 w-6 h-6 rounded-full bg-emerald-600 text-white text-[11px] font-black flex items-center justify-center">7</span>
+                            <div class="text-[11px] leading-tight"><b>ซุปเปอร์มาร์เก็ต</b><span class="block text-emerald-700 font-normal">นำส่งงานให้ไลน์ผลิตที่แจ้งซ่อม (Supermarket)</span></div>
+                        </div>
+                        <!-- Node 8 -->
+                        <div class="absolute bg-emerald-50 border-2 border-emerald-400 rounded-xl p-2 flex items-center gap-2" style="left:685px; top:570px; width:210px; height:70px;">
+                            <span class="shrink-0 w-6 h-6 rounded-full bg-emerald-600 text-white text-[11px] font-black flex items-center justify-center">8</span>
+                            <div class="text-[11px] leading-tight"><b>LINE ผลิต <span class="font-normal opacity-70">(Production Line)</span></b><span class="block text-emerald-700 font-normal">อนุมัติรับงานจากซุปเปอร์มาร์เก็ต (Confirm receipt from Supermarket)</span></div>
+                        </div>
+                        <!-- End -->
+                        <div class="absolute bg-slate-800 text-white rounded-full flex flex-col items-center justify-center font-bold text-xs text-center" style="left:930px; top:575px; width:140px; height:60px;">จบงาน<span class="font-normal opacity-70 text-[9px]">(End)</span></div>
+                    </div>
+                    <p class="text-[9px] text-slate-400 px-4 pb-3">หมายเหตุ: งานปัก / พิมพ์ / เอ็ม ให้ส่งต่อผ่านแผนกที่เกี่ยวข้องก่อนส่งเข้าซุปเปอร์มาร์เก็ต (เฉพาะกรณีมีงาน) <span class="opacity-70">(Note: embellishment jobs route through the related dept before reaching Supermarket, only when applicable)</span></p>
+                </div>
+            </div>
+
+            <div class="card overflow-hidden">
+                <div class="p-4 border-b bg-slate-50">
+                    <h3 class="text-sm font-black text-slate-800">เรื่อง วันหยุดประจำปี 2569 <span class="font-normal text-slate-400 text-xs">(Annual Holidays 2026)</span></h3>
+                    <p class="text-[10px] text-slate-400">เวลาทำงานปกติ: จันทร์-เสาร์ 08:00-17:00 น. (ไม่รวมวันอาทิตย์และวันหยุดด้านล่าง) <span class="opacity-70">(Normal working hours: Mon-Sat 08:00-17:00, excluding Sunday and the holidays below)</span></p>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 text-left">
                         <thead class="bg-slate-50">
                             <tr>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ลำดับ</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">วัน</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">วันที่</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">วันสำคัญ</th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">ลำดับ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">No.</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">วัน<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Day</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">วันที่<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Date</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">วันสำคัญ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Holiday</span></th>
                             </tr>
                         </thead>
                         <tbody id="holidaysTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
@@ -559,7 +709,7 @@
                     <p class="text-slate-500 text-xs mt-0.5">จัดการผู้ใช้งานและสิทธิ์การเข้าถึง พร้อมประวัติการทำงานในระบบ (Log History)</p>
                 </div>
                 <button onclick="printCurrentPage()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1 no-print" title="พิมพ์หน้านี้">
-                    <span>🖨️ พิมพ์เอกสาร</span>
+                    <span>🖨️ พิมพ์เอกสาร <span class="text-[9px] font-normal opacity-70">(Print)</span></span>
                 </button>
             </div>
 
@@ -570,17 +720,17 @@
                         <h3 class="text-sm font-black text-slate-800">จัดการผู้ใช้งาน (Users)</h3>
                         <p class="text-[10px] text-slate-400">กำหนดบทบาทและขอบเขตไลน์/แผนกที่รับผิดชอบของผู้ใช้แต่ละคน (ผู้ใช้คนเดียวสามารถมีได้หลายบทบาท เช่น BU ที่ยื่นขอเองและตรวจสอบเองได้)</p>
                     </div>
-                    <button onclick="openUserModal()" class="btn-primary text-xs">+ เพิ่มผู้ใช้</button>
+                    <button onclick="openUserModal()" class="btn-primary text-xs">+ เพิ่มผู้ใช้ <span class="text-[9px] font-normal opacity-70">(Add User)</span></button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 text-left">
                         <thead class="bg-slate-50">
                             <tr>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">Username</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ชื่อ</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">บทบาท (Roles)</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ขอบเขต (Lines/Dept)</th>
-                                <th class="px-4 py-3 text-center text-[10px] font-extrabold text-slate-400 uppercase">จัดการ</th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">Username</th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">ชื่อ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Name</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">บทบาท (Roles)</th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">ขอบเขต (Lines/Dept)</th>
+                                <th class="px-4 py-3 text-center text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">จัดการ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Actions</span></th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
@@ -595,17 +745,18 @@
                         <h3 class="text-sm font-black text-slate-800">ประวัติการทำงานในระบบ (Log History)</h3>
                         <p class="text-[10px] text-slate-400">บันทึกทุกการสร้าง/แก้ไข/อนุมัติ/รับ-ส่งงานในระบบ พร้อม User และเวลาที่ทำรายการ</p>
                     </div>
-                    <input type="text" id="logSearchInput" oninput="renderLogTable()" placeholder="ค้นหา user, action, รหัสรายการ..." class="text-xs bg-white min-w-[220px]">
+                    <input type="text" id="logSearchInput" oninput="renderLogTable()" placeholder="ค้นหา (Search) user, action, รหัสรายการ..." class="text-xs bg-white min-w-[220px]">
                 </div>
                 <div class="overflow-x-auto max-h-[420px]">
                     <table class="min-w-full divide-y divide-slate-200 text-left">
                         <thead class="bg-slate-50 sticky top-0">
                             <tr>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">เวลา</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">ผู้ใช้</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">การทำงาน</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">รหัสรายการ</th>
-                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase">รายละเอียด</th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">เวลา<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Time</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">ผู้ใช้<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">User</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">การทำงาน<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Action</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">รหัสรายการ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Record ID</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">รายละเอียด<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Detail</span></th>
+                                <th class="px-4 py-3 text-center text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">จัดการ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Actions</span></th>
                             </tr>
                         </thead>
                         <tbody id="logTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
@@ -633,19 +784,19 @@
                 <!-- Header Information -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันที่แจ้งซ่อม</label>
+                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันที่แจ้งซ่อม <span class="font-normal normal-case opacity-70">(Date Reported)</span></label>
                         <input type="datetime-local" id="fDate" class="w-full text-xs" required>
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันที่ต้องการของ</label>
+                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันที่ต้องการของ <span class="font-normal normal-case opacity-70">(Need Date)</span></label>
                         <input type="date" id="fNeedDate" class="w-full text-xs">
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันส่งออก</label>
+                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันส่งออก <span class="font-normal normal-case opacity-70">(Ship-Out Date)</span></label>
                         <input type="date" id="fShipOutDate" class="w-full text-xs">
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">แผนกที่แจ้ง *</label>
+                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">แผนกที่แจ้ง <span class="font-normal normal-case opacity-70">(Dept)</span> *</label>
                         <select id="fDept" onchange="onDeptChange()" class="w-full text-xs" required>
                             <option value="Sewing">แผนกเย็บ (Sewing)</option>
                             <option value="QC">แผนก QC/QA</option>
@@ -655,7 +806,7 @@
                         </select>
                     </div>
                     <div id="lineSelectContainer">
-                        <label class="text-[10px] font-black text-indigo-600 uppercase mb-1 block">ไลน์ผลิต (Line)</label>
+                        <label class="text-[10px] font-black text-indigo-600 uppercase mb-1 block">ไลน์ผลิต <span class="font-normal normal-case opacity-70">(Line)</span></label>
                         <select id="fLine" class="w-full text-xs border-indigo-200 bg-indigo-50/30">
                             <!-- Populated dynamically -->
                         </select>
@@ -695,9 +846,9 @@
                 <!-- Dynamic Parts Section -->
                 <div>
                     <div class="flex justify-between items-center border-b pb-2 mb-3">
-                        <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider">รายการชิ้นส่วนที่ต้องตัดซ่อม</h4>
+                        <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider">รายการชิ้นส่วนที่ต้องตัดซ่อม <span class="font-normal normal-case text-slate-400">(Parts to Repair)</span></h4>
                         <button type="button" onclick="addPartRow()" class="text-indigo-600 text-xs font-bold hover:underline flex items-center gap-1">
-                            <span>+ เพิ่มรายการชิ้นส่วน</span>
+                            <span>+ เพิ่มรายการชิ้นส่วน <span class="text-[9px] font-normal opacity-70">(Add Part)</span></span>
                         </button>
                     </div>
                     <div id="partsContainer" class="space-y-3">
@@ -707,7 +858,7 @@
 
                 <!-- Remark -->
                 <div>
-                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">Remark เพิ่มเติม (ถ้ามี)</label>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">Remark เพิ่มเติม <span class="font-normal normal-case opacity-70">(Additional Remark, optional)</span></label>
                     <textarea id="fRemark" rows="2" class="w-full text-xs" placeholder="รายละเอียดเพิ่มเติมเกี่ยวกับปัญหา หรือข้อความถึงผู้ตรวจสอบ/แผนกตัด..."></textarea>
                 </div>
 
@@ -721,8 +872,8 @@
                         ⚡ เติมข้อมูลตัวอย่าง (Demo)
                     </button>
                     <div class="flex space-x-3">
-                        <button type="button" onclick="closeModal('formModal')" class="btn-ghost text-xs">ยกเลิก</button>
-                        <button type="submit" class="btn-primary text-xs">บันทึกข้อมูล</button>
+                        <button type="button" onclick="closeModal('formModal')" class="btn-ghost text-xs">ยกเลิก <span class="text-[9px] font-normal opacity-70">(Cancel)</span></button>
+                        <button type="submit" class="btn-primary text-xs">บันทึกข้อมูล <span class="text-[9px] font-normal opacity-70">(Save)</span></button>
                     </div>
                 </div>
             </form>
@@ -734,8 +885,8 @@
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-amber-500 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
-                    <h3 class="font-bold text-base">BU Review</h3>
-                    <p class="text-[10px] text-amber-100 uppercase font-semibold">ตรวจสอบใบสั่งซ่อม (BU)</p>
+                    <h3 class="font-bold text-base">ตรวจสอบใบสั่งซ่อม (BU)</h3>
+                    <p class="text-[10px] text-amber-100 uppercase font-semibold">BU Review</p>
                 </div>
                 <button onclick="closeModal('approvalModal')" class="text-white hover:text-amber-100 text-lg">✕</button>
             </div>
@@ -759,17 +910,17 @@
                     </div>
                 </div>
                 <div class="bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-900">
-                    ผู้ตรวจสอบ: <b id="approvalName">-</b><br>
+                    ผู้ตรวจสอบ <span class="opacity-70">(Reviewer)</span>: <b id="approvalName">-</b><br>
                     <span class="text-[10px] text-amber-700">ระบบจะบันทึกชื่อผู้ใช้และเวลาปัจจุบันโดยอัตโนมัติเมื่อกดยืนยัน (ไม่ต้องเซ็นชื่อในระบบ)</span>
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">📎 แนบรูป/ไฟล์เอกสารที่ปริ้นเซ็นต์แล้ว (ถ้ามี)</label>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">📎 แนบรูป/ไฟล์เอกสารที่ปริ้นเซ็นต์แล้ว <span class="font-normal normal-case opacity-70">(Attachment, optional)</span></label>
                     <input type="file" id="approvalAttachment" accept="image/*,.pdf" class="w-full text-xs">
                 </div>
                 <div class="pt-2 flex gap-2">
-                    <button type="button" onclick="closeModal('approvalModal')" class="btn-ghost w-1/4 text-xs">ยกเลิก</button>
-                    <button type="button" onclick="submitApproval('Rejected')" class="btn-danger w-1/3 text-xs py-2.5">ไม่ผ่าน</button>
-                    <button type="button" onclick="submitApproval('Approved')" class="btn-primary flex-1 text-xs py-2.5">ผ่านตรวจสอบ</button>
+                    <button type="button" onclick="closeModal('approvalModal')" class="btn-ghost w-1/4 text-xs">ยกเลิก <span class="text-[9px] font-normal opacity-70">(Cancel)</span></button>
+                    <button type="button" onclick="submitApproval('Rejected')" class="btn-danger w-1/3 text-xs py-2.5">ไม่ผ่าน <span class="text-[9px] font-normal opacity-70">(Fail)</span></button>
+                    <button type="button" onclick="submitApproval('Approved')" class="btn-primary flex-1 text-xs py-2.5">ผ่านตรวจสอบ <span class="text-[9px] font-normal opacity-70">(Pass)</span></button>
                 </div>
             </div>
         </div>
@@ -780,15 +931,15 @@
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-orange-500 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
-                    <h3 class="font-bold text-base">Factory Manager Decision</h3>
-                    <p class="text-[10px] text-orange-100 uppercase font-semibold">พิจารณาอนุมัติโดย Factory Manager</p>
+                    <h3 class="font-bold text-base">พิจารณาอนุมัติโดย Factory Manager</h3>
+                    <p class="text-[10px] text-orange-100 uppercase font-semibold">Factory Manager Decision</p>
                 </div>
                 <button onclick="closeModal('fmApprovalModal')" class="text-white hover:text-orange-100 text-lg">✕</button>
             </div>
             <div class="p-6 space-y-4 overflow-y-auto">
                 <div id="fmApprovalItemInfo" class="p-3.5 bg-slate-50 rounded-xl text-xs border border-slate-100 space-y-1"></div>
                 <div class="bg-orange-50 border border-orange-100 rounded-xl p-3 text-xs text-orange-900">
-                    ผู้อนุมัติ: <b id="fmApprovalName">-</b><br>
+                    ผู้อนุมัติ <span class="opacity-70">(Approver)</span>: <b id="fmApprovalName">-</b><br>
                     <span class="text-[10px] text-orange-700">ระบบจะบันทึกชื่อผู้ใช้และเวลาปัจจุบันโดยอัตโนมัติเมื่อกดยืนยัน</span>
                 </div>
                 <div>
@@ -796,13 +947,13 @@
                     <textarea id="fmApprovalRemark" rows="2" class="w-full text-xs" placeholder="เหตุผลกรณีไม่อนุมัติ"></textarea>
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">📎 แนบรูป/ไฟล์เอกสารที่ปริ้นเซ็นต์แล้ว (ถ้ามี)</label>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">📎 แนบรูป/ไฟล์เอกสารที่ปริ้นเซ็นต์แล้ว <span class="font-normal normal-case opacity-70">(Attachment, optional)</span></label>
                     <input type="file" id="fmApprovalAttachment" accept="image/*,.pdf" class="w-full text-xs">
                 </div>
                 <div class="pt-2 flex gap-2">
-                    <button type="button" onclick="closeModal('fmApprovalModal')" class="btn-ghost w-1/4 text-xs">ยกเลิก</button>
-                    <button type="button" onclick="submitFMApproval('FMRejected')" class="btn-danger w-1/3 text-xs py-2.5">ไม่อนุมัติ</button>
-                    <button type="button" onclick="submitFMApproval('Approved')" class="btn-primary flex-1 text-xs py-2.5">อนุมัติ</button>
+                    <button type="button" onclick="closeModal('fmApprovalModal')" class="btn-ghost w-1/4 text-xs">ยกเลิก <span class="text-[9px] font-normal opacity-70">(Cancel)</span></button>
+                    <button type="button" onclick="submitFMApproval('FMRejected')" class="btn-danger w-1/3 text-xs py-2.5">ไม่อนุมัติ <span class="text-[9px] font-normal opacity-70">(Reject)</span></button>
+                    <button type="button" onclick="submitFMApproval('Approved')" class="btn-primary flex-1 text-xs py-2.5">อนุมัติ <span class="text-[9px] font-normal opacity-70">(Approve)</span></button>
                 </div>
             </div>
         </div>
@@ -813,8 +964,8 @@
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-indigo-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
-                    <h3 id="actionModalTitle" class="font-bold text-base">Cutting Department Action</h3>
-                    <p class="text-[10px] text-indigo-200 uppercase font-semibold">จัดการโดยแผนกตัด</p>
+                    <h3 id="actionModalTitle" class="font-bold text-base">จัดการโดยแผนกตัด</h3>
+                    <p class="text-[10px] text-indigo-200 uppercase font-semibold">Cutting Department Action</p>
                 </div>
                 <button onclick="closeModal('actionModal')" class="text-white hover:text-indigo-200 text-lg">✕</button>
             </div>
@@ -822,43 +973,43 @@
                 <div id="actionItemInfo" class="p-3.5 bg-slate-50 rounded-xl text-xs border border-slate-100 space-y-1"></div>
 
                 <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-xs text-indigo-900">
-                    ผู้ดำเนินการ: <b id="mActionName">-</b><br>
+                    ผู้ดำเนินการ <span class="opacity-70">(Handled by)</span>: <b id="mActionName">-</b><br>
                     <span class="text-[10px] text-indigo-700">ระบบจะบันทึกชื่อผู้ใช้และเวลาปัจจุบันโดยอัตโนมัติเมื่อกดยืนยัน</span>
                 </div>
 
                 <div id="mFinishDateField">
-                    <label class="text-[10px] font-black text-indigo-600 uppercase mb-1 block">วันที่ตัดงานเสร็จ *</label>
+                    <label class="text-[10px] font-black text-indigo-600 uppercase mb-1 block">วันที่ตัดงานเสร็จ <span class="font-normal normal-case opacity-70">(Cutting Done Date)</span> *</label>
                     <input type="date" id="mFinishDate" class="w-full text-xs border-indigo-200">
                 </div>
 
                 <div>
-                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">📎 แนบรูป/ไฟล์เอกสารที่ปริ้นเซ็นต์แล้ว (ถ้ามี)</label>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">📎 แนบรูป/ไฟล์เอกสารที่ปริ้นเซ็นต์แล้ว <span class="font-normal normal-case opacity-70">(Attachment, optional)</span></label>
                     <input type="file" id="actionAttachment" accept="image/*,.pdf" class="w-full text-xs">
                 </div>
 
                 <div class="pt-2 flex gap-2">
-                    <button type="button" onclick="closeModal('actionModal')" class="btn-ghost w-1/3 text-xs">ยกเลิก</button>
-                    <button type="button" id="btnActionSave" onclick="saveAction()" class="btn-primary w-2/3 text-xs py-2.5">บันทึกการอัปเดต</button>
+                    <button type="button" onclick="closeModal('actionModal')" class="btn-ghost w-1/3 text-xs">ยกเลิก <span class="text-[9px] font-normal opacity-70">(Cancel)</span></button>
+                    <button type="button" id="btnActionSave" onclick="saveAction()" class="btn-primary w-2/3 text-xs py-2.5">บันทึกการอัปเดต <span class="text-[9px] font-normal opacity-70">(Update)</span></button>
                 </div>
 
                 <div class="border-t pt-3">
                     <button type="button" onclick="toggleCuttingIssuePanel()" class="text-[11px] font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1">
-                        <span>⚠️ Report a cutting issue</span>
-                        <span class="text-slate-400 font-normal normal-case">ไม่สามารถตัดงานได้ / แจ้งปัญหา</span>
+                        <span>⚠️ ไม่สามารถตัดงานได้ / แจ้งปัญหา</span>
+                        <span class="text-slate-400 font-normal normal-case">Report a cutting issue</span>
                     </button>
                     <div id="cuttingIssuePanel" class="hidden mt-3 space-y-2.5 bg-rose-50 border border-rose-100 rounded-xl p-3">
                         <div>
-                            <label class="text-[9px] font-bold text-rose-700 block mb-1">Reason<br><span class="font-normal normal-case text-rose-400">เหตุผลที่ตัดไม่ได้</span></label>
+                            <label class="text-[9px] font-bold text-rose-700 block mb-1">เหตุผลที่ตัดไม่ได้<br><span class="font-normal normal-case text-rose-400">Reason</span></label>
                             <select id="cuttingIssueReason" class="w-full text-xs bg-white">
                                 <option value="">-- เลือกเหตุผล --</option>
                                 ${CUTTING_ISSUE_OPTIONS.map(c => `<option value="${c.value}">${c.label}</option>`).join('')}
                             </select>
                         </div>
                         <div>
-                            <label class="text-[9px] font-bold text-rose-700 block mb-1">Remark</label>
-                            <textarea id="cuttingIssueRemark" rows="2" class="w-full text-xs bg-white" placeholder="รายละเอียดเพิ่มเติม"></textarea>
+                            <label class="text-[9px] font-bold text-rose-700 block mb-1">Remark <span class="font-normal normal-case text-rose-400">(หมายเหตุ)</span></label>
+                            <textarea id="cuttingIssueRemark" rows="2" class="w-full text-xs bg-white" placeholder="รายละเอียดเพิ่มเติม (Additional details)"></textarea>
                         </div>
-                        <button type="button" onclick="saveCuttingIssue()" class="btn-danger w-full text-xs py-2">บันทึกแจ้งปัญหา</button>
+                        <button type="button" onclick="saveCuttingIssue()" class="btn-danger w-full text-xs py-2">บันทึกแจ้งปัญหา <span class="text-[9px] font-normal opacity-70">(Report Issue)</span></button>
                     </div>
                 </div>
             </div>
@@ -870,8 +1021,8 @@
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-teal-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
-                    <h3 id="marketModalTitle" class="font-bold text-base">Supermarket Action</h3>
-                    <p class="text-[10px] text-teal-100 uppercase font-semibold">ซุปเปอร์มาร์เก็ต</p>
+                    <h3 id="marketModalTitle" class="font-bold text-base">ซุปเปอร์มาร์เก็ต</h3>
+                    <p class="text-[10px] text-teal-100 uppercase font-semibold">Supermarket Action</p>
                 </div>
                 <button onclick="closeModal('marketModal')" class="text-white hover:text-teal-100 text-lg">✕</button>
             </div>
@@ -879,18 +1030,18 @@
                 <div id="marketItemInfo" class="p-3.5 bg-slate-50 rounded-xl text-xs border border-slate-100 space-y-1"></div>
 
                 <div class="bg-teal-50 border border-teal-100 rounded-xl p-3 text-xs text-teal-900">
-                    ผู้ดำเนินการ: <b id="marketActionName">-</b><br>
+                    ผู้ดำเนินการ <span class="opacity-70">(Handled by)</span>: <b id="marketActionName">-</b><br>
                     <span class="text-[10px] text-teal-700">ระบบจะบันทึกชื่อผู้ใช้และเวลาปัจจุบันโดยอัตโนมัติเมื่อกดยืนยัน</span>
                 </div>
 
                 <div>
-                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">📎 แนบรูป/ไฟล์เอกสารที่ปริ้นเซ็นต์แล้ว (ถ้ามี)</label>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">📎 แนบรูป/ไฟล์เอกสารที่ปริ้นเซ็นต์แล้ว <span class="font-normal normal-case opacity-70">(Attachment, optional)</span></label>
                     <input type="file" id="marketAttachment" accept="image/*,.pdf" class="w-full text-xs">
                 </div>
 
                 <div class="pt-2 flex gap-2">
-                    <button type="button" onclick="closeModal('marketModal')" class="btn-ghost w-1/3 text-xs">ยกเลิก</button>
-                    <button type="button" id="btnMarketSave" onclick="saveMarketAction()" class="btn-primary w-2/3 text-xs py-2.5">บันทึก</button>
+                    <button type="button" onclick="closeModal('marketModal')" class="btn-ghost w-1/3 text-xs">ยกเลิก <span class="text-[9px] font-normal opacity-70">(Cancel)</span></button>
+                    <button type="button" id="btnMarketSave" onclick="saveMarketAction()" class="btn-primary w-2/3 text-xs py-2.5">บันทึก <span class="text-[9px] font-normal opacity-70">(Save)</span></button>
                 </div>
             </div>
         </div>
@@ -901,24 +1052,24 @@
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-emerald-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
-                    <h3 class="font-bold text-base">Confirm Receipt at Origin</h3>
-                    <p class="text-[10px] text-emerald-100 uppercase font-semibold">ยืนยันการรับงานตัดเปลี่ยน (ต้นทาง)</p>
+                    <h3 class="font-bold text-base">ยืนยันการรับงานตัดเปลี่ยน (ต้นทาง)</h3>
+                    <p class="text-[10px] text-emerald-100 uppercase font-semibold">Confirm Receipt at Origin</p>
                 </div>
                 <button onclick="closeModal('receiveModal')" class="text-white hover:text-emerald-100 text-lg">✕</button>
             </div>
             <div class="p-6 space-y-4 overflow-y-auto">
                 <div id="receiveItemInfo" class="p-3.5 bg-slate-50 rounded-xl text-xs border border-slate-100 space-y-1"></div>
                 <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-xs text-emerald-900">
-                    ผู้รับงาน: <b id="receiveName">-</b><br>
+                    ผู้รับงาน <span class="opacity-70">(Received by)</span>: <b id="receiveName">-</b><br>
                     <span class="text-[10px] text-emerald-700">ระบบจะบันทึกชื่อผู้ใช้และเวลาปัจจุบันโดยอัตโนมัติเมื่อกดยืนยัน</span>
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">📎 แนบรูป/ไฟล์เอกสารที่ปริ้นเซ็นต์แล้ว (ถ้ามี)</label>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">📎 แนบรูป/ไฟล์เอกสารที่ปริ้นเซ็นต์แล้ว <span class="font-normal normal-case opacity-70">(Attachment, optional)</span></label>
                     <input type="file" id="receiveAttachment" accept="image/*,.pdf" class="w-full text-xs">
                 </div>
                 <div class="pt-2 flex gap-2">
-                    <button type="button" onclick="closeModal('receiveModal')" class="btn-ghost w-1/3 text-xs">ยกเลิก</button>
-                    <button type="button" onclick="confirmOriginReceive()" class="btn-primary w-2/3 text-xs py-2.5">ยืนยันรับงาน</button>
+                    <button type="button" onclick="closeModal('receiveModal')" class="btn-ghost w-1/3 text-xs">ยกเลิก <span class="text-[9px] font-normal opacity-70">(Cancel)</span></button>
+                    <button type="button" onclick="confirmOriginReceive()" class="btn-primary w-2/3 text-xs py-2.5">ยืนยันรับงาน <span class="text-[9px] font-normal opacity-70">(Confirm Receipt)</span></button>
                 </div>
             </div>
         </div>
@@ -931,7 +1082,7 @@
                 <h3 class="font-bold text-slate-800 text-sm">ใบแจ้งขอตัดซ่อม (Job Ticket)</h3>
                 <div class="flex gap-2">
                     <button onclick="printTicket()" class="btn-primary text-xs py-1 px-3 flex items-center gap-1">
-                        <span>🖨️ พิมพ์เอกสาร</span>
+                        <span>🖨️ พิมพ์เอกสาร <span class="text-[9px] font-normal opacity-70">(Print)</span></span>
                     </button>
                     <button onclick="closeModal('ticketModal')" class="text-slate-400 hover:text-slate-600 px-2">✕</button>
                 </div>
@@ -954,8 +1105,8 @@
                 <p class="text-xs text-slate-500 mt-1">คุณแน่ใจหรือไม่ว่าต้องการลบรายการสั่งซ่อมนี้ ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้</p>
             </div>
             <div class="flex gap-3 pt-2">
-                <button onclick="closeModal('confirmModal')" class="btn-secondary w-1/2 text-xs">ยกเลิก</button>
-                <button id="btnConfirmDelete" class="btn-danger w-1/2 text-xs py-2">ยืนยันลบข้อมูล</button>
+                <button onclick="closeModal('confirmModal')" class="btn-secondary w-1/2 text-xs">ยกเลิก <span class="text-[9px] font-normal opacity-70">(Cancel)</span></button>
+                <button id="btnConfirmDelete" class="btn-danger w-1/2 text-xs py-2">ยืนยันลบข้อมูล <span class="text-[9px] font-normal opacity-70">(Confirm Delete)</span></button>
             </div>
         </div>
     </div>
@@ -978,22 +1129,22 @@
                     <input type="text" id="uPassword" class="w-full text-xs" required>
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ชื่อ-นามสกุล *</label>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ชื่อ-นามสกุล <span class="font-normal normal-case opacity-70">(Full Name)</span> *</label>
                     <input type="text" id="uName" class="w-full text-xs" required>
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">บทบาท (เลือกได้หลายอย่าง — เช่น BU ที่ยื่นขอเองและตรวจสอบเอง ให้ติ๊กทั้งผู้ขอและผู้ตรวจสอบ) *</label>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">บทบาท <span class="font-normal normal-case opacity-70">(Roles — เลือกได้หลายอย่าง เช่น BU ที่ยื่นขอเองและตรวจสอบเอง ให้ติ๊กทั้งผู้ขอและผู้ตรวจสอบ)</span> *</label>
                     <div class="flex flex-wrap gap-3 text-xs bg-slate-50 p-2.5 rounded-lg border">
-                        <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Requester"> ผู้ขออนุมัติตัด</label>
+                        <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Requester"> ผู้ขออนุมัติตัด (Requester)</label>
                         <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Approver"> ผู้ตรวจสอบ (BU)</label>
                         <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="FactoryManager"> Factory Manager</label>
-                        <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Cutting"> แผนกตัด</label>
-                        <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Supermarket"> ซุปเปอร์มาร์เก็ต</label>
-                        <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Admin"> ผู้ดูแลระบบ</label>
+                        <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Cutting"> แผนกตัด (Cutting)</label>
+                        <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Supermarket"> ซุปเปอร์มาร์เก็ต (Supermarket)</label>
+                        <label class="flex items-center gap-1"><input type="checkbox" class="uRole" value="Admin"> ผู้ดูแลระบบ (Admin)</label>
                     </div>
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">แผนกผู้แจ้ง (ตำแหน่ง)</label>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">แผนกผู้แจ้ง <span class="font-normal normal-case opacity-70">(Position)</span></label>
                     <select id="uPosition" class="w-full text-xs">
                         <option value="">— ไม่ระบุ —</option>
                         <option value="BU">BU</option>
@@ -1004,13 +1155,46 @@
                     </select>
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ขอบเขต Line/แผนก (คั่นด้วยจุลภาค)</label>
-                    <input type="text" id="uLines" placeholder="เช่น Line 05, Line 06 หรือ QC" class="w-full text-xs">
-                    <p class="text-[9px] text-slate-400 mt-1">ใช้สำหรับผู้ขออนุมัติตัด/ผู้ตรวจสอบ (BU) ไม่จำเป็นสำหรับแผนกตัด/ซุปเปอร์มาร์เก็ต/ผู้ดูแลระบบ</p>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ขอบเขต Line/แผนก <span class="font-normal normal-case opacity-70">(Scope — เลือกได้หลายรายการ)</span></label>
+                    <div id="uLinesCheckboxes" class="grid grid-cols-4 sm:grid-cols-6 gap-1 max-h-40 overflow-y-auto border rounded-lg p-2 bg-slate-50"></div>
+                    <p class="text-[9px] text-slate-400 mt-1">ใช้สำหรับผู้ขออนุมัติตัด (Line Leader) / ผู้ตรวจสอบ (BU) ไม่จำเป็นสำหรับแผนกตัด/ซุปเปอร์มาร์เก็ต/ผู้ดูแลระบบ</p>
                 </div>
                 <div class="flex justify-end gap-2 pt-2 border-t">
-                    <button type="button" onclick="closeModal('userModal')" class="btn-ghost text-xs">ยกเลิก</button>
-                    <button type="submit" class="btn-primary text-xs">บันทึก</button>
+                    <button type="button" onclick="closeModal('userModal')" class="btn-ghost text-xs">ยกเลิก <span class="text-[9px] font-normal opacity-70">(Cancel)</span></button>
+                    <button type="submit" class="btn-primary text-xs">บันทึก <span class="text-[9px] font-normal opacity-70">(Save)</span></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: LOG HISTORY EDIT (Admin-only, for correcting/restoring log entries) -->
+    <div id="logEditModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div class="bg-slate-700 px-6 py-4 text-white flex justify-between items-center">
+                <h3 class="font-bold text-base">แก้ไขรายการประวัติการทำงาน<span class="block text-[10px] text-slate-300 normal-case font-semibold mt-0.5">Edit Log Entry</span></h3>
+                <button onclick="closeModal('logEditModal')" class="text-white hover:text-slate-200 text-lg">✕</button>
+            </div>
+            <form id="logEditForm" onsubmit="saveLogEntryEdits(event)" class="p-6 space-y-3">
+                <input type="hidden" id="logEditIndex">
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ผู้ใช้ <span class="font-normal normal-case opacity-70">(User)</span></label>
+                    <input type="text" id="logEditUserName" class="w-full text-xs" required>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">การทำงาน (Action)</label>
+                    <input type="text" id="logEditAction" class="w-full text-xs" required>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">รหัสรายการ <span class="font-normal normal-case opacity-70">(Record ID)</span></label>
+                    <input type="text" id="logEditRecordId" class="w-full text-xs">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">รายละเอียด <span class="font-normal normal-case opacity-70">(Detail)</span></label>
+                    <textarea id="logEditDetail" rows="3" class="w-full text-xs"></textarea>
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t">
+                    <button type="button" onclick="closeModal('logEditModal')" class="btn-ghost text-xs">ยกเลิก <span class="text-[9px] font-normal opacity-70">(Cancel)</span></button>
+                    <button type="submit" class="btn-primary text-xs">บันทึก <span class="text-[9px] font-normal opacity-70">(Save)</span></button>
                 </div>
             </form>
         </div>
@@ -1101,10 +1285,17 @@
             return d ? d.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }) : '';
         }
 
-        // Parses a date-only "YYYY-MM-DD" (needDate/shipOutDate — no time component) as the
-        // END of that day in Bangkok, for SLA/overdue comparisons against a full timestamp.
+        // needDate/shipOutDate are stored as "YYYY-MM-DD" (legacy records) or
+        // "YYYY-MM-DDTHH:mm" (time part matches the request's own time) — this strips
+        // either down to just the date for display or date-only comparisons.
+        function dateOnlyPart(str) {
+            return str ? str.slice(0, 10) : str;
+        }
+
+        // Treats needDate/shipOutDate as due by the END of that day in Bangkok (regardless
+        // of any embedded time-of-day), for SLA/overdue comparisons against a full timestamp.
         function parseLocalDateEndOfDay(str) {
-            return str ? new Date(str + 'T23:59:59+07:00') : null;
+            return str ? new Date(dateOnlyPart(str) + 'T23:59:59+07:00') : null;
         }
 
         // --- BUSINESS-HOURS DURATION (Mon-Sat 08:00-17:00 Bangkok, Sunday excluded) ---
@@ -1243,7 +1434,7 @@
                 const file = inputEl && inputEl.files && inputEl.files[0];
                 if (!file) { resolve(null); return; }
                 if (file.size > MAX_ATTACHMENT_BYTES) {
-                    showToast('ไฟล์แนบมีขนาดใหญ่เกิน 3MB ระบบข้ามการแนบไฟล์นี้', 'warning');
+                    showToast('ไฟล์แนบมีขนาดใหญ่เกิน 3MB ระบบข้ามการแนบไฟล์นี้ (Attachment exceeds 3MB, skipped)', 'warning');
                     resolve(null);
                     return;
                 }
@@ -1375,6 +1566,11 @@
         let auditLog = [];
         let currentUser = null;
 
+        function userDisplayName(username) {
+            const u = users.find(x => x.username === username);
+            return u ? u.name : '';
+        }
+
         // --- STORAGE (Google Sheets backend) ---
         async function loadFromStorage() {
             try {
@@ -1388,7 +1584,7 @@
             } catch (e) {
                 console.error("Failed to load repairs from Google Sheet", e);
                 repairs = JSON.parse(JSON.stringify(defaultRepairs));
-                showToast('ไม่สามารถเชื่อมต่อ Google Sheet ได้ กำลังใช้ข้อมูลตัวอย่าง (โหมดออฟไลน์)', 'warning');
+                showToast('ไม่สามารถเชื่อมต่อ Google Sheet ได้ กำลังใช้ข้อมูลตัวอย่าง (Cannot connect - using sample data, offline mode)', 'warning');
             }
         }
 
@@ -1409,7 +1605,7 @@
         function saveUsers() {
             return apiReplaceAll('Users', users).catch(e => {
                 console.error("saveUsers failed", e);
-                showToast('บันทึกข้อมูลผู้ใช้งานไปยัง Google Sheet ล้มเหลว', 'warning');
+                showToast('บันทึกข้อมูลผู้ใช้งานไปยัง Google Sheet ล้มเหลว (Failed to save user data)', 'warning');
             });
         }
 
@@ -1433,7 +1629,7 @@
             auditLog.unshift(entry);
             apiAppend('Log', entry).catch(e => {
                 console.error("Log append failed", e);
-                showToast('บันทึก Log ไปยัง Google Sheet ล้มเหลว', 'warning');
+                showToast('บันทึก Log ไปยัง Google Sheet ล้มเหลว (Failed to save log)', 'warning');
             });
             const adminSection = document.getElementById('section-admin');
             if (adminSection && !adminSection.classList.contains('hidden')) renderLogTable();
@@ -1478,14 +1674,14 @@
         }
 
         function resetToDefaultData() {
-            if (!isPrimaryAdmin(currentUser)) { showToast('เฉพาะบัญชี admin เท่านั้นที่รีเซ็ตข้อมูลได้', 'warning'); return; }
+            if (!isPrimaryAdmin(currentUser)) { showToast('เฉพาะบัญชี admin เท่านั้นที่รีเซ็ตข้อมูลได้ (Admin account only)', 'warning'); return; }
             if (confirm("ต้องการรีเซ็ตกลับเป็นข้อมูลตัวอย่างเริ่มต้นใช่หรือไม่?")) {
                 repairs = JSON.parse(JSON.stringify(defaultRepairs));
                 autoSave(true);
                 renderTable();
                 logAction('ResetData', '-', 'รีเซ็ตข้อมูลตัวอย่างเริ่มต้น');
                 if (!document.getElementById('section-analytics').classList.contains('hidden')) renderCharts();
-                showToast('รีเซ็ตข้อมูลเรียบร้อยแล้ว', 'info');
+                showToast('รีเซ็ตข้อมูลเรียบร้อยแล้ว (Data reset complete)', 'info');
             }
         }
 
@@ -1603,6 +1799,7 @@
         function logout() {
             if (currentUser) logAction('Logout', '-', `${currentUser.name} ออกจากระบบ`);
             currentUser = null;
+            notifications = [];
             clearSession();
             stopAutoRefresh();
             document.getElementById('appRoot').classList.add('hidden');
@@ -1611,9 +1808,120 @@
             document.getElementById('loginError').classList.add('hidden');
         }
 
-        // --- AUTO-REFRESH (pull latest data from Google Sheet every 25s so other
-        // logged-in devices' changes show up without a manual reload) ---
-        const AUTO_REFRESH_MS = 25000;
+        // --- NOTIFICATIONS (in-app bell) ---
+        // Tracks each record's last-seen status (+ cutting-issue presence) so autoRefreshTick
+        // can detect changes and notify only the users to whom that change is relevant,
+        // instead of re-notifying about state that was already there before this session.
+        let notifications = [];
+        let lastKnownStatus = {};
+
+        function notifStateKey(item) {
+            return item.status + (item.cuttingIssue ? ':issue:' + (item.cuttingIssue.ts || '') : '');
+        }
+
+        function seedNotificationBaseline() {
+            lastKnownStatus = {};
+            repairs.forEach(item => { lastKnownStatus[item.id] = notifStateKey(item); });
+        }
+
+        // Returns a Thai message if `item`'s current state is relevant to currentUser, else null.
+        function relevantNotifMessage(item) {
+            if (!currentUser) return null;
+            const scopeKey = scopeKeyOf(item);
+            const inScope = scopesOf(currentUser).includes(scopeKey);
+            if (item.status === 'PendingApproval' && hasRole(currentUser, 'Approver') && inScope) {
+                return `รอ BU ตรวจสอบ (Pending BU review): ${item.id} (${item.style}/${item.job})`;
+            }
+            if (item.status === 'PendingFMApproval' && hasRole(currentUser, 'FactoryManager')) {
+                return `รอ Factory Manager อนุมัติ (Pending FM approval): ${item.id} (${item.style}/${item.job})`;
+            }
+            if (item.status === 'Approved' && hasRole(currentUser, 'Cutting')) {
+                return `งานพร้อมตัด (Ready for cutting): ${item.id} (${item.style}/${item.job})`;
+            }
+            if (item.status === 'CuttingSent' && hasRole(currentUser, 'Supermarket')) {
+                return `ตัดเสร็จแล้ว รอซุปเปอร์มาร์เก็ตรับ (Cutting done, awaiting Supermarket): ${item.id}`;
+            }
+            if (item.status === 'SupermarketSent' && hasRole(currentUser, 'Requester') && inScope) {
+                return `ส่งเข้าไลน์แล้ว รอต้นทางรับ (Sent to line, awaiting receipt): ${item.id}`;
+            }
+            if (item.requesterUser === currentUser.username) {
+                if (item.status === 'Rejected') return `ใบสั่งซ่อม ${item.id} ถูก BU ตีกลับ — กรุณาแก้ไข (Rejected by BU — please revise)`;
+                if (item.status === 'FMRejected') return `ใบสั่งซ่อม ${item.id} ไม่ได้รับอนุมัติจาก Factory Manager — กรุณาแก้ไข (Rejected by FM — please revise)`;
+            }
+            if (item.cuttingIssue && (item.requesterUser === currentUser.username || hasRole(currentUser, 'Approver') || hasRole(currentUser, 'FactoryManager') || hasRole(currentUser, 'Admin')) && inScope) {
+                return `แผนกตัดแจ้งปัญหาในใบสั่งซ่อม (Cutting issue reported) ${item.id}`;
+            }
+            return null;
+        }
+
+        function pushNotification(message, recordId) {
+            notifications.unshift({ ts: new Date().toISOString(), message, recordId, read: false });
+            if (notifications.length > 50) notifications.length = 50;
+            renderNotifPanel();
+            showToast(message, 'info');
+        }
+
+        // Compares the freshly-fetched `newRepairs` against lastKnownStatus and notifies
+        // currentUser about any record whose state changed into something relevant to them.
+        function detectAndNotify(newRepairs) {
+            if (!currentUser) { lastKnownStatus = {}; newRepairs.forEach(item => { lastKnownStatus[item.id] = notifStateKey(item); }); return; }
+            newRepairs.forEach(item => {
+                const key = notifStateKey(item);
+                if (lastKnownStatus[item.id] !== key) {
+                    const msg = relevantNotifMessage(item);
+                    if (msg) pushNotification(msg, item.id);
+                    lastKnownStatus[item.id] = key;
+                }
+            });
+        }
+
+        function renderNotifPanel() {
+            const list = document.getElementById('notifList');
+            const badge = document.getElementById('notifBadge');
+            if (!list || !badge) return;
+            const unread = notifications.filter(n => !n.read).length;
+            badge.classList.toggle('hidden', unread === 0);
+            badge.innerText = unread > 99 ? '99+' : String(unread);
+            list.innerHTML = notifications.length
+                ? notifications.map((n, i) => `
+                    <div onclick="openNotif(${i})" class="p-2.5 text-xs cursor-pointer hover:bg-slate-50 ${n.read ? '' : 'bg-indigo-50/60'}">
+                        <div class="font-bold text-slate-700">${escapeHtml(n.message)}</div>
+                        <div class="text-[9px] text-slate-400 mt-0.5">${fmtDT(n.ts.slice(0, 16))}</div>
+                    </div>`).join('')
+                : `<div class="p-4 text-center text-[11px] text-slate-400">ยังไม่มีการแจ้งเตือน</div>`;
+        }
+
+        function toggleNotifPanel() {
+            document.getElementById('notifPanel').classList.toggle('hidden');
+        }
+
+        function markAllNotifsRead() {
+            notifications.forEach(n => n.read = true);
+            renderNotifPanel();
+        }
+
+        function openNotif(i) {
+            const n = notifications[i];
+            if (!n) return;
+            n.read = true;
+            renderNotifPanel();
+            document.getElementById('notifPanel').classList.add('hidden');
+            if (n.recordId) openDetailModal(n.recordId);
+        }
+
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('notifPanel');
+            const wrapper = panel ? panel.closest('.relative') : null;
+            if (panel && !panel.classList.contains('hidden') && wrapper && !wrapper.contains(e.target)) {
+                panel.classList.add('hidden');
+            }
+        });
+
+        // --- AUTO-REFRESH (pull latest data from Google Sheet every 5s so other
+        // logged-in devices' changes show up without a manual reload, and to
+        // reduce the window where two people editing the same record overwrite
+        // each other's work) ---
+        const AUTO_REFRESH_MS = 5000;
         let autoRefreshTimer = null;
 
         function startAutoRefresh() {
@@ -1635,6 +1943,7 @@
                 const [newRepairs, newUsers, newLog] = await Promise.all([
                     apiGetAll('Repairs'), apiGetAll('Users'), apiGetAll('Log')
                 ]);
+                detectAndNotify(newRepairs || []);
                 repairs = newRepairs || [];
                 users = newUsers || [];
                 auditLog = (newLog || []).slice().reverse();
@@ -1653,6 +1962,14 @@
             }
         }
 
+        async function manualRefresh() {
+            const btn = document.getElementById('btnManualRefresh');
+            if (btn) btn.disabled = true;
+            await autoRefreshTick();
+            showToast('รีเฟรชข้อมูลล่าสุดเรียบร้อยแล้ว (Refreshed)', 'success');
+            if (btn) btn.disabled = false;
+        }
+
         function showApp() {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('appRoot').classList.remove('hidden');
@@ -1660,6 +1977,7 @@
             document.getElementById('currentUserRole').innerText = currentUser.roles.join(' / ');
             document.getElementById('tab-admin').classList.toggle('hidden', !hasRole(currentUser, 'Admin'));
             document.getElementById('btnResetData').classList.toggle('hidden', !isPrimaryAdmin(currentUser));
+            renderNotifPanel();
             populateLines();
             renderTable();
             switchTab('records');
@@ -1695,7 +2013,7 @@
                 document.getElementById('tab-holidays').classList.remove('text-slate-400');
                 renderHolidaysTable();
             } else if (tab === 'admin') {
-                if (!hasRole(currentUser, 'Admin')) { showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'warning'); return; }
+                if (!hasRole(currentUser, 'Admin')) { showToast('เฉพาะผู้ดูแลระบบเท่านั้น (Admin only)', 'warning'); return; }
                 document.getElementById('section-admin').classList.remove('hidden');
                 document.getElementById('tab-admin').classList.add('nav-active');
                 document.getElementById('tab-admin').classList.remove('text-slate-400');
@@ -1705,15 +2023,28 @@
         }
 
         // --- LINE POPULATION & UI CONTROLS ---
+        // All Sewing line codes (Line 01-24, SML01, SML02) — the canonical set used both for
+        // the fLine dropdown and for the user-scope checkbox grid.
+        const ALL_SEWING_LINES = Array.from({ length: 24 }, (_, i) => `Line ${String(i + 1).padStart(2, '0')}`).concat(['SML01', 'SML02']);
+        // Non-Sewing departments that can also be assigned as a user's scope (scopeKeyOf()
+        // returns the dept name itself for these, instead of a line code).
+        const NON_SEWING_SCOPE_DEPTS = ['QC', 'Finishing', 'BU', 'Embellishment'];
+        const ALL_SCOPE_VALUES = ALL_SEWING_LINES.concat(NON_SEWING_SCOPE_DEPTS);
+
         function populateLines() {
             const select = document.getElementById('fLine');
-            select.innerHTML = '<option value="-">N/A (ไม่ระบุ)</option>';
-            for (let i = 1; i <= 24; i++) {
-                let val = `Line ${String(i).padStart(2, '0')}`;
-                select.innerHTML += `<option value="${val}">${val}</option>`;
-            }
-            select.innerHTML += '<option value="SML01">SML01</option>';
-            select.innerHTML += '<option value="SML02">SML02</option>';
+            select.innerHTML = '<option value="-">N/A (ไม่ระบุ)</option>' +
+                ALL_SEWING_LINES.map(val => `<option value="${val}">${val}</option>`).join('');
+        }
+
+        function renderScopeCheckboxes(selectedLines) {
+            const container = document.getElementById('uLinesCheckboxes');
+            const selected = new Set(selectedLines || []);
+            container.innerHTML = ALL_SCOPE_VALUES.map(val => `
+                <label class="flex items-center gap-1 text-[10px] text-slate-600">
+                    <input type="checkbox" class="uLineScope" value="${val}" ${selected.has(val) ? 'checked' : ''}>
+                    ${val}
+                </label>`).join('');
         }
 
         function toggleLineSelect() {
@@ -1819,7 +2150,7 @@
             if (rows.length > 1) {
                 document.getElementById(id).remove();
             } else {
-                showToast('ต้องมีรายการชิ้นส่วนอย่างน้อย 1 รายการ', 'warning');
+                showToast('ต้องมีรายการชิ้นส่วนอย่างน้อย 1 รายการ (At least 1 part required)', 'warning');
             }
         }
 
@@ -1861,7 +2192,7 @@
             if (lt && lt.overdue) reasons.push(`เกิน Leadtime (${lt.days.toFixed(1)}/${LEADTIME_DAYS} วันทำการ)`);
             if (item.needDate) {
                 const need = parseLocalDateEndOfDay(item.needDate);
-                if (new Date() > need) reasons.push(`เกินกำหนดวันที่ต้องการของ (${escapeHtml(item.needDate)})`);
+                if (new Date() > need) reasons.push(`เกินกำหนดวันที่ต้องการของ (${escapeHtml(dateOnlyPart(item.needDate))})`);
             }
             return reasons.length ? reasons : null;
         }
@@ -1962,7 +2293,7 @@
                     <tr class="hover:bg-slate-50/80 transition-colors">
                         <td class="px-5 py-4">
                             <div class="text-xs font-black text-slate-800">${escapeHtml(item.id)}</div>
-                            <div class="text-[11px] font-bold text-rose-600 mt-0.5">${item.needDate ? 'รับ: ' + escapeHtml(item.needDate) : 'ไม่ระบุวันที่ต้องการของ'}</div>
+                            <div class="text-[11px] font-bold text-rose-600 mt-0.5">${item.needDate ? 'รับ: ' + escapeHtml(dateOnlyPart(item.needDate)) : 'ไม่ระบุวันที่ต้องการของ'}</div>
                             <div class="text-[9px] text-slate-400">แจ้ง: ${fmtDT(item.date)}</div>
                         </td>
                         <td class="px-5 py-4">
@@ -1975,7 +2306,7 @@
                             <div class="text-xs font-bold text-slate-700">${escapeHtml(item.dept)}</div>
                             <div class="text-[10px] text-slate-500 font-medium">${item.line !== '-' ? escapeHtml(item.line) : 'N/A'}</div>
                             <div class="text-[9px] text-indigo-700 font-extrabold mt-1 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 inline-flex items-center gap-1">
-                                👤 <span>${escapeHtml(item.requesterUser || '-')}</span>
+                                👤 <span>${escapeHtml(item.requesterUser || '-')}${userDisplayName(item.requesterUser) ? ' - ' + escapeHtml(userDisplayName(item.requesterUser)) : ''}</span>
                             </div>
                         </td>
                         <td class="px-5 py-4">
@@ -1992,7 +2323,7 @@
                         </td>
                         <td class="px-5 py-4">
                             <span class="status-pill ${STATUS_STYLES[item.status]}">${STATUS_LABELS[item.status]}</span>
-                            ${item.cuttingIssue ? `<div class="text-[9px] font-bold text-rose-600 mt-1 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5 inline-block">⚠️ Cutting issue<span class="block font-normal normal-case">แผนกตัดแจ้งปัญหา</span></div>` : ''}
+                            ${item.cuttingIssue ? `<div class="text-[9px] font-bold text-rose-600 mt-1 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5 inline-block">⚠️ แผนกตัดแจ้งปัญหา<span class="block font-normal normal-case">Cutting issue</span></div>` : ''}
                             ${item.approval && item.approval.name ? `<div class="text-[9px] mt-1 font-bold text-slate-500">อนุมัติโดย: ${escapeHtml(item.approval.name)}</div>` : ''}
                             ${item.cuttingReceive && item.cuttingReceive.name ? `<div class="text-[9px] text-slate-500">รับงาน: ${escapeHtml(item.cuttingReceive.name)}</div>` : ''}
                         </td>
@@ -2109,7 +2440,7 @@
 
         function openFormModal() {
             if (!hasRole(currentUser, 'Requester') && !hasRole(currentUser, 'Admin')) {
-                showToast('เฉพาะผู้ขออนุมัติตัดเท่านั้นที่สร้างใบสั่งซ่อมได้', 'warning');
+                showToast('เฉพาะผู้ขออนุมัติตัดเท่านั้นที่สร้างใบสั่งซ่อมได้ (Requester role only)', 'warning');
                 return;
             }
             document.getElementById('editItemIndex').value = "-1";
@@ -2128,15 +2459,15 @@
             if (idx === -1) return;
             const item = repairs[idx];
             if (!canEditRecord(currentUser, item)) {
-                showToast('คุณไม่มีสิทธิ์แก้ไขรายการนี้', 'warning');
+                showToast('คุณไม่มีสิทธิ์แก้ไขรายการนี้ (No permission to edit)', 'warning');
                 return;
             }
 
             document.getElementById('editItemIndex').value = idx;
             document.getElementById('formModalTitle').innerText = `แก้ไขรายการสั่งซ่อม (${item.id})`;
             document.getElementById('fDate').value = item.date;
-            document.getElementById('fNeedDate').value = item.needDate || '';
-            document.getElementById('fShipOutDate').value = item.shipOutDate || '';
+            document.getElementById('fNeedDate').value = dateOnlyPart(item.needDate) || '';
+            document.getElementById('fShipOutDate').value = dateOnlyPart(item.shipOutDate) || '';
             document.getElementById('fDept').value = item.dept;
             toggleLineSelect();
             document.getElementById('fLine').value = item.line;
@@ -2164,7 +2495,7 @@
             const editIndex = parseInt(document.getElementById('editItemIndex').value);
 
             if (editIndex < 0 && !canCreateFor(currentUser, scopeKey)) {
-                showToast('คุณไม่มีสิทธิ์สร้างใบสั่งซ่อมสำหรับไลน์/แผนกนี้', 'warning');
+                showToast('คุณไม่มีสิทธิ์สร้างใบสั่งซ่อมสำหรับไลน์/แผนกนี้ (No permission for this line/dept)', 'warning');
                 return;
             }
 
@@ -2179,19 +2510,26 @@
 
             const remark = document.getElementById('fRemark').value;
             const po = document.getElementById('fPO').value;
-            const shipOutDate = document.getElementById('fShipOutDate').value;
+            const dateVal = document.getElementById('fDate').value;
+            // needDate/shipOutDate are picked as date-only in the UI, but stored with a time
+            // component matching the request's own time (dateVal), instead of an implied
+            // midnight, so the Google Sheet doesn't show a misleading "0:00" next to them.
+            const requestTimePart = (dateVal.split('T')[1] || '00:00');
+            const needDateOnly = document.getElementById('fNeedDate').value;
+            const shipOutDateOnly = document.getElementById('fShipOutDate').value;
+            const needDate = needDateOnly ? `${needDateOnly}T${requestTimePart}` : '';
+            const shipOutDate = shipOutDateOnly ? `${shipOutDateOnly}T${requestTimePart}` : '';
 
             if (editIndex >= 0) {
                 const existing = repairs[editIndex];
                 if (!canEditRecord(currentUser, existing)) {
-                    showToast('คุณไม่มีสิทธิ์แก้ไขรายการนี้', 'warning');
+                    showToast('คุณไม่มีสิทธิ์แก้ไขรายการนี้ (No permission to edit)', 'warning');
                     return;
                 }
                 const wasRejected = existing.status === 'Rejected' || existing.status === 'FMRejected';
                 const newFields = {
-                    date: document.getElementById('fDate').value,
-                    needDate: document.getElementById('fNeedDate').value,
-                    shipOutDate,
+                    date: dateVal,
+                    needDate,
                     dept, line,
                     style: document.getElementById('fStyle').value,
                     job: document.getElementById('fJob').value,
@@ -2211,12 +2549,12 @@
                     fmApproval: wasRejected ? null : existing.fmApproval
                 };
                 logAction(wasRejected ? 'Resubmit' : 'Edit', existing.id, `${wasRejected ? 'แก้ไขและส่งขออนุมัติใหม่' : 'แก้ไขข้อมูล'}${diffText ? ' — ' + diffText : ' (ไม่มีการเปลี่ยนแปลงฟิลด์หลัก)'}`);
-                showToast(wasRejected ? 'แก้ไขและส่งขออนุมัติใหม่เรียบร้อยแล้ว' : 'อัปเดตข้อมูลใบสั่งซ่อมเรียบร้อยแล้ว', 'success');
+                showToast(wasRejected ? 'แก้ไขและส่งขออนุมัติใหม่เรียบร้อยแล้ว (Resubmitted)' : 'อัปเดตข้อมูลใบสั่งซ่อมเรียบร้อยแล้ว (Updated)', 'success');
             } else {
                 const newItem = {
                     id: "R-" + Math.floor(1000 + Math.random() * 9000),
-                    date: document.getElementById('fDate').value,
-                    needDate: document.getElementById('fNeedDate').value,
+                    date: dateVal,
+                    needDate,
                     shipOutDate,
                     dept, line,
                     style: document.getElementById('fStyle').value,
@@ -2239,7 +2577,7 @@
                 };
                 repairs.unshift(newItem);
                 logAction('Create', newItem.id, `สร้างใบสั่งซ่อมใหม่ (${newItem.style}/${newItem.job})`);
-                showToast(`สร้างใบสั่งซ่อม ${newItem.id} เรียบร้อยแล้ว รอ BU ตรวจสอบ`, 'success');
+                showToast(`สร้างใบสั่งซ่อม ${newItem.id} เรียบร้อยแล้ว รอ BU ตรวจสอบ (Created, pending BU review)`, 'success');
             }
 
             autoSave();
@@ -2256,29 +2594,43 @@
             if (!item.cuttingIssue) return '';
             const ci = item.cuttingIssue;
             return `<div class="bg-rose-50 border border-rose-200 rounded-lg p-2 text-rose-800 text-[11px] font-bold mb-1">
-                ⚠️ Cutting issue: ${escapeHtml(CUTTING_ISSUE_LABELS[ci.reason] || ci.reason || '-')}
-                <span class="block font-normal normal-case text-rose-500">แผนกตัดแจ้งปัญหา${ci.name ? ' โดย ' + escapeHtml(ci.name) : ''}</span>
+                ⚠️ แผนกตัดแจ้งปัญหา: ${escapeHtml(CUTTING_ISSUE_LABELS[ci.reason] || ci.reason || '-')}
+                <span class="block font-normal normal-case text-rose-500">Cutting issue reported${ci.name ? ' by ' + escapeHtml(ci.name) : ''}</span>
                 ${ci.remark ? `<span class="block font-normal mt-0.5">${escapeHtml(ci.remark)}</span>` : ''}
             </div>`;
         }
 
+        // One label/value row of the review table built by buildInfoBlock().
+        function infoRow(label, valueHtml, valueClass) {
+            return `<tr class="border-b border-slate-100 last:border-b-0">
+                <td class="py-1 pr-2 font-bold text-slate-500 align-top whitespace-nowrap w-[38%]">${label}</td>
+                <td class="py-1 align-top ${valueClass || ''}">${valueHtml}</td>
+            </tr>`;
+        }
+
         function buildInfoBlock(item) {
             const totalQty = item.parts.reduce((sum, p) => sum + parseInt(p.qty || 0), 0);
+            const reasons = escapeHtml([...new Set(item.parts.map(p => REASON_LABELS[p.reason] || p.reason).filter(Boolean))].join(', '));
+            const requester = escapeHtml(item.requesterUser) + (userDisplayName(item.requesterUser) ? ' - ' + escapeHtml(userDisplayName(item.requesterUser)) : '');
             return `
                 ${cuttingIssueBadge(item)}
-                <div class="font-bold text-slate-800 mb-1">รหัสใบสั่งซ่อม: ${escapeHtml(item.id)}</div>
-                <div><b>PO No.:</b> ${item.po ? escapeHtml(item.po) : '<span class="text-amber-600 font-bold">ยังไม่ระบุ</span>'}</div>
-                <div><b>Job No.:</b> ${escapeHtml(item.job)}</div>
-                <div><b>Item:</b> ${escapeHtml(item.item)}</div>
-                <div><b>Style:</b> ${escapeHtml(item.style)}</div>
-                <div><b>สี:</b> ${escapeHtml(item.color)}</div>
-                <div><b>แผนก:</b> ${escapeHtml(item.dept)}</div>
-                ${item.line !== '-' ? `<div><b>ไลน์ผลิต:</b> ${escapeHtml(item.line)}</div>` : ''}
-                <div><b>ผู้ขอ:</b> ${escapeHtml(item.requesterUser)}</div>
-                <div><b>จำนวนรวม:</b> ${totalQty} ชิ้น</div>
-                <div><b>สาเหตุการสั่งซ่อม:</b> ${escapeHtml([...new Set(item.parts.map(p => REASON_LABELS[p.reason] || p.reason).filter(Boolean))].join(', '))}</div>
-                <div class="${item.needDate ? 'text-rose-600 font-bold' : ''}"><b>วันที่ต้องการของ:</b> ${item.needDate ? escapeHtml(item.needDate) : 'ไม่ระบุ'}</div>
-                <div><b>วันส่งออก:</b> ${item.shipOutDate ? escapeHtml(item.shipOutDate) : 'ไม่ระบุ'}</div>
+                <div class="font-bold text-slate-800 mb-1.5">รหัสใบสั่งซ่อม: ${escapeHtml(item.id)}</div>
+                <table class="w-full text-xs border-collapse">
+                    <tbody>
+                        ${infoRow('PO No.', item.po ? escapeHtml(item.po) : '<span class="text-amber-600 font-bold">ยังไม่ระบุ</span>')}
+                        ${infoRow('Job No.', escapeHtml(item.job))}
+                        ${infoRow('Item', escapeHtml(item.item))}
+                        ${infoRow('Style', escapeHtml(item.style))}
+                        ${infoRow('สี', escapeHtml(item.color))}
+                        ${infoRow('แผนก', escapeHtml(item.dept))}
+                        ${item.line !== '-' ? infoRow('ไลน์ผลิต', escapeHtml(item.line)) : ''}
+                        ${infoRow('ผู้ขอ', requester)}
+                        ${infoRow('จำนวนรวม', `${totalQty} ชิ้น`)}
+                        ${infoRow('สาเหตุการสั่งซ่อม', reasons)}
+                        ${infoRow('วันที่ต้องการของ', item.needDate ? escapeHtml(dateOnlyPart(item.needDate)) : 'ไม่ระบุ', item.needDate ? 'text-rose-600 font-bold' : '')}
+                        ${infoRow('วันส่งออก', item.shipOutDate ? escapeHtml(dateOnlyPart(item.shipOutDate)) : 'ไม่ระบุ')}
+                    </tbody>
+                </table>
                 <div class="border-t border-slate-200 pt-1.5 mt-1.5">
                     <div class="font-bold text-slate-600 mb-0.5">รายการชิ้นส่วนที่ต้องตรวจสอบ:</div>
                     ${item.parts.map(p => `<div>• ${escapeHtml(PART_NAME_LABELS[p.name] || p.name)} (${escapeHtml(p.size)}) x${p.qty} ${p.sample ? '<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold">มีชิ้นงานเสียแนบ</span>' : ''} ${p.reason ? `<span class="text-[9px] bg-rose-50 text-rose-600 px-1 rounded font-bold">${escapeHtml(REASON_LABELS[p.reason] || p.reason)}</span>` : ''}</div>`).join('')}
@@ -2291,7 +2643,7 @@
         function openApprovalModal(id) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
-            if (!canApprove(currentUser, item)) { showToast('คุณไม่มีสิทธิ์ตรวจสอบรายการนี้', 'warning'); return; }
+            if (!canApprove(currentUser, item)) { showToast('คุณไม่มีสิทธิ์ตรวจสอบรายการนี้ (No permission to review)', 'warning'); return; }
             activeActionId = id;
             document.getElementById('approvalItemInfo').innerHTML = buildInfoBlock(item);
             document.getElementById('approvalPO').value = item.po || '';
@@ -2310,7 +2662,7 @@
             const jobField = document.getElementById('approvalJobField').value.trim();
 
             if (decision === 'Approved' && (!po || !itemField || !jobField)) {
-                showToast('กรุณากรอกข้อมูล PO No., Item และ Job No. ให้ครบก่อนอนุมัติ', 'warning');
+                showToast('กรุณากรอกข้อมูล PO No., Item และ Job No. ให้ครบก่อนอนุมัติ (Please complete PO/Item/Job No. before approving)', 'warning');
                 return;
             }
 
@@ -2339,7 +2691,7 @@
         function openFMApprovalModal(id) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
-            if (!canFMApprove(currentUser)) { showToast('คุณไม่มีสิทธิ์อนุมัติรายการนี้ (เฉพาะ Factory Manager)', 'warning'); return; }
+            if (!canFMApprove(currentUser)) { showToast('คุณไม่มีสิทธิ์อนุมัติรายการนี้ (เฉพาะ Factory Manager / FM only)', 'warning'); return; }
             activeActionId = id;
             document.getElementById('fmApprovalItemInfo').innerHTML = buildInfoBlock(item);
             document.getElementById('fmApprovalRemark').value = '';
@@ -2353,7 +2705,7 @@
 
             const remark = document.getElementById('fmApprovalRemark').value.trim();
             if (decision === 'FMRejected' && !remark) {
-                showToast('กรุณาระบุ Remark เหตุผลที่ไม่อนุมัติ', 'warning');
+                showToast('กรุณาระบุ Remark เหตุผลที่ไม่อนุมัติ (Please provide a reject reason)', 'warning');
                 return;
             }
 
@@ -2378,12 +2730,12 @@
         function openActionModal(id) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
-            if (!canCuttingAct(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้', 'warning'); return; }
+            if (!canCuttingAct(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
 
             activeActionId = id;
             if (item.status === 'Approved') actionMode = 'receive';
             else if (item.status === 'CuttingReceived') actionMode = 'send';
-            else { showToast('รายการนี้ไม่อยู่ในสถานะที่แผนกตัดดำเนินการได้', 'warning'); return; }
+            else { showToast('รายการนี้ไม่อยู่ในสถานะที่แผนกตัดดำเนินการได้ (Not in a cutting-actionable status)', 'warning'); return; }
 
             document.getElementById('actionItemInfo').innerHTML = buildInfoBlock(item);
             document.getElementById('mActionName').innerText = `${currentUser.name} (${currentUser.username})`;
@@ -2419,13 +2771,13 @@
             if (idx === -1) return;
             const reason = document.getElementById('cuttingIssueReason').value;
             const remark = document.getElementById('cuttingIssueRemark').value.trim();
-            if (!reason && !remark) { showToast('กรุณาเลือกเหตุผลและ/หรือระบุ Remark', 'warning'); return; }
+            if (!reason && !remark) { showToast('กรุณาเลือกเหตุผลและ/หรือระบุ Remark (Please select a reason or add a remark)', 'warning'); return; }
 
             repairs[idx].cuttingIssue = { reason, remark, by: currentUser.username, name: currentUser.name, ts: getLocalTime() };
             autoSave();
             renderTable();
             logAction('CuttingIssue', repairs[idx].id, `${currentUser.name} แจ้งปัญหาแผนกตัด: ${CUTTING_ISSUE_LABELS[reason] || reason || '-'}${remark ? ' — ' + remark : ''}`);
-            showToast('บันทึกการแจ้งปัญหาเรียบร้อย', 'success');
+            showToast('บันทึกการแจ้งปัญหาเรียบร้อย (Issue reported)', 'success');
             closeModal('actionModal');
         }
 
@@ -2439,14 +2791,14 @@
                 repairs[idx].cuttingReceive = { by: currentUser.username, name: currentUser.name, attachment, ts };
                 repairs[idx].status = 'CuttingReceived';
                 logAction('CuttingReceive', repairs[idx].id, `${currentUser.name} รับงานตัด`);
-                showToast('บันทึกการรับงานตัดเรียบร้อย', 'success');
+                showToast('บันทึกการรับงานตัดเรียบร้อย (Cutting receipt saved)', 'success');
             } else {
                 const finishDate = document.getElementById('mFinishDate').value;
-                if (!finishDate) { showToast('กรุณาระบุวันที่ตัดงานเสร็จ', 'warning'); return; }
+                if (!finishDate) { showToast('กรุณาระบุวันที่ตัดงานเสร็จ (Please specify the cutting-done date)', 'warning'); return; }
                 repairs[idx].cuttingSend = { by: currentUser.username, name: currentUser.name, attachment, ts, finishDate };
                 repairs[idx].status = 'CuttingSent';
                 logAction('CuttingSend', repairs[idx].id, `${currentUser.name} ตัดเสร็จ`);
-                showToast('บันทึกตัดเสร็จเรียบร้อย', 'success');
+                showToast('บันทึกตัดเสร็จเรียบร้อย (Cutting done saved)', 'success');
             }
 
             // A successful receive/send means the job is moving again — clear any earlier "cannot cut" flag.
@@ -2463,12 +2815,12 @@
         function openMarketModal(id) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
-            if (!canSupermarketAct(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (เฉพาะซุปเปอร์มาร์เก็ต)', 'warning'); return; }
+            if (!canSupermarketAct(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (เฉพาะซุปเปอร์มาร์เก็ต / Supermarket only)', 'warning'); return; }
 
             activeActionId = id;
             if (item.status === 'CuttingSent') marketMode = 'receive';
             else if (item.status === 'SupermarketReceived') marketMode = 'send';
-            else { showToast('รายการนี้ไม่อยู่ในสถานะที่ซุปเปอร์มาร์เก็ตดำเนินการได้', 'warning'); return; }
+            else { showToast('รายการนี้ไม่อยู่ในสถานะที่ซุปเปอร์มาร์เก็ตดำเนินการได้ (Not in a supermarket-actionable status)', 'warning'); return; }
 
             document.getElementById('marketItemInfo').innerHTML = buildInfoBlock(item);
             document.getElementById('marketActionName').innerText = `${currentUser.name} (${currentUser.username})`;
@@ -2487,12 +2839,12 @@
                 repairs[idx].supermarketReceive = { by: currentUser.username, name: currentUser.name, attachment, ts };
                 repairs[idx].status = 'SupermarketReceived';
                 logAction('SupermarketReceive', repairs[idx].id, `${currentUser.name} (ซุปเปอร์มาร์เก็ต) รับงานตัดเสร็จ`);
-                showToast('บันทึกการรับงานเข้าซุปเปอร์มาร์เก็ตเรียบร้อย', 'success');
+                showToast('บันทึกการรับงานเข้าซุปเปอร์มาร์เก็ตเรียบร้อย (Supermarket receipt saved)', 'success');
             } else {
                 repairs[idx].supermarketSend = { by: currentUser.username, name: currentUser.name, attachment, ts };
                 repairs[idx].status = 'SupermarketSent';
                 logAction('SupermarketSend', repairs[idx].id, `${currentUser.name} (ซุปเปอร์มาร์เก็ต) ส่งงานเข้าไลน์`);
-                showToast('บันทึกการส่งงานเข้าไลน์เรียบร้อย', 'success');
+                showToast('บันทึกการส่งงานเข้าไลน์เรียบร้อย (Sent to line saved)', 'success');
             }
 
             autoSave();
@@ -2504,7 +2856,7 @@
         function openReceiveModal(id) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
-            if (!canOriginReceive(currentUser, item)) { showToast('คุณไม่มีสิทธิ์รับงานนี้ (ไม่ใช่ผู้ขอต้นทาง)', 'warning'); return; }
+            if (!canOriginReceive(currentUser, item)) { showToast('คุณไม่มีสิทธิ์รับงานนี้ (ไม่ใช่ผู้ขอต้นทาง / not the origin requester)', 'warning'); return; }
             activeActionId = id;
             document.getElementById('receiveItemInfo').innerHTML = buildInfoBlock(item);
             document.getElementById('receiveName').innerText = `${currentUser.name} (${currentUser.username})`;
@@ -2521,12 +2873,12 @@
             autoSave();
             renderTable();
             logAction('OriginReceive', repairs[idx].id, `${currentUser.name} ยืนยันรับงานตัดเปลี่ยนสมบูรณ์`);
-            showToast('ยืนยันรับงานเรียบร้อยแล้ว รายการถูกย้ายไปหน้าสรุปปัญหา & Analytics', 'success');
+            showToast('ยืนยันรับงานเรียบร้อยแล้ว รายการถูกย้ายไปหน้าสรุปปัญหา & Analytics (Confirmed, moved to Analytics history)', 'success');
             closeModal('receiveModal');
         }
 
         function promptDelete(id) {
-            if (!canDelete(currentUser)) { showToast('เฉพาะผู้ดูแลระบบเท่านั้นที่ลบรายการได้', 'warning'); return; }
+            if (!canDelete(currentUser)) { showToast('เฉพาะผู้ดูแลระบบเท่านั้นที่ลบรายการได้ (Admin only)', 'warning'); return; }
             deleteTargetId = id;
             document.getElementById('confirmModal').classList.replace('hidden', 'flex');
         }
@@ -2537,7 +2889,7 @@
                 autoSave();
                 renderTable();
                 logAction('Delete', deleteTargetId, `${currentUser.name} ลบรายการสั่งซ่อม`);
-                showToast('ลบรายการสั่งซ่อมเรียบร้อยแล้ว', 'info');
+                showToast('ลบรายการสั่งซ่อมเรียบร้อยแล้ว (Deleted)', 'info');
                 deleteTargetId = null;
             }
             closeModal('confirmModal');
@@ -2585,8 +2937,8 @@
                         <div><b>แผนกที่แจ้ง:</b> ${escapeHtml(item.dept)}</div>
                         <div><b>ไลน์ผลิต:</b> ${escapeHtml(item.line)}</div>
                         <div><b>สถานะ:</b> ${STATUS_LABELS[item.status] || item.status}</div>
-                        <div class="col-span-2 text-rose-600 font-bold"><b>วันที่ต้องการของ:</b> ${item.needDate ? escapeHtml(item.needDate) : 'ไม่ระบุ'}</div>
-                        <div class="col-span-2"><b>วันส่งออก:</b> ${item.shipOutDate ? escapeHtml(item.shipOutDate) : 'ไม่ระบุ'}</div>
+                        <div class="col-span-2 text-rose-600 font-bold"><b>วันที่ต้องการของ:</b> ${item.needDate ? escapeHtml(dateOnlyPart(item.needDate)) : 'ไม่ระบุ'}</div>
+                        <div class="col-span-2"><b>วันส่งออก:</b> ${item.shipOutDate ? escapeHtml(dateOnlyPart(item.shipOutDate)) : 'ไม่ระบุ'}</div>
                     </div>
 
                     <div class="border-t pt-2">
@@ -2700,12 +3052,12 @@
                     <div>
                         <div class="font-black text-lg text-slate-800">${escapeHtml(item.id)} <span class="status-pill ${STATUS_STYLES[item.status]} ml-1">${STATUS_LABELS[item.status]}</span></div>
                         <div class="text-xs text-slate-500 mt-1">${escapeHtml(item.style)} / ${escapeHtml(item.job)} — ${escapeHtml(item.item)} (${escapeHtml(item.color)})</div>
-                        <div class="text-xs text-slate-500">แผนก: ${escapeHtml(item.dept)} ${item.line !== '-' ? '| ไลน์: ' + escapeHtml(item.line) : ''} | ผู้ขอ: ${escapeHtml(item.requesterUser)}</div>
+                        <div class="text-xs text-slate-500">แผนก: ${escapeHtml(item.dept)} ${item.line !== '-' ? '| ไลน์: ' + escapeHtml(item.line) : ''} | ผู้ขอ: ${escapeHtml(item.requesterUser)}${userDisplayName(item.requesterUser) ? ' - ' + escapeHtml(userDisplayName(item.requesterUser)) : ''}</div>
                     </div>
                     <div class="text-right text-[11px] text-slate-400">
                         <div>แจ้ง: ${fmtDT(item.date)}</div>
-                        <div class="text-rose-500 font-bold">ต้องการของ: ${item.needDate ? escapeHtml(item.needDate) : 'ไม่ระบุ'}</div>
-                        <div>วันส่งออก: ${item.shipOutDate ? escapeHtml(item.shipOutDate) : 'ไม่ระบุ'}</div>
+                        <div class="text-rose-500 font-bold">ต้องการของ: ${item.needDate ? escapeHtml(dateOnlyPart(item.needDate)) : 'ไม่ระบุ'}</div>
+                        <div>วันส่งออก: ${item.shipOutDate ? escapeHtml(dateOnlyPart(item.shipOutDate)) : 'ไม่ระบุ'}</div>
                     </div>
                 </div>
 
@@ -2986,9 +3338,10 @@
             if (!tbody) return;
             const archivedItems = repairs.filter(r => r.archived);
             if (archivedItems.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-slate-400 text-xs">ยังไม่มีรายการที่เสร็จสมบูรณ์</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-8 text-center text-slate-400 text-xs">ยังไม่มีรายการที่เสร็จสมบูรณ์</td></tr>`;
                 return;
             }
+            const canManage = isPrimaryAdmin(currentUser);
             tbody.innerHTML = archivedItems.map(item => `
                 <tr class="hover:bg-slate-50/80 cursor-pointer" onclick="openDetailModal('${item.id}')" title="คลิกเพื่อดูรายละเอียด (ดูอย่างเดียว)">
                     <td class="px-4 py-3 text-xs font-black text-slate-800">${escapeHtml(item.id)} <span class="text-slate-400">🔍</span></td>
@@ -3004,6 +3357,12 @@
                     <td class="px-4 py-3">${historyStageCell(item.supermarketReceive)}</td>
                     <td class="px-4 py-3">${historyStageCell(item.supermarketSend)}</td>
                     <td class="px-4 py-3">${historyStageCell(item.originReceive)}</td>
+                    <td class="px-4 py-3 text-center whitespace-nowrap" onclick="event.stopPropagation()">
+                        ${canManage ? `
+                            <button onclick="editOrder('${item.id}')" class="text-[10px] p-1.5 rounded bg-slate-50 text-amber-600 hover:bg-amber-50" title="แก้ไข (ทดสอบ/แก้ไขข้อมูลย้อนหลัง)">✏️</button>
+                            <button onclick="promptDelete('${item.id}')" class="text-[10px] p-1.5 rounded bg-slate-50 text-rose-500 hover:bg-rose-50" title="ลบ">🗑️</button>
+                        ` : '-'}
+                    </td>
                 </tr>
             `).join('');
         }
@@ -3038,12 +3397,13 @@
                 document.getElementById('uUsername').value = u.username;
                 document.getElementById('uPassword').value = u.password;
                 document.getElementById('uName').value = u.name;
-                document.getElementById('uLines').value = (u.lines || []).join(', ');
+                renderScopeCheckboxes(u.lines);
                 document.getElementById('uPosition').value = u.position || '';
                 document.querySelectorAll('.uRole').forEach(cb => { cb.checked = (u.roles || []).includes(cb.value); });
             } else {
                 document.getElementById('userModalTitle').innerText = 'เพิ่มผู้ใช้งาน';
                 document.getElementById('uEditUsername').value = '';
+                renderScopeCheckboxes([]);
             }
             document.getElementById('userModal').classList.replace('hidden', 'flex');
         }
@@ -3055,21 +3415,21 @@
             const password = document.getElementById('uPassword').value;
             const name = document.getElementById('uName').value.trim();
             const roles = Array.from(document.querySelectorAll('.uRole:checked')).map(cb => cb.value);
-            const lines = document.getElementById('uLines').value.split(',').map(s => s.trim()).filter(Boolean);
+            const lines = Array.from(document.querySelectorAll('.uLineScope:checked')).map(cb => cb.value);
             const position = document.getElementById('uPosition').value;
 
-            if (roles.length === 0) { showToast('กรุณาเลือกบทบาทอย่างน้อย 1 อย่าง', 'warning'); return; }
+            if (roles.length === 0) { showToast('กรุณาเลือกบทบาทอย่างน้อย 1 อย่าง (Select at least 1 role)', 'warning'); return; }
             if (!editUsername && users.some(u => u.username === username)) { showToast('Username นี้มีอยู่แล้ว', 'warning'); return; }
 
             if (editUsername) {
                 const idx = users.findIndex(u => u.username === editUsername);
                 users[idx] = { username, password, name, roles, lines, position };
                 logAction('EditUser', username, `${currentUser.name} แก้ไขผู้ใช้ ${username}`);
-                showToast('อัปเดตผู้ใช้เรียบร้อยแล้ว', 'success');
+                showToast('อัปเดตผู้ใช้เรียบร้อยแล้ว (User updated)', 'success');
             } else {
                 users.push({ username, password, name, roles, lines, position });
                 logAction('CreateUser', username, `${currentUser.name} เพิ่มผู้ใช้ ${username}`);
-                showToast('เพิ่มผู้ใช้เรียบร้อยแล้ว', 'success');
+                showToast('เพิ่มผู้ใช้เรียบร้อยแล้ว (User added)', 'success');
             }
             saveUsers();
             renderUsersTable();
@@ -3077,13 +3437,13 @@
         };
 
         function deleteUser(username) {
-            if (username === currentUser.username) { showToast('ไม่สามารถลบผู้ใช้ที่กำลังใช้งานอยู่ได้', 'warning'); return; }
+            if (username === currentUser.username) { showToast('ไม่สามารถลบผู้ใช้ที่กำลังใช้งานอยู่ได้ (Cannot delete the current user)', 'warning'); return; }
             if (!confirm(`ต้องการลบผู้ใช้ ${username} ใช่หรือไม่?`)) return;
             users = users.filter(u => u.username !== username);
             saveUsers();
             renderUsersTable();
             logAction('DeleteUser', username, `${currentUser.name} ลบผู้ใช้ ${username}`);
-            showToast('ลบผู้ใช้เรียบร้อยแล้ว', 'info');
+            showToast('ลบผู้ใช้เรียบร้อยแล้ว (User deleted)', 'info');
         }
 
         // --- ADMIN: LOG HISTORY ---
@@ -3099,18 +3459,72 @@
                 (l.detail || '').toLowerCase().includes(search)
             );
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-slate-400 text-xs">ไม่พบข้อมูล Log</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400 text-xs">ไม่พบข้อมูล Log</td></tr>`;
                 return;
             }
-            tbody.innerHTML = filtered.map(l => `
+            const canManage = isPrimaryAdmin(currentUser);
+            tbody.innerHTML = filtered.map(l => {
+                const idx = auditLog.indexOf(l);
+                return `
                 <tr class="hover:bg-slate-50/80">
                     <td class="px-4 py-2.5 text-[10px] text-slate-400">${new Date(l.ts).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })}</td>
                     <td class="px-4 py-2.5 text-[10px] font-bold text-slate-700">${escapeHtml(l.userName || l.user)}</td>
                     <td class="px-4 py-2.5 text-[10px]"><span class="bg-slate-100 px-1.5 py-0.5 rounded font-bold text-slate-600">${escapeHtml(l.action)}</span></td>
                     <td class="px-4 py-2.5 text-[10px] text-indigo-600 font-bold">${escapeHtml(l.recordId)}</td>
                     <td class="px-4 py-2.5 text-[10px] text-slate-500">${escapeHtml(l.detail)}</td>
-                </tr>
-            `).join('');
+                    <td class="px-4 py-2.5 text-center whitespace-nowrap">
+                        ${canManage ? `
+                            <button onclick="openLogEditModal(${idx})" class="text-[10px] p-1 rounded bg-slate-50 text-amber-600 hover:bg-amber-50" title="แก้ไข">✏️</button>
+                            <button onclick="deleteLogEntry(${idx})" class="text-[10px] p-1 rounded bg-slate-50 text-rose-500 hover:bg-rose-50" title="ลบ">🗑️</button>
+                        ` : '-'}
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        // --- ADMIN: LOG HISTORY EDIT/DELETE (restricted to the primary "admin" account, so
+        // logs can be corrected/restored after an accidental change without opening editing
+        // up to every Admin-role user) ---
+        function openLogEditModal(index) {
+            if (!isPrimaryAdmin(currentUser)) return;
+            const l = auditLog[index];
+            if (!l) return;
+            document.getElementById('logEditIndex').value = index;
+            document.getElementById('logEditUserName').value = l.userName || l.user || '';
+            document.getElementById('logEditAction').value = l.action || '';
+            document.getElementById('logEditRecordId').value = l.recordId || '';
+            document.getElementById('logEditDetail').value = l.detail || '';
+            document.getElementById('logEditModal').classList.replace('hidden', 'flex');
+        }
+
+        async function saveLogEntryEdits(e) {
+            e.preventDefault();
+            const index = parseInt(document.getElementById('logEditIndex').value);
+            const l = auditLog[index];
+            if (!l) return;
+            l.userName = document.getElementById('logEditUserName').value.trim();
+            l.action = document.getElementById('logEditAction').value.trim();
+            l.recordId = document.getElementById('logEditRecordId').value.trim();
+            l.detail = document.getElementById('logEditDetail').value.trim();
+            await persistLogChanges();
+            renderLogTable();
+            closeModal('logEditModal');
+            showToast('แก้ไขรายการ Log เรียบร้อยแล้ว (Log entry updated)', 'success');
+        }
+
+        async function deleteLogEntry(index) {
+            if (!isPrimaryAdmin(currentUser)) return;
+            if (!confirm('ต้องการลบรายการ Log นี้ใช่หรือไม่? (ใช้เพื่อกู้คืน/แก้ไขประวัติที่ผิดพลาดเท่านั้น)')) return;
+            auditLog.splice(index, 1);
+            await persistLogChanges();
+            renderLogTable();
+            showToast('ลบรายการ Log เรียบร้อยแล้ว (Log entry deleted)', 'info');
+        }
+
+        // auditLog is kept newest-first in memory for display, but the Log sheet is append-only
+        // oldest-first — reverse back before writing the full corrected list to storage.
+        async function persistLogChanges() {
+            await apiReplaceAll('Log', auditLog.slice().reverse());
         }
 
         // --- CSV Export ---
@@ -3145,7 +3559,7 @@
             link.click();
             document.body.removeChild(link);
             logAction('ExportCSV', '-', `${currentUser.name} ส่งออกรายงาน CSV`);
-            showToast('ส่งออกไฟล์ CSV เรียบร้อยแล้ว', 'success');
+            showToast('ส่งออกไฟล์ CSV เรียบร้อยแล้ว (CSV exported)', 'success');
         }
 
         // --- Toast Feedback System ---
@@ -3166,6 +3580,7 @@
             await loadUsers();
             await loadLog();
             await loadFromStorage();
+            seedNotificationBaseline();
             if (loginBtn) { loginBtn.disabled = false; loginBtn.innerText = 'เข้าสู่ระบบ'; }
             if (tryAutoLogin()) {
                 showApp();
