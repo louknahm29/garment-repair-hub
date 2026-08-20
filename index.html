@@ -6174,6 +6174,12 @@
         // date/remark fields, per "ถ้ารายการเป็นไม่ต้องจ่ายก็ไม่ต้องกรอกข้อมูลอะไร แต่ถ้าเป็น
         // ติ๊กจ่ายก็จะเป็นรายการให้กรอก".
         function accFulfillmentRowHtml(group, idx, label, itemNo, size, requestedQty, saved) {
+            // itemNo may be a single string (ACC requisition lines) or an array of distinct
+            // item numbers (a part can carry more than one embellishment item) — each gets its
+            // own line instead of being joined into one string.
+            const itemNoHtml = Array.isArray(itemNo)
+                ? (itemNo.length ? itemNo.map(n => `<div>${escapeHtml(n)}</div>`).join('') : '<span class="text-slate-300">-</span>')
+                : (itemNo ? escapeHtml(itemNo) : '<span class="text-slate-300">-</span>');
             const l = saved || {};
             const noNeed = !!l.noNeed;
             // A line with no prior decision at all defaults to the "จ่าย" (pay) view so its
@@ -6191,7 +6197,7 @@
             return `
                 <tr class="accFulfillRow ${noNeed ? 'bg-slate-100' : ''}" data-fulfill-group="${group}" data-fulfill-idx="${idx}" data-requested-qty="${requestedQty}" data-existing-paid="${qtyPaid}">
                     <td class="border border-slate-200 px-1.5 py-1 font-medium align-top">${label}${historyHtml ? `<div class="text-[9px] text-slate-400 mt-1">${historyHtml}</div>` : ''}</td>
-                    <td class="border border-slate-200 px-1.5 py-1 align-top">${itemNo ? escapeHtml(itemNo) : '<span class="text-slate-300">-</span>'}</td>
+                    <td class="border border-slate-200 px-1.5 py-1 align-top">${itemNoHtml}</td>
                     <td class="border border-slate-200 px-1.5 py-1 align-top">${size ? escapeHtml(size) : '<span class="text-slate-300">-</span>'}</td>
                     <td class="border border-slate-200 px-1.5 py-1 text-center align-top font-bold bg-slate-50">${requestedQty}</td>
                     <td class="border border-slate-200 px-1.5 py-1 align-top whitespace-nowrap">
@@ -6221,7 +6227,10 @@
             const partMap = Object.fromEntries((existing.parts || []).map(l => [l.idx, l]));
             const accMap = Object.fromEntries((existing.accRequest || []).map(l => [l.idx, l]));
             const partRows = item.parts.map((p, idx) => {
-                const itemNos = [...new Set((p.embellishment || []).flatMap(e => (e.items && e.items.length) ? e.items : []))].join(', ');
+                // Each distinct embellishment item number gets its own line — per "ส่วนของ
+                // รายการที่เป็น item จะเรียงไอเทมลงมาถ้าเป็นคนละไอเทม" — instead of joining
+                // multiple different items into one comma-separated string.
+                const itemNos = [...new Set((p.embellishment || []).flatMap(e => (e.items && e.items.length) ? e.items : []).filter(Boolean))];
                 return accFulfillmentRowHtml('parts', idx,
                     `${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}${p.part ? ' (' + escapeHtml(p.part) + ')' : ''}`, itemNos, p.size, p.qty, partMap[idx]);
             }).join('');
