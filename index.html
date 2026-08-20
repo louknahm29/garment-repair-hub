@@ -126,6 +126,9 @@
                 <p id="loginError" class="text-[11px] text-rose-600 font-bold hidden"></p>
                 <button type="submit" id="loginSubmitBtn" class="btn-primary w-full text-sm">เข้าสู่ระบบ <span class="text-[10px] font-normal opacity-70">(Login)</span></button>
             </form>
+            <!-- Quick read-only access for Top Management — no account needed, per "เพิ่มปุ่ม
+                 ด้านล่างต่อจากให้กดล็อคอินเข้าเป็น View Only". -->
+            <button type="button" onclick="enterViewOnlyMode()" class="btn-ghost w-full text-sm border border-slate-200 text-slate-500">👁️ เข้าดูข้อมูลอย่างเดียว <span class="text-[10px] font-normal opacity-70">(View Only — for Management)</span></button>
         </div>
     </div>
 
@@ -709,6 +712,22 @@
                     <h2 class="text-2xl font-black text-slate-800 tracking-tight">รายการสั่งซ่อมและคิวงานตัด</h2>
                     <p class="text-slate-500 text-xs mt-0.5">ติดตามสถานะใบแจ้งตัดซ่อม การอนุมัติ การรับ-ส่งงานของแผนกตัด</p>
                 </div>
+                <!-- Work-in-process summary — split by line-item TYPE (parts vs ACC requisition),
+                     not by the record's requestType flag, so a request that asks for BOTH
+                     (Cut-Replace + ACC together) naturally contributes to both blocks instead of
+                     needing its own third "mixed" block, per "แยกส่วนงานไปในบล็อคก่อนหน้า". -->
+                <div class="flex items-center gap-2.5 flex-wrap">
+                    <div class="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-1.5 whitespace-nowrap">
+                        <span class="text-[10px] font-bold text-indigo-600 uppercase">ตัดเปลี่ยน</span>
+                        <span id="dashCutReplaceLines" class="text-sm font-black text-indigo-700">0</span><span class="text-[9px] text-indigo-400">รายการ</span>
+                        <span id="dashCutReplaceQty" class="text-sm font-black text-indigo-700 ml-1">0</span><span class="text-[9px] text-indigo-400">ชิ้น</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 bg-lime-50 border border-lime-100 rounded-lg px-3 py-1.5 whitespace-nowrap">
+                        <span class="text-[10px] font-bold text-lime-600 uppercase">เบิก ACC</span>
+                        <span id="dashAccLines" class="text-sm font-black text-lime-700">0</span><span class="text-[9px] text-lime-400">รายการ</span>
+                        <span id="dashAccQty" class="text-sm font-black text-lime-700 ml-1">0</span><span class="text-[9px] text-lime-400">ชิ้น</span>
+                    </div>
+                </div>
                 <div class="flex flex-wrap gap-2 no-print">
                     <button id="btnManualRefresh" onclick="manualRefresh()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1" title="ดึงข้อมูลล่าสุดจากระบบ">
                         <span>🔃 Refresh</span>
@@ -1042,6 +1061,28 @@
                 </div>
             </div>
 
+            <!-- Cut-Replace vs ACC requisition trend, per "ต้องการให้มี Chart สรุปยอดตัดเปลี่ยน
+                 และเบิก acc ออกเป็นรายเดือน รายสัปดาห์ รายวัน...มีตัดเปลี่ยนและเบิก ACC ทั้งหมด
+                 กี่รายการและจำนวนกี่ชิ้น" — bars are total pcs (the operationally-important
+                 number); the show/hide details table below adds line-count per bucket too. -->
+            <div class="card p-6">
+                <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">แนวโน้มตัดเปลี่ยน & เบิก ACC <span class="font-normal normal-case opacity-70">(Cut-Replace vs ACC Requisition Trend)</span></h3>
+                    <div class="flex items-center gap-1.5">
+                        <div class="flex rounded-lg border border-slate-200 overflow-hidden text-[10px] font-bold">
+                            <button id="wipTrendPeriodDay" onclick="setWipTrendPeriod('day')" class="px-2.5 py-1 hover:bg-slate-50">รายวัน</button>
+                            <button id="wipTrendPeriodWeek" onclick="setWipTrendPeriod('week')" class="px-2.5 py-1 hover:bg-slate-50 border-l border-slate-200">รายสัปดาห์</button>
+                            <button id="wipTrendPeriodMonth" onclick="setWipTrendPeriod('month')" class="px-2.5 py-1 hover:bg-slate-50 border-l border-slate-200">รายเดือน</button>
+                        </div>
+                        <button id="wipTrendChartToggleBtn" onclick="toggleChartDetails('wipTrendChart')" class="text-[10px] font-bold text-indigo-600 hover:underline whitespace-nowrap ml-1">Show details</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="wipTrendChart"></canvas>
+                </div>
+                <div id="wipTrendChartDetails" class="hidden mt-3 text-xs text-slate-600 max-h-48 overflow-y-auto overflow-x-auto"></div>
+            </div>
+
             <!-- Completed / Archived history -->
             <div class="card overflow-hidden">
                 <div class="p-4 border-b bg-slate-50">
@@ -1354,6 +1395,10 @@
                         <label class="flex items-center gap-1"><input type="radio" name="fRequestType" value="CutReplace" checked onchange="onRequestTypeChange()"> แจ้งขอตัดเปลี่ยน <span class="opacity-70">(Cut-Replace)</span></label>
                         <label class="flex items-center gap-1"><input type="radio" name="fRequestType" value="ACCOnly" onchange="onRequestTypeChange()"> แจ้งขอ ACC <span class="opacity-70">(ACC Only)</span></label>
                     </div>
+                    <!-- Locked once editing an existing record — per "ล็อคหน้าการเลือกประเภทคำขอ
+                         หากทำงานในหน้าตัดเปลี่ยน...แต่เผลอไปโดนปุ่มเลื่อนไปที่หน้า ACC ทำให้
+                         รายการขอนั้นขึ้นผิดประเภทรายการ". -->
+                    <p id="fRequestTypeLockNote" class="hidden text-[9px] text-amber-600 font-bold mt-1">🔒 ล็อกไว้หลังสร้างรายการแล้ว เพื่อป้องกันการสลับประเภทโดยไม่ตั้งใจ <span class="font-normal opacity-70">(Locked after creation)</span></p>
                 </div>
 
                 <!-- Header Information -->
@@ -2150,6 +2195,22 @@
         function apiReplaceAll(sheetName, rows) { return apiPost({ sheet: sheetName, action: 'replaceAll', rows }); }
         function apiAppend(sheetName, row) { return apiPost({ sheet: sheetName, action: 'append', row }); }
         const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', 'ST', 'MT', 'LT', 'XLT', '2XLT', '3XLT', '4XLT'];
+        // Supplementary size groups a part can opt into beyond the standard grid above — each
+        // group's codes get appended as extra Size Ratio cells when picked, per "ต้องการให้เพิ่ม
+        // Size ที่นอกเหนือจากตาราง...แล้วรายการไซส์ที่เลือกจะมาแสดงในบล็อค ระบุจำนวนแต่ละไซส์ต่อกัน".
+        const SIZE_GROUPS = [
+            { key: 'setT', label: 'SET-T', sizes: ['ST', 'MT', 'LT', 'XLT', '2XLT', '3XLT', '4XLT'] },
+            { key: 'setTT', label: 'SET-TT', sizes: ['STT', 'MTT', 'LTT', 'XLTT', '2XLTT', '3XLTT', '4XLTT'] },
+            { key: 'custSize', label: 'CUST SIZE', sizes: ['CUST1'] },
+            { key: 'nbaShirtRegular', label: 'NBA เสื้อ — REGULAR', sizes: ['44R', '46R', '48R', '50R', '52R', '54R', '56R', '58R'] },
+            { key: 'nbaShirtPlus2', label: 'NBA เสื้อ — +2', sizes: ['44/2', '46/2', '48/2', '50/2', '52/2', '54/2', '56/2', '58/2'] },
+            { key: 'nbaShirtPlus4', label: 'NBA เสื้อ — +4', sizes: ['44/4', '46/4', '48/4', '50/4', '52/4', '54/4', '56/4', '58/4'] },
+            { key: 'nbaShirtPlus6', label: 'NBA เสื้อ — +6', sizes: ['44/6', '46/6', '48/6', '50/6', '52/6', '54/6', '56/6', '58/6'] },
+            { key: 'nbaPantsMinus1', label: 'NBA กางเกง — -1', sizes: ['30-1', '32-1', '34-1', '36-1', '38-1', '40-1', '42-1', '44-1', '46-1', '48-1'] },
+            { key: 'nbaPantsRegular', label: 'NBA กางเกง — REGULAR', sizes: ['30R', '32R', '34R', '36R', '38R', '40R', '42R', '44R', '46R', '48R'] },
+            { key: 'nbaPantsPlus1', label: 'NBA กางเกง — +1', sizes: ['30+1', '32+1', '34+1', '36+1', '38+1', '40+1', '42+1', '44+1', '46+1', '48+1'] },
+            { key: 'nbaPantsPlus2', label: 'NBA กางเกง — +2', sizes: ['30+2', '32+2', '34+2', '36+2', '38+2', '40+2', '42+2', '44+2', '46+2', '48+2'] },
+        ];
         const PART_NAME_OPTIONS = [
             { value: 'Front', label: 'ชิ้นหน้า (Front)' },
             { value: 'Back', label: 'ชิ้นหลัง (Back)' },
@@ -2307,15 +2368,26 @@
         }
 
         const FIELD_LABELS = { date: 'วันที่แจ้ง', needDate: 'วันที่ต้องการของ', shipOutDate: 'วันส่งออก', dept: 'แผนก', line: 'ไลน์', style: 'Style', job: 'Job', item: 'Item', color: 'สี', po: 'PO No.', remark: 'Remark' };
+        // Returns BOTH the existing human-readable summary text (unchanged, still used for the
+        // toast/one-line log detail) AND a structured old/new value list — per "เพิ่มการเก็บ log
+        // history...รายการแก้ไขทั้งเก่าและใหม่" — kept for the Admin-only detail view instead of
+        // only ever being flattened into prose.
         function diffFields(oldItem, newFields) {
+            const textParts = [];
             const changes = [];
             Object.keys(FIELD_LABELS).forEach(k => {
                 const oldVal = oldItem[k] || '';
                 const newVal = newFields[k] || '';
-                if (oldVal !== newVal) changes.push(`${FIELD_LABELS[k]}: "${oldVal || '-'}" → "${newVal || '-'}"`);
+                if (oldVal !== newVal) {
+                    textParts.push(`${FIELD_LABELS[k]}: "${oldVal || '-'}" → "${newVal || '-'}"`);
+                    changes.push({ field: FIELD_LABELS[k], oldValue: oldVal || '-', newValue: newVal || '-' });
+                }
             });
-            if (JSON.stringify(oldItem.parts || []) !== JSON.stringify(newFields.parts || [])) changes.push('แก้ไขรายการชิ้นส่วน');
-            return changes.join('; ');
+            if (JSON.stringify(oldItem.parts || []) !== JSON.stringify(newFields.parts || [])) {
+                textParts.push('แก้ไขรายการชิ้นส่วน');
+                changes.push({ field: 'รายการชิ้นส่วน', oldValue: 'เดิม', newValue: 'มีการแก้ไข' });
+            }
+            return { text: textParts.join('; '), changes };
         }
 
         const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
@@ -2510,12 +2582,13 @@
             }
         }
 
-        function logAction(action, recordId, detail) {
+        function logAction(action, recordId, detail, changes) {
             const entry = {
                 ts: getLocalTime(),
                 user: currentUser ? currentUser.username : 'system',
                 userName: currentUser ? currentUser.name : '-',
-                action, recordId: recordId || '-', detail: detail || ''
+                action, recordId: recordId || '-', detail: detail || '',
+                changes: (changes && changes.length) ? changes : undefined,
             };
             auditLog.unshift(entry);
             apiAppend('Log', entry).catch(e => {
@@ -2800,6 +2873,17 @@
             el.value = upper;
             if (selectionStart !== null && selectionEnd !== null) el.setSelectionRange(selectionStart, selectionEnd);
         });
+
+        // Read-only access with no account needed — a synthetic user with an empty roles
+        // array, so every hasRole()/canXAct() permission check across the app naturally comes
+        // back false and every action button is blocked, without having to special-case
+        // "view only" into each one individually. Not persisted via setSession — a fresh visit
+        // always lands back on the real login screen, this is a per-visit shortcut only.
+        function enterViewOnlyMode() {
+            currentUser = { username: 'viewonly', name: 'Top Management', roles: ['ViewOnly'], lines: [], position: 'Top Management (View Only)' };
+            logAction('Login', '-', `${currentUser.name} เข้าดูข้อมูลแบบ View Only`);
+            showApp();
+        }
 
         function logout() {
             if (currentUser) logAction('Logout', '-', `${currentUser.name} ออกจากระบบ`);
@@ -3516,8 +3600,9 @@
             const isOtherReason = !!reason && !reasonOpts.some(r => r.value === reason);
             const div = document.createElement('div');
             div.id = rowId;
-            div.className = "grid grid-cols-1 sm:grid-cols-[repeat(14,minmax(0,1fr))] gap-2.5 items-end bg-slate-50 p-3.5 rounded-xl border border-slate-200";
+            div.className = "relative grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end bg-slate-50 p-3.5 pt-8 rounded-xl border border-slate-200";
             div.innerHTML = `
+                <button type="button" onclick="removePartRow('${rowId}')" class="absolute top-2 right-3 text-rose-400 hover:text-rose-600 font-bold text-[10px] flex items-center gap-1">✕ ลบรายการ</button>
                 <div class="sm:col-span-2">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">Item ผ้า <span class="opacity-70">(Fabric Item)</span></label>
                     <input type="text" class="pFabricItem w-full text-xs" value="${escapeHtml(fabricItem)}" placeholder="เลขที่ Item ผ้า">
@@ -3550,24 +3635,36 @@
                         <span class="text-[9px] font-bold text-slate-600 uppercase">มีชิ้นงานเสียแนบ</span>
                     </label>
                 </div>
-                <div class="sm:col-span-2 flex justify-end">
-                    <button type="button" onclick="removePartRow('${rowId}')" class="text-rose-400 hover:text-rose-600 font-bold p-1 text-sm">✕ ลบรายการ</button>
-                </div>
                 <div class="sm:col-span-12">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">ระบุจำนวนแต่ละไซส์ (Size Ratio) <span class="font-normal normal-case opacity-70">— เหมือนที่จะส่งให้มาร์คเกอร์</span> *</label>
-                    <div class="flex flex-wrap gap-1.5 bg-white border rounded-lg p-2">
+                    <div class="pSizeRatioBox flex flex-wrap gap-1.5 bg-white border rounded-lg p-2">
                         ${SIZE_OPTIONS.map(s => `
                             <div class="flex flex-col items-center">
                                 <span class="text-[8px] font-bold text-slate-400">${s}</span>
                                 <input type="number" class="pSizeQty w-11 text-xs text-center" min="0" data-size="${s}" value="${sizeQtys[s] || ''}">
                             </div>`).join('')}
-                        <div class="flex flex-col items-center ml-2 pl-2 border-l border-slate-200">
+                        <!-- Extra sizes from a group already saved on this part (editing an existing
+                             record) — rendered so they aren't silently dropped, same shape as ones
+                             the group-picker below adds fresh. -->
+                        ${Object.keys(sizeQtys).filter(s => !SIZE_OPTIONS.includes(s)).map(s => `
+                            <div class="flex flex-col items-center">
+                                <span class="text-[8px] font-bold text-slate-400">${escapeHtml(s)}</span>
+                                <input type="number" class="pSizeQty w-11 text-xs text-center" min="0" data-size="${escapeHtml(s)}" value="${sizeQtys[s] || ''}">
+                            </div>`).join('')}
+                        <div class="pTotalWrap flex flex-col items-center ml-2 pl-2 border-l border-slate-200">
                             <span class="text-[8px] font-bold text-indigo-600">Total</span>
                             <span class="pTotalDisplay text-xs font-black text-indigo-700 w-11 text-center">${Object.values(sizeQtys).reduce((a, b) => a + (parseInt(b) || 0), 0)}</span>
                         </div>
                     </div>
+                    <div class="flex items-center gap-1.5 mt-1.5">
+                        <select class="pSizeGroupSelect text-[10px] w-56 bg-white">
+                            <option value="">-- เพิ่มกลุ่มไซส์อื่น (Add size group) --</option>
+                            ${SIZE_GROUPS.map(g => `<option value="${g.key}">${g.label}</option>`).join('')}
+                        </select>
+                        <button type="button" class="pSizeGroupAdd text-[10px] font-bold text-indigo-600 hover:underline">+ เพิ่มกลุ่มไซส์</button>
+                    </div>
                 </div>
-                <div class="sm:col-span-10">
+                <div class="sm:col-span-8">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">สาเหตุการสั่งซ่อม (รายการนี้) *</label>
                     <div class="flex gap-1.5">
                         <select class="pReason w-1/2 text-xs" required>
@@ -3648,6 +3745,29 @@
                 sampleInput.disabled = noSample;
                 if (noSample) sampleInput.checked = false;
             }
+        });
+
+        // Appends a supplementary size group's codes as extra Size Ratio cells (before the
+        // Total readout), skipping any code the row already has — either from the standard
+        // grid or a previously-added group — so re-clicking the same group is a no-op.
+        document.getElementById('partsContainer').addEventListener('click', (e) => {
+            if (!e.target.classList.contains('pSizeGroupAdd')) return;
+            const row = e.target.closest('#partsContainer > div');
+            const select = row.querySelector('.pSizeGroupSelect');
+            const group = SIZE_GROUPS.find(g => g.key === select.value);
+            if (!group) { showToast('กรุณาเลือกกลุ่มไซส์ก่อน (Please choose a size group)', 'warning'); return; }
+            const box = row.querySelector('.pSizeRatioBox');
+            const totalWrap = row.querySelector('.pTotalWrap');
+            const existingSizes = new Set(Array.from(row.querySelectorAll('.pSizeQty')).map(inp => inp.dataset.size));
+            const toAdd = group.sizes.filter(s => !existingSizes.has(s));
+            toAdd.forEach(s => {
+                const cell = document.createElement('div');
+                cell.className = 'flex flex-col items-center';
+                cell.innerHTML = `<span class="text-[8px] font-bold text-slate-400">${escapeHtml(s)}</span><input type="number" class="pSizeQty w-11 text-xs text-center" min="0" data-size="${escapeHtml(s)}" value="">`;
+                box.insertBefore(cell, totalWrap);
+            });
+            if (!toAdd.length) showToast('กลุ่มไซส์นี้มีอยู่ในรายการแล้ว (Already added)', 'info');
+            select.value = '';
         });
 
         function removePartRow(id) {
@@ -3780,6 +3900,36 @@
             if (hasAccReq) return { text: 'ขอตัดเปลี่ยนและเบิก ACC', cls: 'bg-indigo-100 text-indigo-700 border-indigo-200' };
             return { text: 'ขอตัดเปลี่ยน', cls: 'bg-slate-100 text-slate-600 border-slate-200' };
         }
+        // Separate running document numbers per request type, per "ต้องการให้มีการออกเลข
+        // เอกสารแยก และ run no.ไปเรื่อย" — this is purely a DISPLAY identifier; item.id stays
+        // the random internal key everything else (upsert/delete/kickback/etc.) is keyed on,
+        // so this never risks a numbering collision breaking the underlying data model.
+        function generateDocNo(requestType) {
+            const prefix = requestType === 'ACCOnly' ? 'ACC' : 'CR';
+            const maxNum = repairs.reduce((max, r) => {
+                if (!r.docNo || !r.docNo.startsWith(prefix + '-')) return max;
+                const n = parseInt(r.docNo.slice(prefix.length + 1), 10);
+                return isNaN(n) ? max : Math.max(max, n);
+            }, 0);
+            return `${prefix}-${String(maxNum + 1).padStart(6, '0')}`;
+        }
+        // Work-in-process summary blocks above the records table — counted at the LINE-ITEM
+        // level (parts vs accRequestList), not by the record's requestType flag, so a record
+        // asking for both Cut-Replace AND ACC together contributes to both blocks naturally.
+        function updateWipSummary(active) {
+            let cutLines = 0, cutQty = 0, accLines = 0, accQty = 0;
+            active.forEach(r => {
+                cutLines += r.parts.length;
+                cutQty += r.parts.reduce((s, p) => s + (parseInt(p.qty) || 0), 0);
+                accLines += (r.accRequestList || []).length;
+                accQty += (r.accRequestList || []).reduce((s, a) => s + (parseInt(a.qty) || 0), 0);
+            });
+            const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+            set('dashCutReplaceLines', cutLines);
+            set('dashCutReplaceQty', cutQty);
+            set('dashAccLines', accLines);
+            set('dashAccQty', accQty);
+        }
         const STATUS_STYLES = {
             PendingApproval: 'bg-amber-100 text-amber-800 border border-amber-200',
             Rejected: 'bg-rose-100 text-rose-800 border border-rose-200',
@@ -3811,6 +3961,7 @@
             tbody.innerHTML = '';
 
             const active = repairs.filter(r => !r.archived);
+            updateWipSummary(active);
             const byStatus = (status) => status ? active.filter(r => r.status === status) : active;
             // Every KPI card shows both its count and how many of those are overdue —
             // setKpi tolerates cards with no "...Overdue" element (e.g. terminal states
@@ -4120,6 +4271,7 @@
                     <tr class="hover:bg-slate-50/80 transition-colors">
                         <td class="px-5 py-4">
                             <div class="text-xs font-black text-slate-800">${escapeHtml(item.id)}</div>
+                            ${item.docNo ? `<div class="text-[10px] font-bold ${item.requestType === 'ACCOnly' ? 'text-lime-600' : 'text-indigo-600'}">${escapeHtml(item.docNo)}</div>` : ''}
                             <div class="text-[11px] font-bold text-rose-600 mt-0.5">${item.needDate ? 'รับ: ' + escapeHtml(dateOnlyPart(item.needDate)) : 'ไม่ระบุวันที่ต้องการของ'}</div>
                             <div class="text-[9px] text-slate-400">แจ้ง: ${fmtDT(item.date)}</div>
                         </td>
@@ -4499,6 +4651,9 @@
             document.getElementById('partsContainer').innerHTML = '';
             addPartRow();
             renderAccRequestChecklist();
+            // A brand new request is free to toggle request type until first saved.
+            document.querySelectorAll('input[name="fRequestType"]').forEach(el => el.disabled = false);
+            document.getElementById('fRequestTypeLockNote').classList.add('hidden');
             onRequestTypeChange();
             applyUserScopeToForm();
             populateDatalists();
@@ -4518,6 +4673,11 @@
             document.getElementById('formModalTitle').innerText = `แก้ไขรายการสั่งซ่อม (${item.id})`;
             const requestTypeRadio = document.querySelector(`input[name="fRequestType"][value="${item.requestType || 'CutReplace'}"]`);
             if (requestTypeRadio) requestTypeRadio.checked = true;
+            // Locked once a record already exists — an accidental click on the other option
+            // while editing must never silently reclassify a live request (it has real
+            // downstream transactions riding on which type it is).
+            document.querySelectorAll('input[name="fRequestType"]').forEach(el => el.disabled = true);
+            document.getElementById('fRequestTypeLockNote').classList.remove('hidden');
             onRequestTypeChange();
             document.getElementById('fDate').value = item.date;
             document.getElementById('fNeedDate').value = dateOnlyPart(item.needDate) || '';
@@ -4643,7 +4803,7 @@
                     po,
                     remark, parts, accRequestList, requestType
                 };
-                const diffText = diffFields(existing, newFields);
+                const { text: diffText, changes: diffChanges } = diffFields(existing, newFields);
                 repairs[editIndex] = {
                     ...existing,
                     ...newFields,
@@ -4653,12 +4813,13 @@
                     approval: wasRejected ? null : existing.approval,
                     fmApproval: wasRejected ? null : existing.fmApproval
                 };
-                logAction(wasRejected ? 'Resubmit' : 'Edit', existing.id, `${wasRejected ? 'แก้ไขและส่งขออนุมัติใหม่' : 'แก้ไขข้อมูล'}${diffText ? ' — ' + diffText : ' (ไม่มีการเปลี่ยนแปลงฟิลด์หลัก)'}`);
+                logAction(wasRejected ? 'Resubmit' : 'Edit', existing.id, `${wasRejected ? 'แก้ไขและส่งขออนุมัติใหม่' : 'แก้ไขข้อมูล'}${diffText ? ' — ' + diffText : ' (ไม่มีการเปลี่ยนแปลงฟิลด์หลัก)'}`, diffChanges);
                 showToast(wasRejected ? 'แก้ไขและส่งขออนุมัติใหม่เรียบร้อยแล้ว (Resubmitted)' : 'อัปเดตข้อมูลใบสั่งซ่อมเรียบร้อยแล้ว (Updated)', 'success');
                 savedId = existing.id;
             } else {
                 const newItem = {
                     id: "R-" + Math.floor(1000 + Math.random() * 9000),
+                    docNo: generateDocNo(requestType),
                     date: dateVal,
                     needDate,
                     shipOutDate,
@@ -4761,7 +4922,11 @@
                 if (p.reason) g.reasons.add(REASON_LABELS[p.reason] || p.reason);
                 if (!g.fabricItem && p.fabricItem) g.fabricItem = p.fabricItem;
             });
-            const usedSizes = SIZE_OPTIONS.filter(s => groups.some(g => g.sizes[s]));
+            const allSizesUsedCut = [...new Set(groups.flatMap(g => Object.keys(g.sizes)))];
+            const usedSizes = [
+                ...SIZE_OPTIONS.filter(s => groups.some(g => g.sizes[s])),
+                ...allSizesUsedCut.filter(s => !SIZE_OPTIONS.includes(s)),
+            ];
             const allChecked = groups.every(g => checkedKeys.has(g.key));
             return `
                 <table class="w-full text-[10px] border-collapse">
@@ -4816,7 +4981,15 @@
                 // merge/accumulate across sibling sizes.
                 if (!g.embEntries.length && (p.embellishment || []).length) g.embEntries = p.embellishment;
             });
-            const usedSizes = SIZE_OPTIONS.filter(s => groups.some(g => g.sizes[s]));
+            // Standard sizes first (in their defined order), then any supplementary size-group
+            // codes (SET-TT, CUST SIZE, NBA groups, etc.) actually present on this record — those
+            // aren't in SIZE_OPTIONS at all, so filtering against it alone would silently drop
+            // that whole column from every review/print table.
+            const allSizesUsed = [...new Set(groups.flatMap(g => Object.keys(g.sizes)))];
+            const usedSizes = [
+                ...SIZE_OPTIONS.filter(s => groups.some(g => g.sizes[s])),
+                ...allSizesUsed.filter(s => !SIZE_OPTIONS.includes(s)),
+            ];
             const grandTotal = groups.reduce((sum, g) => sum + Object.values(g.sizes).reduce((a, b) => a + b, 0), 0);
             return `
                 <table class="w-full text-[10px] border-collapse">
@@ -5027,7 +5200,7 @@
             const requester = escapeHtml(item.requesterUser) + (userDisplayName(item.requesterUser) ? ' - ' + escapeHtml(userDisplayName(item.requesterUser)) : '');
             return `
                 ${cuttingIssueBadge(item)}
-                <div class="font-bold text-slate-800 mb-1.5">${item.requestType === 'ACCOnly' ? 'รหัสใบเบิก ACC' : 'รหัสใบสั่งซ่อม'}: ${escapeHtml(item.id)} ${item.requestType === 'ACCOnly' ? '<span class="text-[9px] bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded font-bold align-middle">แจ้งขอ ACC</span>' : ''}</div>
+                <div class="font-bold text-slate-800 mb-1.5">${item.requestType === 'ACCOnly' ? 'รหัสใบเบิก ACC' : 'รหัสใบสั่งซ่อม'}: ${escapeHtml(item.id)} ${item.docNo ? `<span class="text-slate-500 font-normal">(${escapeHtml(item.docNo)})</span>` : ''} ${item.requestType === 'ACCOnly' ? '<span class="text-[9px] bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded font-bold align-middle">แจ้งขอ ACC</span>' : ''}</div>
                 ${item.sourceQcRejectId ? `<div class="text-[10px] text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1 mb-1.5">✂️ สร้างอัตโนมัติจาก QC Reject ของ <b>${escapeHtml(item.sourceQcRejectId)}</b>${buildQcRejectChainHtml(item.sourceQcRejectId)}</div>` : ''}
                 ${item.qcCutReplace && item.qcCutReplace.resolved && item.qcCutReplace.createdRequestId ? `<div class="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-2 py-1 mb-1.5">✅ สร้างใบแจ้งตัดเปลี่ยนใหม่แล้ว: <b>${escapeHtml(item.qcCutReplace.createdRequestId)}</b></div>` : ''}
                 <!-- Prominent total-work summary, per "ยอดงานที่ต้องทำ ต้องการให้มีสรุป total
@@ -6667,8 +6840,10 @@
             const ts = getLocalTime();
             const newItem = {
                 id: "R-" + Math.floor(1000 + Math.random() * 9000),
+                docNo: generateDocNo('CutReplace'),
                 date: ts, needDate: item.needDate || '', shipOutDate: '',
                 dept: item.dept, line: item.line, heatTransferType: null, originFabricType: item.originFabricType,
+                requestType: 'CutReplace',
                 style: item.style, job: item.job, item: item.item, color: item.color, po: item.po,
                 remark: `สร้างอัตโนมัติจาก QC Reject ของ ${item.id} (${(item.qcCutReplace.types || []).map(t => EMB_LABELS[t] || t).join(', ')})`,
                 accRequestList: [],
@@ -7451,7 +7626,7 @@
                             <p class="text-[10px] text-slate-500">ใบสั่งตัดซ่อมชิ้นส่วนสินค้า</p>
                         </div>
                         <div class="text-right">
-                            <span class="font-black text-sm text-indigo-600">${escapeHtml(item.id)}</span> ${item.requestType === 'ACCOnly' ? '<span class="text-[9px] bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded font-bold">แจ้งขอ ACC</span>' : ''}
+                            <span class="font-black text-sm text-indigo-600">${escapeHtml(item.id)}</span> ${item.docNo ? `<span class="text-[10px] text-slate-500">(${escapeHtml(item.docNo)})</span>` : ''} ${item.requestType === 'ACCOnly' ? '<span class="text-[9px] bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded font-bold">แจ้งขอ ACC</span>' : ''}
                             <p class="text-[9px] text-slate-400">วันที่แจ้ง: ${fmtDT(item.date)}</p>
                         </div>
                     </div>
@@ -7764,8 +7939,9 @@
                     </div>
                 </div>
 
+                ${hasRole(currentUser, 'Admin') ? `
                 <div>
-                    <h4 class="text-xs font-black text-slate-700 uppercase mb-1">ประวัติการแก้ไข/การทำงานของรายการนี้ (Log)</h4>
+                    <h4 class="text-xs font-black text-slate-700 uppercase mb-1">ประวัติการแก้ไข/การทำงานของรายการนี้ (Log) <span class="font-normal normal-case text-slate-400">— Admin only</span></h4>
                     <div class="bg-white border border-slate-100 rounded-lg max-h-48 overflow-y-auto divide-y divide-slate-100">
                         ${recordLog.length ? recordLog.map(l => `
                             <div class="px-3 py-2 text-[10px]">
@@ -7773,10 +7949,15 @@
                                 <span class="font-bold text-slate-700 ml-1">${escapeHtml(l.userName || l.user)}</span>
                                 <span class="bg-slate-100 px-1.5 py-0.5 rounded font-bold text-slate-600 ml-1">${escapeHtml(l.action)}</span>
                                 <div class="text-slate-500 mt-0.5">${escapeHtml(l.detail)}</div>
+                                ${(l.changes && l.changes.length) ? `
+                                <table class="w-full text-[9px] border-collapse mt-1">
+                                    <thead><tr class="bg-slate-50"><th class="border border-slate-100 px-1 py-0.5 text-left">ฟิลด์</th><th class="border border-slate-100 px-1 py-0.5 text-left">ค่าเดิม</th><th class="border border-slate-100 px-1 py-0.5 text-left">ค่าใหม่</th></tr></thead>
+                                    <tbody>${l.changes.map(c => `<tr><td class="border border-slate-100 px-1 py-0.5 font-bold">${escapeHtml(c.field)}</td><td class="border border-slate-100 px-1 py-0.5 text-rose-500">${escapeHtml(c.oldValue)}</td><td class="border border-slate-100 px-1 py-0.5 text-emerald-600">${escapeHtml(c.newValue)}</td></tr>`).join('')}</tbody>
+                                </table>` : ''}
                             </div>
                         `).join('') : `<div class="px-3 py-4 text-center text-slate-400 text-[11px]">ไม่มีประวัติ</div>`}
                     </div>
-                </div>
+                </div>` : ''}
             `;
             document.getElementById('detailModal').classList.replace('hidden', 'flex');
         }
@@ -8218,6 +8399,86 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
             renderChartDetailsList('requestTypeChart', requestTypeLabels, requestTypeData);
+
+            renderWipTrendChart();
+        }
+
+        // Cut-Replace vs ACC requisition trend — bucketed by day/week/month (toggle), across
+        // ALL records (not just active ones), same convention as the existing monthlyChart.
+        let wipTrendPeriod = 'month';
+        function setWipTrendPeriod(period) {
+            wipTrendPeriod = period;
+            renderWipTrendChart();
+        }
+        function wipTrendBucketKey(dateStr, period) {
+            const d = parseLocalDateTime(dateStr);
+            if (!d) return null;
+            const p = getBangkokParts(d);
+            if (period === 'day') return `${p.year}-${p.month}-${p.day}`;
+            if (period === 'month') return `${p.year}-${p.month}`;
+            // Week: key is that week's Monday date (UTC-anchored so the weekday calculation
+            // doesn't drift with the browser's own local timezone).
+            const utcDate = new Date(Date.UTC(parseInt(p.year, 10), parseInt(p.month, 10) - 1, parseInt(p.day, 10)));
+            const dow = utcDate.getUTCDay();
+            utcDate.setUTCDate(utcDate.getUTCDate() - (dow === 0 ? 6 : dow - 1));
+            return utcDate.toISOString().slice(0, 10);
+        }
+        function wipTrendBucketLabel(key, period) {
+            const THAI_MONTHS_ABBR_WIP = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            if (period === 'month') {
+                const [y, m] = key.split('-');
+                return `${THAI_MONTHS_ABBR_WIP[parseInt(m, 10) - 1]} ${y}`;
+            }
+            if (period === 'day') {
+                const [y, m, d] = key.split('-');
+                return `${d}/${m}/${y}`;
+            }
+            const [y, m, d] = key.split('-');
+            return `สัปดาห์ ${d}/${m}/${y}`;
+        }
+        function renderWipTrendChart() {
+            const canvas = document.getElementById('wipTrendChart');
+            if (!canvas) return;
+            ['Day', 'Week', 'Month'].forEach(p => {
+                const btn = document.getElementById('wipTrendPeriod' + p);
+                if (btn) btn.classList.toggle('bg-indigo-600', wipTrendPeriod === p.toLowerCase());
+                if (btn) btn.classList.toggle('text-white', wipTrendPeriod === p.toLowerCase());
+                if (btn) btn.classList.toggle('text-slate-500', wipTrendPeriod !== p.toLowerCase());
+            });
+            const buckets = {}; // key -> { cutLines, cutQty, accLines, accQty }
+            repairs.forEach(r => {
+                const key = wipTrendBucketKey(r.date, wipTrendPeriod);
+                if (!key) return;
+                if (!buckets[key]) buckets[key] = { cutLines: 0, cutQty: 0, accLines: 0, accQty: 0 };
+                buckets[key].cutLines += r.parts.length;
+                buckets[key].cutQty += r.parts.reduce((s, p) => s + (parseInt(p.qty) || 0), 0);
+                buckets[key].accLines += (r.accRequestList || []).length;
+                buckets[key].accQty += (r.accRequestList || []).reduce((s, a) => s + (parseInt(a.qty) || 0), 0);
+            });
+            const keys = Object.keys(buckets).sort();
+            const labels = keys.length ? keys.map(k => wipTrendBucketLabel(k, wipTrendPeriod)) : ['-'];
+            const cutQtyData = keys.length ? keys.map(k => buckets[k].cutQty) : [0];
+            const accQtyData = keys.length ? keys.map(k => buckets[k].accQty) : [0];
+            if (myCharts.wipTrendChart) myCharts.wipTrendChart.destroy();
+            myCharts.wipTrendChart = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'ตัดเปลี่ยน (ชิ้น)', data: cutQtyData, backgroundColor: '#6366f1' },
+                        { label: 'เบิก ACC (ชิ้น)', data: accQtyData, backgroundColor: '#84cc16' },
+                    ],
+                },
+                options: { responsive: true, maintainAspectRatio: false },
+            });
+            const detailsEl = document.getElementById('wipTrendChartDetails');
+            if (detailsEl) {
+                detailsEl.innerHTML = !keys.length ? '<div class="text-slate-400">ไม่มีข้อมูล</div>' : `
+                    <table class="w-full text-[10px] border-collapse">
+                        <thead><tr class="bg-slate-100"><th class="border border-slate-200 px-1.5 py-1 text-left">ช่วงเวลา</th><th class="border border-slate-200 px-1.5 py-1">ตัดเปลี่ยน (รายการ)</th><th class="border border-slate-200 px-1.5 py-1">ตัดเปลี่ยน (ชิ้น)</th><th class="border border-slate-200 px-1.5 py-1">เบิก ACC (รายการ)</th><th class="border border-slate-200 px-1.5 py-1">เบิก ACC (ชิ้น)</th></tr></thead>
+                        <tbody>${keys.map(k => `<tr><td class="border border-slate-200 px-1.5 py-1">${escapeHtml(wipTrendBucketLabel(k, wipTrendPeriod))}</td><td class="border border-slate-200 px-1.5 py-1 text-center">${buckets[k].cutLines}</td><td class="border border-slate-200 px-1.5 py-1 text-center">${buckets[k].cutQty}</td><td class="border border-slate-200 px-1.5 py-1 text-center">${buckets[k].accLines}</td><td class="border border-slate-200 px-1.5 py-1 text-center">${buckets[k].accQty}</td></tr>`).join('')}</tbody>
+                    </table>`;
+            }
         }
 
         function toggleChartDetails(chartId) {
@@ -8472,13 +8733,13 @@
         // --- CSV Export ---
         function exportCSV() {
             let csvContent = "data:text/csv;charset=utf-8,﻿";
-            csvContent += "ID,วันที่แจ้ง,วันที่ต้องการ,วันส่งออก,แผนก,ไลน์ผลิต,ประเภทคำขอ (Heat Transfer),ประเภทคำขอ (Cut-Replace/ACC Only),อ้างอิง QC Reject,ผู้ขอ,Style,Job,Item,Color,PO No.,สาเหตุ (รายชิ้น),Remark,Alert,สถานะ,ผู้ตรวจสอบ (BU),วันที่ตรวจสอบ (BU),ผู้อนุมัติ (FM),วันที่อนุมัติ (FM),Remark (FM),ผู้รับงาน (Marker),ประเภทผ้า (Marker),วางมาร์ค (Marker),ผู้รับงาน (ใบปูตัด),ผู้ส่งต่อ (ใบปูตัด),ผู้รับงาน (เช็คผ้า),มีผ้าหรือไม่ (เช็คผ้า),ผู้รับงาน (PPC Fabric),วันผ้าเข้าจริง (PPC Fabric),ผู้รับงาน (สต็อคผ้า),ผู้ส่งต่อ (สต็อคผ้า),ปัญหาแผนกตัด,ผู้รับงานตัด,ผู้ตัดเสร็จ,ค้างตัด (Cutting Pending),ผู้รับงาน (ACC),คงค้างจ่าย (ACC),ประวัติปัญหา ACC (จำนวนรอบ),ผู้ส่งต่อ (ACC)," +
+            csvContent += "ID,เลขที่เอกสาร (Doc No.),วันที่แจ้ง,วันที่ต้องการ,วันส่งออก,แผนก,ไลน์ผลิต,ประเภทคำขอ (Heat Transfer),ประเภทคำขอ (Cut-Replace/ACC Only),อ้างอิง QC Reject,ผู้ขอ,Style,Job,Item,Color,PO No.,สาเหตุ (รายชิ้น),Remark,Alert,สถานะ,ผู้ตรวจสอบ (BU),วันที่ตรวจสอบ (BU),ผู้อนุมัติ (FM),วันที่อนุมัติ (FM),Remark (FM),ผู้รับงาน (Marker),ประเภทผ้า (Marker),วางมาร์ค (Marker),ผู้รับงาน (ใบปูตัด),ผู้ส่งต่อ (ใบปูตัด),ผู้รับงาน (เช็คผ้า),มีผ้าหรือไม่ (เช็คผ้า),ผู้รับงาน (PPC Fabric),วันผ้าเข้าจริง (PPC Fabric),ผู้รับงาน (สต็อคผ้า),ผู้ส่งต่อ (สต็อคผ้า),ปัญหาแผนกตัด,ผู้รับงานตัด,ผู้ตัดเสร็จ,ค้างตัด (Cutting Pending),ผู้รับงาน (ACC),คงค้างจ่าย (ACC),ประวัติปัญหา ACC (จำนวนรอบ),ผู้ส่งต่อ (ACC)," +
                 EMB_STAGE_TYPES.map(t => `ผู้รับงาน (${EMB_LABELS[t]}),ผู้ส่งต่อ (${EMB_LABELS[t]}),Vendor Outsource (${EMB_LABELS[t]})`).join(',') +
                 ",ผู้รับงาน (QC),จำนวนตรวจรับ (QC),จำนวน Defect (QC),ผลตรวจ (QC),รอบส่งซ่อม QC (QC Repair Rounds),ผู้รับงาน (ซุปเปอร์มาร์เก็ต),ผู้ส่งงานเข้าไลน์ (ซุปเปอร์มาร์เก็ต),ผู้รับงานต้นทาง\n";
             repairs.forEach(r => {
                 const partReasons = [...new Set(r.parts.map(p => REASON_LABELS[p.reason] || p.reason).filter(Boolean))].join(' / ');
                 const row = [
-                    r.id, r.date, r.needDate || '', r.shipOutDate || '', r.dept, r.line,
+                    r.id, `"${r.docNo || ''}"`, r.date, r.needDate || '', r.shipOutDate || '', r.dept, r.line,
                     r.heatTransferType === 'acc' ? 'ขอ ACC' : (r.heatTransferType === 'fabric' ? 'ขอผ้า' : ''),
                     r.requestType === 'ACCOnly' ? 'แจ้งขอ ACC' : 'แจ้งขอตัดเปลี่ยน',
                     `"${r.sourceQcRejectId || ''}"`,
