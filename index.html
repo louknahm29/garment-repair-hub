@@ -2184,6 +2184,9 @@
             { value: 'heatPress', label: 'ตัวรีด (Heat Seal)' },
             { value: 'padEmb', label: 'แพดปัก (Emb Pad)' },
             { value: 'logoEmb', label: 'โลโก้ปัก (Logo Emb)' },
+            { value: 'labelSticker', label: 'สติ๊กเกอร์ติดป้าย (Label Sticker)' },
+            { value: 'bagSticker', label: 'สติ๊กเกอร์ติดถุง (Bag Sticker)' },
+            { value: 'heatPressDriFit', label: 'ตัวรีด DRI-FIT (Heat Seal DRI-FIT)' },
             { value: '__other__', label: 'อื่นๆ (Others)' }
         ];
         const ACC_REQUEST_LABELS = Object.fromEntries(ACC_REQUEST_OPTIONS.map(p => [p.value, p.label]));
@@ -3502,7 +3505,7 @@
                 </div>`;
         }
 
-        function addPartRow(name = '', part = '', sizes = null, reason = '', sample = false, embEntries = null, itemNo = '', fabricItem = '') {
+        function addPartRow(name = '', part = '', sizes = null, reason = '', sample = false, embEntries = null, itemNo = '', fabricItem = '', cw = '') {
             const container = document.getElementById('partsContainer');
             const rowId = 'row-' + Date.now() + Math.random().toString(36).substr(2, 4);
             const sizeQtys = sizes || {};
@@ -3513,7 +3516,7 @@
             const isOtherReason = !!reason && !reasonOpts.some(r => r.value === reason);
             const div = document.createElement('div');
             div.id = rowId;
-            div.className = "grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end bg-slate-50 p-3.5 rounded-xl border border-slate-200";
+            div.className = "grid grid-cols-1 sm:grid-cols-[repeat(14,minmax(0,1fr))] gap-2.5 items-end bg-slate-50 p-3.5 rounded-xl border border-slate-200";
             div.innerHTML = `
                 <div class="sm:col-span-2">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">Item ผ้า <span class="opacity-70">(Fabric Item)</span></label>
@@ -3536,6 +3539,10 @@
                         </select>
                         <input type="text" class="pPartOther w-1/2 text-xs uppercase ${isOtherPart ? '' : 'opacity-40 bg-slate-100 cursor-not-allowed'}" style="text-transform:uppercase" value="${escapeHtml(isOtherPart ? part : '')}" placeholder="ระบุพาร์ท" ${isOtherPart ? '' : 'disabled'}>
                     </div>
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="text-[9px] font-bold text-slate-400 block mb-1">CW. <span class="opacity-70">(Colorway)</span></label>
+                    <input type="text" class="pCW w-full text-xs" value="${escapeHtml(cw)}" placeholder="ระบุ CW.">
                 </div>
                 <div class="sm:col-span-2 flex items-center justify-center h-[34px] border rounded-lg bg-white px-2">
                     <label class="pSampleLabel flex items-center gap-1.5 cursor-pointer">
@@ -3560,7 +3567,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="sm:col-span-8">
+                <div class="sm:col-span-10">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">สาเหตุการสั่งซ่อม (รายการนี้) *</label>
                     <div class="flex gap-1.5">
                         <select class="pReason w-1/2 text-xs" required>
@@ -3754,6 +3761,12 @@
         function displayStatusLabel(item) {
             if (item.status === 'PPCFabricReceived' && item.ppcFabric && !item.ppcFabric.actualArrivalDate) {
                 return 'รอผ้าเข้า (PPC Fabric)';
+            }
+            // ACCOnly requests skip Supermarket entirely (see checkAdvanceToSupermarket) — the
+            // generic "SupermarketSent" label ("sent into the line") doesn't fit a hand
+            // -delivery from ACC, so it gets its own wording once that hand-off actually happened.
+            if (item.status === 'SupermarketSent' && item.requestType === 'ACCOnly' && !item.supermarketReceive) {
+                return 'ACC ส่งตรงถึงผู้ขอ รอผู้ขอรับ';
             }
             return STATUS_LABELS[item.status] || item.status;
         }
@@ -4531,13 +4544,13 @@
             item.parts.forEach(p => {
                 const key = (p.name || '') + '||' + (p.part || '');
                 if (!groupMap[key]) {
-                    groupMap[key] = { name: p.name, part: p.part || '', sizes: {}, reason: p.reason, sample: false, embellishment: p.embellishment || [], itemNo: p.itemNo || '', fabricItem: p.fabricItem || '' };
+                    groupMap[key] = { name: p.name, part: p.part || '', sizes: {}, reason: p.reason, sample: false, embellishment: p.embellishment || [], itemNo: p.itemNo || '', fabricItem: p.fabricItem || '', cw: p.cw || '' };
                     groups.push(groupMap[key]);
                 }
                 groupMap[key].sizes[p.size] = (groupMap[key].sizes[p.size] || 0) + parseInt(p.qty || 0);
                 if (p.sample) groupMap[key].sample = true;
             });
-            groups.forEach(g => addPartRow(g.name, g.part, g.sizes, g.reason, g.sample, g.embellishment, g.itemNo, g.fabricItem));
+            groups.forEach(g => addPartRow(g.name, g.part, g.sizes, g.reason, g.sample, g.embellishment, g.itemNo, g.fabricItem, g.cw));
             renderAccRequestChecklist(item.accRequestList || []);
 
             populateDatalists();
@@ -4576,6 +4589,7 @@
                 if (reasonSel === '__other__' && !reason) missingReasonRow = true;
                 const itemNo = row.querySelector('.pItemNo').value;
                 const fabricItem = row.querySelector('.pFabricItem').value.trim();
+                const cw = row.querySelector('.pCW').value.trim();
                 // Embellishment is no longer entered here — BU fills it in during approval
                 // review (see the approvalModal embellishment section), so a freshly
                 // created/edited part always starts with none and BU (re-)confirms it.
@@ -4584,7 +4598,7 @@
                     .map(inp => ({ size: inp.dataset.size, qty: parseInt(inp.value) || 0 }))
                     .filter(s => s.qty > 0);
                 if (sizeEntries.length === 0) zeroRatioRow = true;
-                return sizeEntries.map(s => ({ name, part, size: s.size, qty: s.qty, sample, reason, embellishment, itemNo, fabricItem }));
+                return sizeEntries.map(s => ({ name, part, size: s.size, qty: s.qty, sample, reason, embellishment, itemNo, fabricItem, cw }));
             });
             const isAccOnlyRequest = currentRequestType() === 'ACCOnly';
             if (zeroRatioRow && !isAccOnlyRequest) {
@@ -5261,12 +5275,23 @@
             // without this, mainPipelineDone() would wait forever on a cuttingSend that
             // nobody will ever set, and the record could never reach Supermarket.
             const isHeatTransferAccSkip = decision === 'Approved' && ((repairs[idx].dept === 'HeatTransfer' && repairs[idx].heatTransferType === 'acc') || repairs[idx].requestType === 'ACCOnly');
-            repairs[idx].status = isHeatTransferAccSkip ? 'CuttingSent' : decision;
+            // Pattern-matched fabric never gets a marker laid out at all — the requester
+            // already declared this at intake (originFabricType), so there's nothing for
+            // Marker to actually do. Skip straight to Cutting Sheet's queue instead of making
+            // Marker click through a step that's pure formality; non-matched fabric still
+            // needs Marker to do the real marker-laying work first, per "ถ้าเป็นผ้าจับลาย จะไม่มี
+            // การวางมาร์ค จึงต้องการให้ผ่านไปที่ใบปูตัดเลย แต่ถ้าไม่จับลายก็จะส่งให้มาร์คเกอร์
+            // ทำงานก่อน แล้วค่อยส่งต่อให้ปูตัด".
+            const isMatchedFabricSkip = decision === 'Approved' && !isHeatTransferAccSkip && repairs[idx].originFabricType === 'matched';
+            repairs[idx].status = isHeatTransferAccSkip ? 'CuttingSent' : (isMatchedFabricSkip ? 'MarkerSent' : decision);
             if (isHeatTransferAccSkip) {
                 // checkAdvanceToSupermarket() now gates on the cuttingSend field (not status)
                 // since ACC runs independently of status — mark the skipped cutting step as
                 // already "done" so this item can still advance once ACC finishes.
                 repairs[idx].cuttingSend = { by: 'system', ts: getLocalTime() };
+            }
+            if (isMatchedFabricSkip) {
+                repairs[idx].markerAction = { by: 'system', name: 'system', fabricType: 'matched', ts: getLocalTime() };
             }
             repairs[idx].fmApproval = {
                 by: currentUser.username,
@@ -5448,13 +5473,13 @@
                 const row = e.target.closest('.accFulfillRow');
                 row.querySelectorAll('.accFulfillPayCell').forEach(cell => cell.classList.toggle('hidden', e.target.value !== 'pay'));
             }
-            if (e.target.classList.contains('accFulfillSourceJob')) {
-                // Stays visible at a fixed position next to "Job อื่น" at all times (never
-                // hidden/reflowed) — just disabled/greyed-out until that option is picked, per
-                // "ฟิกซตำแหน่งไว้เป็นเหมือนเบลอเทาไม่ให้กรอกจนกว่าจะติ๊กที่คำว่า Job อื่น".
+            if (e.target.classList.contains('accFulfillPoOther')) {
+                // "PO เดิม" and "PO ใหม่" are independent checkboxes — both can be ticked at
+                // once (a line can mix stock from the record's own PO with newly-bought stock
+                // under another). The PO-number list only shows once "PO ใหม่" is ticked.
                 const row = e.target.closest('.accFulfillRow');
-                const jobNoInput = row.querySelector('.accFulfillSourceJobNo');
-                if (jobNoInput) jobNoInput.disabled = e.target.value !== 'other';
+                const numbersWrap = row.querySelector('.accFulfillPoNumbers');
+                if (numbersWrap) numbersWrap.classList.toggle('hidden', !e.target.checked);
             }
             // Receive-verification checklist (Embellishment/Supermarket receive + send) — the
             // qty-received input only makes sense once "ไม่ครบ" is picked.
@@ -5462,6 +5487,20 @@
                 const row = e.target.closest('.rcvCheckRow');
                 const qtyCell = row.querySelector('.rcvCheckQtyCell');
                 if (qtyCell) qtyCell.classList.toggle('hidden', e.target.value !== 'partial');
+            }
+        });
+        // Add/remove PO-number rows within the ACC checklist's "PO ใหม่" list — separate
+        // 'click' listener since these are buttons, not radio/checkbox 'change' events.
+        document.getElementById('stageExtraFields').addEventListener('click', (e) => {
+            if (e.target.classList.contains('accFulfillPoAdd')) {
+                const wrap = e.target.closest('.accFulfillPoNumbers');
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-1';
+                row.innerHTML = `<input type="text" class="accFulfillPoNo text-[10px] w-20" placeholder="เลข PO" value=""><button type="button" class="accFulfillPoRemove text-rose-400 hover:text-rose-600 text-[10px] font-bold">✕</button>`;
+                wrap.insertBefore(row, e.target);
+            }
+            if (e.target.classList.contains('accFulfillPoRemove')) {
+                e.target.closest('div').remove();
             }
         });
         // Recomputes a row's Balance cell live as the qty-this-round input is typed, instead
@@ -5719,7 +5758,21 @@
         }
         function checkAdvanceToSupermarket(item) {
             const accDone = !!item.accSend;
-            if (mainPipelineDone(item) && accDone) { pushStatusHistory(item); item.status = 'SupermarketPending'; }
+            if (mainPipelineDone(item) && accDone) {
+                pushStatusHistory(item);
+                if (item.requestType === 'ACCOnly') {
+                    // ACCOnly requests never touch fabric/Supermarket at all — ACC staff hand
+                    // -deliver the goods straight to whoever opened the request instead, per
+                    // "ไม่ต้องไปที่ซุปเปอร์มาร์เก็ต แต่จะเป็นพนักงานของ ACC เดินไปส่งงานที่คนเปิด
+                    // ขอ". Land directly on 'SupermarketSent' (the same status the requester's
+                    // own "รับงาน" button already keys off of) with a system-stamped note
+                    // instead of real Supermarket receive/send records.
+                    item.supermarketSend = { by: 'system', name: 'ACC (ส่งตรงถึงผู้ขอ)', ts: getLocalTime() };
+                    item.status = 'SupermarketSent';
+                } else {
+                    item.status = 'SupermarketPending';
+                }
+            }
         }
         const ACC_ISSUE_OPTIONS = [
             { value: 'OutOfStock', label: 'ของหมด/ไม่มีในสต็อค' },
@@ -6189,7 +6242,12 @@
             const unit = l.unit || 'ชิ้น';
             const qtyPaid = l.qtyPaid || 0;
             const balance = requestedQty - qtyPaid;
-            const sourceJob = l.sourceJob || 'same';
+            // PO เดิม/PO ใหม่ are independent — a dispense line commonly mixes stock already
+            // bought under the record's own PO with newly-bought stock under a different PO,
+            // per "อาจจะเพิ่มกรณีมีหลาย PO No. ให้สามารถเพิ่มได้ ... สามารถติ๊กได้ทั้ง 2 เช็คบ็อค".
+            const poUseSame = l.poUseSame !== false; // default-checked for a brand new line
+            const poUseOther = !!l.poUseOther;
+            const poNumbers = (l.poNumbers && l.poNumbers.length) ? l.poNumbers : [''];
             const history = l.history || [];
             const historyHtml = history.length
                 ? history.map(h => `<div>${new Date(h.ts).toLocaleDateString('th-TH', { timeZone: 'Asia/Bangkok' })} — ${h.qty}${escapeHtml(h.unit || '')} (${escapeHtml(h.name || '')})</div>`).join('')
@@ -6211,12 +6269,17 @@
                             ${ACC_UNIT_OPTIONS.map(u => `<option value="${u}" ${u === unit ? 'selected' : ''}>${u}</option>`).join('')}
                         </select>
                     </td>
-                    <td class="border border-slate-200 px-1.5 py-1 align-top accFulfillPayCell ${isPaying ? '' : 'hidden'} whitespace-nowrap min-w-[160px]">
-                        <label class="flex items-center gap-2 text-[9px] leading-5"><input type="radio" name="fulfillSrc_${group}_${idx}" value="same" class="accFulfillSourceJob sq-radio" ${sourceJob === 'same' ? 'checked' : ''}> Job เดิม</label>
-                        <label class="flex items-center gap-2 text-[9px] leading-5">
-                            <input type="radio" name="fulfillSrc_${group}_${idx}" value="other" class="accFulfillSourceJob sq-radio" ${sourceJob === 'other' ? 'checked' : ''}> Job อื่น
-                            <input type="text" class="accFulfillSourceJobNo text-[10px] w-16" placeholder="เลข Job" value="${escapeHtml(l.sourceJobNo || '')}" ${sourceJob === 'other' ? '' : 'disabled'}>
-                        </label>
+                    <td class="border border-slate-200 px-1.5 py-1 align-top accFulfillPayCell ${isPaying ? '' : 'hidden'} whitespace-nowrap min-w-[220px]">
+                        <label class="flex items-center gap-2 text-[9px] leading-5"><input type="checkbox" class="accFulfillPoSame sq-radio" ${poUseSame ? 'checked' : ''}> PO เดิม</label>
+                        <label class="flex items-center gap-2 text-[9px] leading-5 mt-0.5"><input type="checkbox" class="accFulfillPoOther sq-radio" ${poUseOther ? 'checked' : ''}> PO ใหม่</label>
+                        <div class="accFulfillPoNumbers mt-1 space-y-1 ${poUseOther ? '' : 'hidden'}">
+                            ${poNumbers.map(po => `
+                            <div class="flex items-center gap-1">
+                                <input type="text" class="accFulfillPoNo text-[10px] w-20" placeholder="เลข PO" value="${escapeHtml(po)}">
+                                <button type="button" class="accFulfillPoRemove text-rose-400 hover:text-rose-600 text-[10px] font-bold">✕</button>
+                            </div>`).join('')}
+                            <button type="button" class="accFulfillPoAdd text-[9px] text-indigo-600 hover:underline">+ เพิ่ม PO</button>
+                        </div>
                     </td>
                     <td class="border border-slate-200 px-1.5 py-1 align-top accFulfillPayCell ${isPaying ? '' : 'hidden'}"><input type="date" class="accFulfillArrival text-[10px] w-20" value="${escapeHtml(l.arrivalDate || '')}"></td>
                     <td class="border border-slate-200 px-1.5 py-1 align-top accFulfillPayCell ${isPaying ? '' : 'hidden'}"><input type="text" class="accFulfillRemark text-[10px] w-24" placeholder="หมายเหตุ" value="${escapeHtml(l.remarkLine || '')}"></td>
@@ -6297,16 +6360,21 @@
                 }
                 const unit = row.querySelector('.accFulfillUnit').value;
                 const arrivalDate = row.querySelector('.accFulfillArrival').value;
-                const sourceJobEl = row.querySelector('.accFulfillSourceJob:checked');
-                const sourceJob = sourceJobEl ? sourceJobEl.value : 'same';
-                const sourceJobNo = sourceJob === 'other' ? row.querySelector('.accFulfillSourceJobNo').value.trim() : '';
+                // PO เดิม/PO ใหม่ are independent checkboxes (both can be ticked), and "PO ใหม่"
+                // can list more than one PO number — per "สามารถติ๊กได้ทั้ง 2 เช็คบ็อค...อาจจะ
+                // เพิ่มกรณีมีหลาย PO No. ให้สามารถเพิ่มได้".
+                const poUseSame = row.querySelector('.accFulfillPoSame').checked;
+                const poUseOther = row.querySelector('.accFulfillPoOther').checked;
+                const poNumbers = poUseOther
+                    ? Array.from(row.querySelectorAll('.accFulfillPoNo')).map(inp => inp.value.trim()).filter(Boolean)
+                    : [];
                 const remarkLine = row.querySelector('.accFulfillRemark').value.trim();
                 const history = [...(prior.history || [])];
                 let qtyPaid = prior.qtyPaid || 0;
                 const thisRound = parseInt(row.querySelector('.accFulfillQty').value) || 0;
                 if (thisRound > 0) { history.push({ ts: getLocalTime(), by: currentUser.username, name: currentUser.name, qty: thisRound, unit }); qtyPaid += thisRound; }
                 const decision = qtyPaid >= requestedQty && requestedQty > 0 ? 'full' : (qtyPaid > 0 ? 'partial' : 'pendingAll');
-                setLine(group, idxNum, { idx: idxNum, noNeed: false, decision, qtyPaid, unit, arrivalDate: arrivalDate || undefined, sourceJob, sourceJobNo: sourceJobNo || undefined, remarkLine: remarkLine || undefined, history });
+                setLine(group, idxNum, { idx: idxNum, noNeed: false, decision, qtyPaid, unit, arrivalDate: arrivalDate || undefined, poUseSame, poUseOther, poNumbers, remarkLine: remarkLine || undefined, history });
             });
             return result;
         }
@@ -7599,11 +7667,21 @@
                     }
                 });
             }
-            steps.push(
-                { label: 'ซุปเปอร์มาร์เก็ตรับงาน', step: item.supermarketReceive },
-                { label: 'ส่งงานเข้าไลน์ (ซุปเปอร์มาร์เก็ต)', step: item.supermarketSend },
-                { label: 'ต้นทางยืนยันรับงาน', step: item.originReceive },
-            );
+            // ACCOnly requests skip Supermarket entirely (see checkAdvanceToSupermarket) — ACC
+            // hand-delivers straight to the requester, so there's no separate "Supermarket
+            // received" step to show; only the hand-off (relabeled) and origin's confirmation.
+            if (item.requestType === 'ACCOnly' && !item.supermarketReceive) {
+                steps.push(
+                    { label: 'ACC ส่งตรงถึงผู้ขอ', step: item.supermarketSend },
+                    { label: 'ต้นทางยืนยันรับงาน', step: item.originReceive },
+                );
+            } else {
+                steps.push(
+                    { label: 'ซุปเปอร์มาร์เก็ตรับงาน', step: item.supermarketReceive },
+                    { label: 'ส่งงานเข้าไลน์ (ซุปเปอร์มาร์เก็ต)', step: item.supermarketSend },
+                    { label: 'ต้นทางยืนยันรับงาน', step: item.originReceive },
+                );
+            }
             let prevTs = item.date ? parseLocalDateTime(item.date) : null;
             let html = '';
             steps.forEach(({ label, step, anchorTs, isParallel }) => {
