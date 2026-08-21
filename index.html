@@ -204,7 +204,18 @@
                  tab reveals that card's rows below, and each tab shows one combined badge
                  (sum of that card's per-row "new" counts from the existing notification
                  system) instead of needing every card open at once to notice new work. -->
-            <div id="kpiTabBar" class="flex flex-wrap gap-1.5 border-b border-slate-200 pb-2 mb-1"></div>
+            <div class="flex items-start gap-3 border-b border-slate-200 pb-2 mb-1">
+                <div id="kpiTabBar" class="flex flex-wrap gap-1.5 flex-grow"></div>
+                <!-- Notes/legend panel — fills the spare space to the right of the KPI tab
+                     bar, per "ต้องการให้มีเหมือนกรอบโน๊ตให้ทุกคนทราบ เป็นพื้นที่ว่างด้านขวาสุด
+                     แถวเดียวกับ card ที่ให้เลือก สถานะแต่ละแผนก". -->
+                <div class="hidden lg:block shrink-0 w-72 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[9px] text-slate-500 leading-snug">
+                    <p class="font-bold text-slate-600">ทุกแผนก : ดูรายการรอทำ → กดรับงาน → ดำเนินการ → กดส่งต่องาน</p>
+                    <p class="mt-1"><b>หมายเหตุ</b> :</p>
+                    <p>- แผนกก่อนหน้าทำรายการไม่ถูกต้องหรือข้อแก้ไข &gt; แจ้งตีงานกลับไปยังแผนกก่อนหน้า โดยต้องระบุสาเหตุที่ตีงานกลับ</p>
+                    <p>- แจ้งปัญหางาน : กรณีที่ไม่สามารถดำเนินการได้ (บางแผนกจะมีส่วนแยกให้ระบุสาเหตุเป็นรายการเฉพาะ)</p>
+                </div>
+            </div>
             <div id="kpiTabPanels">
                 <div class="card p-0 overflow-hidden" id="kpiCardOverview" data-kpi-tab="overview">
                     <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest px-3 pt-1.5 pb-1">ภาพรวม <span class="font-normal normal-case text-slate-300">(Overview)</span></p>
@@ -212,7 +223,10 @@
                         <div onclick="filterByKpi('all')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-slate-50 transition-colors border-l-2 border-l-slate-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
-                                <p class="text-[8px] font-bold uppercase text-slate-500 leading-tight">งานซ่อมกำลังดำเนินการ<span class="block font-normal normal-case text-slate-400">Active Repair Jobs</span></p>
+                                <p class="text-[10px] font-bold uppercase text-slate-500 leading-tight">งานซ่อมกำลังดำเนินการ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Active Repair Jobs</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiTotalLines">0</span> รายการ<br><span id="kpiTotalQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiTotal" class="text-lg font-black text-slate-800 leading-none">0</h4>
@@ -222,14 +236,20 @@
                         <div onclick="filterByKpi('overdue')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">⚠️</span>
-                                <p class="text-[8px] font-bold uppercase text-red-600 leading-tight">🚨 เกิน 2 วัน / เกินวันที่ต้องการของ<span class="block font-normal normal-case text-slate-400">Overdue 2 Days / Past Need Date</span></p>
+                                <p class="text-[10px] font-bold uppercase text-red-600 leading-tight">🚨 เกิน 2 วัน / เกินวันที่ต้องการของ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Overdue 2 Days / Past Need Date</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiOverdueLines">0</span> รายการ<br><span id="kpiOverdueQty">0</span> ชิ้น
                             </div>
                             <h4 id="kpiOverdue" class="text-lg font-black text-red-600 leading-none shrink-0">0</h4>
                         </div>
                         <div onclick="goToCompletedHistory()" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-emerald-50 transition-colors border-l-2 border-l-emerald-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">✅</span>
-                                <p class="text-[8px] font-bold uppercase text-emerald-600 leading-tight">เสร็จสมบูรณ์ทั้งหมด<span class="block font-normal normal-case text-slate-400">All Completed</span></p>
+                                <p class="text-[10px] font-bold uppercase text-emerald-600 leading-tight">เสร็จสมบูรณ์ทั้งหมด <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">All Completed</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiCompletedLines">0</span> รายการ<br><span id="kpiCompletedQty">0</span> ชิ้น
                             </div>
                             <h4 id="kpiCompleted" class="text-lg font-black text-emerald-600 leading-none shrink-0">0</h4>
                         </div>
@@ -239,7 +259,10 @@
                         <div onclick="goToCompletedHistory()" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-slate-50 transition-colors border-l-2 border-l-slate-300">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🚫</span>
-                                <p class="text-[8px] font-bold uppercase text-slate-500 leading-tight">ยกเลิกแล้ว<span class="block font-normal normal-case text-slate-400">Cancelled</span></p>
+                                <p class="text-[10px] font-bold uppercase text-slate-500 leading-tight">ยกเลิกแล้ว <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Cancelled</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiCancelledLines">0</span> รายการ<br><span id="kpiCancelledQty">0</span> ชิ้น
                             </div>
                             <h4 id="kpiCancelled" class="text-lg font-black text-slate-500 leading-none shrink-0">0</h4>
                         </div>
@@ -252,7 +275,10 @@
                         <div onclick="filterByKpi('PendingApproval')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">⏳</span>
-                                <p class="text-[8px] font-bold uppercase text-amber-600 leading-tight">รอ BU ตรวจสอบ<span class="block font-normal normal-case text-slate-400">Pending BU</span></p>
+                                <p class="text-[10px] font-bold uppercase text-amber-600 leading-tight">รอ BU ตรวจสอบ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending BU</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiPendingLines">0</span> รายการ<br><span id="kpiPendingQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiPending" class="text-lg font-black text-amber-600 leading-none">0</h4>
@@ -262,7 +288,10 @@
                         <div onclick="filterByKpi('PendingFMApproval')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🗂️</span>
-                                <p class="text-[8px] font-bold uppercase text-orange-600 leading-tight">รอ FM อนุมัติ<span class="block font-normal normal-case text-slate-400">Pending FM</span></p>
+                                <p class="text-[10px] font-bold uppercase text-orange-600 leading-tight">รอ FM อนุมัติ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending FM</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiPendingFMLines">0</span> รายการ<br><span id="kpiPendingFMQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiPendingFM" class="text-lg font-black text-orange-600 leading-none">0</h4>
@@ -272,7 +301,10 @@
                         <div onclick="filterByKpi('anyRejected')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-rose-50 transition-colors border-l-2 border-l-rose-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🚫</span>
-                                <p class="text-[8px] font-bold uppercase text-rose-500 leading-tight">ถูกตีกลับ<span class="block font-normal normal-case text-slate-400">Returned (BU/FM)</span></p>
+                                <p class="text-[10px] font-bold uppercase text-rose-500 leading-tight">ถูกตีกลับ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Returned (BU/FM)</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiRejectedLines">0</span> รายการ<br><span id="kpiRejectedQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiRejected" class="text-lg font-black text-rose-500 leading-none">0</h4>
@@ -288,7 +320,10 @@
                         <div onclick="filterByKpi('Approved')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-sky-50 transition-colors border-l-2 border-l-sky-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📝</span>
-                                <p class="text-[8px] font-bold uppercase text-sky-600 leading-tight">รอ Marker รับงาน<span class="block font-normal normal-case text-slate-400">Pending Marker</span></p>
+                                <p class="text-[10px] font-bold uppercase text-sky-600 leading-tight">รอ Marker รับงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Marker</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiApprovedLines">0</span> รายการ<br><span id="kpiApprovedQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiApproved" class="text-lg font-black text-sky-600 leading-none">0</h4>
@@ -298,7 +333,10 @@
                         <div onclick="filterByKpi('waitCuttingSheet')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-violet-50 transition-colors border-l-2 border-l-violet-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📐</span>
-                                <p class="text-[8px] font-bold uppercase text-violet-600 leading-tight">รอรับงานทำใบปูตัด<span class="block font-normal normal-case text-slate-400">Pending Cutting Sheet</span></p>
+                                <p class="text-[10px] font-bold uppercase text-violet-600 leading-tight">รอรับงานทำใบปูตัด <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Cutting Sheet</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiWaitCuttingSheetLines">0</span> รายการ<br><span id="kpiWaitCuttingSheetQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiWaitCuttingSheet" class="text-lg font-black text-violet-600 leading-none">0</h4>
@@ -308,7 +346,10 @@
                         <div onclick="filterByKpi('markerWorking')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-fuchsia-50 transition-colors border-l-2 border-l-fuchsia-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">✍️</span>
-                                <p class="text-[8px] font-bold uppercase text-fuchsia-600 leading-tight">Marker กำลังทำงาน<span class="block font-normal normal-case text-slate-400">Marker In Progress</span></p>
+                                <p class="text-[10px] font-bold uppercase text-fuchsia-600 leading-tight">Marker กำลังทำงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Marker In Progress</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiMarkerWorkingLines">0</span> รายการ<br><span id="kpiMarkerWorkingQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiMarkerWorking" class="text-lg font-black text-fuchsia-600 leading-none">0</h4>
@@ -318,7 +359,10 @@
                         <div onclick="filterByKpi('cuttingSheetWorking')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-violet-50 transition-colors border-l-2 border-l-violet-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📐</span>
-                                <p class="text-[8px] font-bold uppercase text-violet-700 leading-tight">ใบปูตัดกำลังทำงาน<span class="block font-normal normal-case text-slate-400">Cutting Sheet In Progress</span></p>
+                                <p class="text-[10px] font-bold uppercase text-violet-700 leading-tight">ใบปูตัดกำลังทำงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Cutting Sheet In Progress</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiCuttingSheetWorkingLines">0</span> รายการ<br><span id="kpiCuttingSheetWorkingQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiCuttingSheetWorking" class="text-lg font-black text-violet-700 leading-none">0</h4>
@@ -334,7 +378,10 @@
                         <div onclick="filterByKpi('waitFabricCheck')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-blue-50 transition-colors border-l-2 border-l-blue-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🔎</span>
-                                <p class="text-[8px] font-bold uppercase text-blue-600 leading-tight">รอเช็คผ้า<span class="block font-normal normal-case text-slate-400">Pending Fabric Check</span></p>
+                                <p class="text-[10px] font-bold uppercase text-blue-600 leading-tight">รอเช็คผ้า <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Fabric Check</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiWaitFabricCheckLines">0</span> รายการ<br><span id="kpiWaitFabricCheckQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiWaitFabricCheck" class="text-lg font-black text-blue-600 leading-none">0</h4>
@@ -344,7 +391,10 @@
                         <div onclick="filterByKpi('fabricCheckWorking')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-blue-50 transition-colors border-l-2 border-l-blue-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🔎</span>
-                                <p class="text-[8px] font-bold uppercase text-blue-700 leading-tight">เช็คผ้ากำลังทำงาน<span class="block font-normal normal-case text-slate-400">Fabric Check In Progress</span></p>
+                                <p class="text-[10px] font-bold uppercase text-blue-700 leading-tight">เช็คผ้ากำลังทำงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Fabric Check In Progress</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiFabricCheckWorkingLines">0</span> รายการ<br><span id="kpiFabricCheckWorkingQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiFabricCheckWorking" class="text-lg font-black text-blue-700 leading-none">0</h4>
@@ -354,7 +404,10 @@
                         <div onclick="filterByKpi('waitPPCFabric')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-fuchsia-50 transition-colors border-l-2 border-l-fuchsia-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🧵</span>
-                                <p class="text-[8px] font-bold uppercase text-fuchsia-600 leading-tight">รอ PPC เบิกผ้า<span class="block font-normal normal-case text-slate-400">Pending PPC Fabric</span></p>
+                                <p class="text-[10px] font-bold uppercase text-fuchsia-600 leading-tight">รอ PPC เบิกผ้า <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending PPC Fabric</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiWaitPPCFabricLines">0</span> รายการ<br><span id="kpiWaitPPCFabricQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiWaitPPCFabric" class="text-lg font-black text-fuchsia-600 leading-none">0</h4>
@@ -364,7 +417,10 @@
                         <div onclick="filterByKpi('waitingFabric')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🚚</span>
-                                <p class="text-[8px] font-bold uppercase text-amber-500 leading-tight">รอผ้าเข้า<span class="block font-normal normal-case text-slate-400">Waiting for fabric to arrive</span></p>
+                                <p class="text-[10px] font-bold uppercase text-amber-500 leading-tight">รอผ้าเข้า <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Waiting for fabric to arrive</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiWaitingFabricLines">0</span> รายการ<br><span id="kpiWaitingFabricQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiWaitingFabric" class="text-lg font-black text-amber-500 leading-none">0</h4>
@@ -374,7 +430,10 @@
                         <div onclick="filterByKpi('waitStockFabric')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-sky-50 transition-colors border-l-2 border-l-sky-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
-                                <p class="text-[8px] font-bold uppercase text-sky-500 leading-tight">รอสต็อคจ่ายผ้า<span class="block font-normal normal-case text-slate-400">Pending Stock Fabric</span></p>
+                                <p class="text-[10px] font-bold uppercase text-sky-500 leading-tight">รอสต็อคจ่ายผ้า <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Stock Fabric</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiWaitStockFabricLines">0</span> รายการ<br><span id="kpiWaitStockFabricQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiWaitStockFabric" class="text-lg font-black text-sky-500 leading-none">0</h4>
@@ -384,7 +443,10 @@
                         <div onclick="filterByKpi('stockFabricWorking')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-sky-50 transition-colors border-l-2 border-l-sky-600">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
-                                <p class="text-[8px] font-bold uppercase text-sky-700 leading-tight">สต็อคผ้ากำลังทำงาน<span class="block font-normal normal-case text-slate-400">Stock Fabric In Progress</span></p>
+                                <p class="text-[10px] font-bold uppercase text-sky-700 leading-tight">สต็อคผ้ากำลังทำงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Stock Fabric In Progress</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiStockFabricWorkingLines">0</span> รายการ<br><span id="kpiStockFabricWorkingQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiStockFabricWorking" class="text-lg font-black text-sky-700 leading-none">0</h4>
@@ -396,7 +458,10 @@
                         <div onclick="filterByKpi('crossJobFabric')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-violet-50 transition-colors border-l-2 border-l-violet-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🔀</span>
-                                <p class="text-[8px] font-bold uppercase text-violet-600 leading-tight">ใช้ผ้าจาก Job อื่น<span class="block font-normal normal-case text-slate-400">Fabric borrowed from another Job</span></p>
+                                <p class="text-[10px] font-bold uppercase text-violet-600 leading-tight">ใช้ผ้าจาก Job อื่น <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Fabric borrowed from another Job</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiCrossJobFabricLines">0</span> รายการ<br><span id="kpiCrossJobFabricQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiCrossJobFabric" class="text-lg font-black text-violet-600 leading-none">0</h4>
@@ -412,7 +477,10 @@
                         <div onclick="filterByKpi('waitCuttingDept')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-indigo-50 transition-colors border-l-2 border-l-indigo-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">✂️</span>
-                                <p class="text-[8px] font-bold uppercase text-indigo-500 leading-tight">รอแผนกตัดรับงาน<span class="block font-normal normal-case text-slate-400">Pending Cutting Dept</span></p>
+                                <p class="text-[10px] font-bold uppercase text-indigo-500 leading-tight">รอแผนกตัดรับงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Cutting Dept</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiWaitCuttingDeptLines">0</span> รายการ<br><span id="kpiWaitCuttingDeptQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiWaitCuttingDept" class="text-lg font-black text-indigo-500 leading-none">0</h4>
@@ -422,7 +490,10 @@
                         <div onclick="filterByKpi('CuttingReceived')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-indigo-50 transition-colors border-l-2 border-l-indigo-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">✂️</span>
-                                <p class="text-[8px] font-bold uppercase text-indigo-600 leading-tight">กำลังตัดซ่อม<span class="block font-normal normal-case text-slate-400">Cutting In Progress</span></p>
+                                <p class="text-[10px] font-bold uppercase text-indigo-600 leading-tight">กำลังตัดซ่อม <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Cutting In Progress</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiCuttingReceivedLines">0</span> รายการ<br><span id="kpiCuttingReceivedQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiCuttingReceived" class="text-lg font-black text-indigo-600 leading-none">0</h4>
@@ -432,7 +503,10 @@
                         <div onclick="filterByKpi('cuttingSentFresh')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-purple-50 transition-colors border-l-2 border-l-purple-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
-                                <p class="text-[8px] font-bold uppercase text-purple-600 leading-tight">ตัดเสร็จ รอเริ่มงานต่อ<span class="block font-normal normal-case text-slate-400">Awaiting next stage</span></p>
+                                <p class="text-[10px] font-bold uppercase text-purple-600 leading-tight">ตัดเสร็จ รอเริ่มงานต่อ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Awaiting next stage</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiCuttingSentLines">0</span> รายการ<br><span id="kpiCuttingSentQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiCuttingSent" class="text-lg font-black text-purple-600 leading-none">0</h4>
@@ -442,7 +516,10 @@
                         <div onclick="filterByKpi('cuttingIssue')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">⚠️</span>
-                                <p class="text-[8px] font-bold uppercase text-red-600 leading-tight">แผนกตัดแจ้งปัญหา<span class="block font-normal normal-case text-slate-400">Cutting Issue Reported</span></p>
+                                <p class="text-[10px] font-bold uppercase text-red-600 leading-tight">แผนกตัดแจ้งปัญหา <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Cutting Issue Reported</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiCuttingIssueLines">0</span> รายการ<br><span id="kpiCuttingIssueQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiCuttingIssue" class="text-lg font-black text-red-600 leading-none">0</h4>
@@ -454,7 +531,10 @@
                         <div onclick="filterByKpi('cuttingPending')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">✂️</span>
-                                <p class="text-[8px] font-bold uppercase text-amber-600 leading-tight">รายการตัดคงค้าง<span class="block font-normal normal-case text-slate-400">Pending Cut Items</span></p>
+                                <p class="text-[10px] font-bold uppercase text-amber-600 leading-tight">รายการตัดคงค้าง <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Cut Items</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiCuttingPendingLines">0</span> รายการ<br><span id="kpiCuttingPendingQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiCuttingPending" class="text-lg font-black text-amber-600 leading-none">0</h4>
@@ -473,7 +553,10 @@
                         <div onclick="filterByKpi('accWaitingReceive')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-lime-50 transition-colors border-l-2 border-l-lime-300">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🏷️</span>
-                                <p class="text-[8px] font-bold uppercase text-lime-500 leading-tight">รอ ACC รับงาน<span class="block font-normal normal-case text-slate-400">Pending ACC receipt</span></p>
+                                <p class="text-[10px] font-bold uppercase text-lime-500 leading-tight">รอ ACC รับงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending ACC receipt</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiAccWaitingReceiveLines">0</span> รายการ<br><span id="kpiAccWaitingReceiveQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiAccWaitingReceive" class="text-lg font-black text-lime-500 leading-none">0</h4>
@@ -483,7 +566,10 @@
                         <div onclick="filterByKpi('acc')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-lime-50 transition-colors border-l-2 border-l-lime-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🏷️</span>
-                                <p class="text-[8px] font-bold uppercase text-lime-600 leading-tight">ACC กำลังดำเนินการ<span class="block font-normal normal-case text-slate-400">ACC In Progress</span></p>
+                                <p class="text-[10px] font-bold uppercase text-lime-600 leading-tight">ACC กำลังดำเนินการ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">ACC In Progress</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiAccLines">0</span> รายการ<br><span id="kpiAccQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiAcc" class="text-lg font-black text-lime-600 leading-none">0</h4>
@@ -493,7 +579,10 @@
                         <div onclick="filterByKpi('accPending')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📮</span>
-                                <p class="text-[8px] font-bold uppercase text-orange-500 leading-tight">รายการที่ติดปัญหา (ACC)<span class="block font-normal normal-case text-slate-400">Pending / issue reported</span></p>
+                                <p class="text-[10px] font-bold uppercase text-orange-500 leading-tight">รายการที่ติดปัญหา (ACC) <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending / issue reported</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiAccPendingLines">0</span> รายการ<br><span id="kpiAccPendingQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiAccPending" class="text-lg font-black text-orange-500 leading-none">0</h4>
@@ -506,7 +595,10 @@
                         <div onclick="filterByKpi('accFulfillmentPending')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🧾</span>
-                                <p class="text-[8px] font-bold uppercase text-amber-600 leading-tight">ค้างจ่ายบางรายการ (ACC)<span class="block font-normal normal-case text-slate-400">Some lines still pending</span></p>
+                                <p class="text-[10px] font-bold uppercase text-amber-600 leading-tight">ค้างจ่ายบางรายการ (ACC) <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Some lines still pending</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiAccFulfillmentPendingLines">0</span> รายการ<br><span id="kpiAccFulfillmentPendingQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiAccFulfillmentPending" class="text-lg font-black text-amber-600 leading-none">0</h4>
@@ -535,7 +627,10 @@
                         <div onclick="filterByKpi('qcWaiting')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-fuchsia-50 transition-colors border-l-2 border-l-fuchsia-300">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🔍</span>
-                                <p class="text-[8px] font-bold uppercase text-fuchsia-500 leading-tight">รอ QC รับงาน<span class="block font-normal normal-case text-slate-400">Pending QC receipt</span></p>
+                                <p class="text-[10px] font-bold uppercase text-fuchsia-500 leading-tight">รอ QC รับงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending QC receipt</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiQcWaitingLines">0</span> รายการ<br><span id="kpiQcWaitingQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiQcWaiting" class="text-lg font-black text-fuchsia-500 leading-none">0</h4>
@@ -545,7 +640,10 @@
                         <div onclick="filterByKpi('qc')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-fuchsia-50 transition-colors border-l-2 border-l-fuchsia-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🔍</span>
-                                <p class="text-[8px] font-bold uppercase text-fuchsia-600 leading-tight">QC กำลังตรวจสอบ<span class="block font-normal normal-case text-slate-400">QC In Progress</span></p>
+                                <p class="text-[10px] font-bold uppercase text-fuchsia-600 leading-tight">QC กำลังตรวจสอบ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">QC In Progress</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiQcLines">0</span> รายการ<br><span id="kpiQcQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiQc" class="text-lg font-black text-fuchsia-600 leading-none">0</h4>
@@ -604,7 +702,10 @@
                         <div onclick="filterByKpi('qcCutReplacePending')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">✂️</span>
-                                <p class="text-[8px] font-bold uppercase text-red-600 leading-tight">รอ QC แจ้งตัดเปลี่ยนใหม่<span class="block font-normal normal-case text-slate-400">Pending QC cut-replace notice</span></p>
+                                <p class="text-[10px] font-bold uppercase text-red-600 leading-tight">รอ QC แจ้งตัดเปลี่ยนใหม่ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending QC cut-replace notice</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiQcCutReplaceLines">0</span> รายการ<br><span id="kpiQcCutReplaceQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiQcCutReplace" class="text-lg font-black text-red-600 leading-none">0</h4>
@@ -616,7 +717,10 @@
                         <div onclick="filterByKpi('qcNotifyVendorPending')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📨</span>
-                                <p class="text-[8px] font-bold uppercase text-red-500 leading-tight">รอ QC แจ้ง Vendor<span class="block font-normal normal-case text-slate-400">Pending QC vendor notice</span></p>
+                                <p class="text-[10px] font-bold uppercase text-red-500 leading-tight">รอ QC แจ้ง Vendor <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending QC vendor notice</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiQcNotifyVendorLines">0</span> รายการ<br><span id="kpiQcNotifyVendorQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiQcNotifyVendor" class="text-lg font-black text-red-500 leading-none">0</h4>
@@ -638,7 +742,10 @@
                         <div onclick="filterByKpi('waitingAccOnly')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
-                                <p class="text-[8px] font-bold uppercase text-orange-600 leading-tight">รอ ACC เท่านั้น<span class="block font-normal normal-case text-slate-400">Emb/QC done — waiting on ACC only</span></p>
+                                <p class="text-[10px] font-bold uppercase text-orange-600 leading-tight">รอ ACC เท่านั้น <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Emb/QC done — waiting on ACC only</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiWaitingAccOnlyLines">0</span> รายการ<br><span id="kpiWaitingAccOnlyQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiWaitingAccOnly" class="text-lg font-black text-orange-600 leading-none">0</h4>
@@ -648,7 +755,10 @@
                         <div onclick="filterByKpi('waitingMainPipelineOnly')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
-                                <p class="text-[8px] font-bold uppercase text-orange-500 leading-tight">รอตกแต่ง/QC เท่านั้น<span class="block font-normal normal-case text-slate-400">ACC done — waiting on Emb/QC only</span></p>
+                                <p class="text-[10px] font-bold uppercase text-orange-500 leading-tight">รอตกแต่ง/QC เท่านั้น <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">ACC done — waiting on Emb/QC only</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiWaitingMainOnlyLines">0</span> รายการ<br><span id="kpiWaitingMainOnlyQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiWaitingMainOnly" class="text-lg font-black text-orange-500 leading-none">0</h4>
@@ -658,7 +768,10 @@
                         <div onclick="filterByKpi('waitingBoth')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
-                                <p class="text-[8px] font-bold uppercase text-red-500 leading-tight">รอทั้ง ACC และตกแต่ง/QC<span class="block font-normal normal-case text-slate-400">Waiting on both ACC and Emb/QC</span></p>
+                                <p class="text-[10px] font-bold uppercase text-red-500 leading-tight">รอทั้ง ACC และตกแต่ง/QC <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Waiting on both ACC and Emb/QC</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiWaitingBothLines">0</span> รายการ<br><span id="kpiWaitingBothQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiWaitingBoth" class="text-lg font-black text-red-500 leading-none">0</h4>
@@ -668,7 +781,10 @@
                         <div onclick="filterByKpi('SupermarketPending')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-teal-50 transition-colors border-l-2 border-l-teal-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🏬</span>
-                                <p class="text-[8px] font-bold uppercase text-teal-500 leading-tight">รอ SM รับงาน<span class="block font-normal normal-case text-slate-400">Pending Supermarket</span></p>
+                                <p class="text-[10px] font-bold uppercase text-teal-500 leading-tight">รอ SM รับงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Supermarket</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiSupermarketPendingLines">0</span> รายการ<br><span id="kpiSupermarketPendingQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiSupermarketPending" class="text-lg font-black text-teal-500 leading-none">0</h4>
@@ -678,7 +794,10 @@
                         <div onclick="filterByKpi('SupermarketReceived')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-teal-50 transition-colors border-l-2 border-l-teal-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🏬</span>
-                                <p class="text-[8px] font-bold uppercase text-teal-600 leading-tight">SM รับแล้ว<span class="block font-normal normal-case text-slate-400">Supermarket Received</span></p>
+                                <p class="text-[10px] font-bold uppercase text-teal-600 leading-tight">SM รับแล้ว <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Supermarket Received</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiSupermarketReceivedLines">0</span> รายการ<br><span id="kpiSupermarketReceivedQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiSupermarketReceived" class="text-lg font-black text-teal-600 leading-none">0</h4>
@@ -688,7 +807,10 @@
                         <div onclick="filterByKpi('SupermarketSent')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-cyan-50 transition-colors border-l-2 border-l-cyan-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🚚</span>
-                                <p class="text-[8px] font-bold uppercase text-cyan-600 leading-tight">ส่งเข้าไลน์ รอต้นทางรับ<span class="block font-normal normal-case text-slate-400">Sent to Line, Pending Receipt</span></p>
+                                <p class="text-[10px] font-bold uppercase text-cyan-600 leading-tight">ส่งเข้าไลน์ รอต้นทางรับ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Sent to Line, Pending Receipt</span></p>
+                            </div>
+                            <div class="text-[9px] font-bold text-slate-400 text-center shrink-0 px-2 leading-tight">
+                                <span id="kpiSupermarketSentLines">0</span> รายการ<br><span id="kpiSupermarketSentQty">0</span> ชิ้น
                             </div>
                             <div class="text-right shrink-0 flex items-center justify-end gap-[18px]">
                                 <h4 id="kpiSupermarketSent" class="text-lg font-black text-cyan-600 leading-none">0</h4>
@@ -938,6 +1060,8 @@
                                 <th class="px-4 py-3 text-[10px] font-extrabold text-amber-600 uppercase whitespace-nowrap">🕐 Downtime เฉลี่ย<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Avg Downtime</span></th>
                                 <th class="px-4 py-3 text-[10px] font-extrabold text-emerald-600 uppercase whitespace-nowrap">⚙️ Active เฉลี่ย<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Avg Active</span></th>
                                 <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">— รวม (Mixed)<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Avg Combined</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">🔽 เร็วสุด<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Min</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">🔼 ช้าสุด<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Max</span></th>
                             </tr>
                         </thead>
                         <tbody id="processDurationBody" class="divide-y divide-slate-100 bg-white"></tbody>
@@ -1127,7 +1251,7 @@
             <div class="card overflow-hidden">
                 <div class="p-4 border-b bg-slate-50">
                     <h3 class="text-sm font-black text-slate-800">การซ่อมงาน / ตัดเปลี่ยนในไลน์ผลิต<span class="block text-[10px] font-semibold text-slate-400 normal-case mt-0.5">Workflow</span></h3>
-                    <p class="text-[10px] text-slate-400 mt-0.5">แจ้งงาน → ตรวจสอบ (BU) → อนุมัติ (FM) → ตัด → ส่งมอบ → รับงาน</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">แจ้งงาน → ตรวจสอบ (BU) → อนุมัติ (FM) → ตัด → ส่งมอบ → รับงาน <span class="opacity-70">(Report → BU Review → FM Approval → Cut → Deliver → Receive)</span></p>
                 </div>
                 <div class="overflow-x-auto p-4">
                     <div id="workflowDiagram" class="relative" style="width:1200px; height:720px; min-width:1200px;">
@@ -1169,10 +1293,10 @@
                             <text x="600" y="422" font-size="10" fill="#b45309" font-weight="700">มี (Yes)</text>
                             <!-- 5.1 -> 5.2 (QC): งานเสร็จ ส่งตรวจ -->
                             <path d="M700,465 V500" stroke="#3730a3" stroke-width="2" fill="none" marker-end="url(#wfArrowBlue)"/>
-                            <text x="708" y="486" font-size="9" fill="#3730a3" font-weight="700">เสร็จ → ส่งตรวจ</text>
+                            <text x="708" y="486" font-size="9" fill="#3730a3" font-weight="700">เสร็จ → ส่งตรวจ (Done → Send for inspection)</text>
                             <!-- 5.2 (QC) -> 5.1: ไม่ผ่าน reject loop -->
                             <path d="M790,500 V465" stroke="#be123c" stroke-width="2" fill="none" marker-end="url(#wfArrowRose)"/>
-                            <text x="796" y="486" font-size="9" fill="#be123c" font-weight="700">ไม่ผ่าน</text>
+                            <text x="796" y="486" font-size="9" fill="#be123c" font-weight="700">ไม่ผ่าน (Failed)</text>
                             <!-- 5.2 (QC) -> 6: ผ่านครบทุกประเภท -->
                             <path d="M845,535 H875" stroke="#047857" stroke-width="2" fill="none" marker-end="url(#wfArrowGreen)"/>
                             <!-- D3 -> 6 (ไม่มี, bypass 5.1+5.2 entirely) -->
@@ -1238,12 +1362,12 @@
                         <!-- Node 5.1 -->
                         <div class="absolute bg-amber-50 border-2 border-amber-300 rounded-xl p-2 flex items-center gap-2" style="left:645px; top:395px; width:200px; height:70px;">
                             <span class="shrink-0 w-6 h-6 rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center">5.1</span>
-                            <div class="text-[11px] leading-tight"><b>แผนกที่เกี่ยวข้อง <span class="font-normal opacity-70">(Related Dept)</span></b><span class="block text-amber-700 font-normal">ปัก/พิมพ์/เอ็ม ตามประเภทที่มี — ทำทีละประเภท (In-house/Outsource)</span></div>
+                            <div class="text-[11px] leading-tight"><b>แผนกที่เกี่ยวข้อง <span class="font-normal opacity-70">(Related Dept)</span></b><span class="block text-amber-700 font-normal">ปัก/พิมพ์/เอ็ม ตามประเภทที่มี — ทำทีละประเภท (In-house/Outsource) <span class="opacity-70">(Embroidery/Print/Embellishment per type present — one type at a time)</span></span></div>
                         </div>
                         <!-- Node 5.2 (QC) -->
                         <div class="absolute bg-sky-50 border-2 border-sky-400 rounded-xl p-2 flex items-center gap-2" style="left:645px; top:500px; width:200px; height:70px;">
                             <span class="shrink-0 w-6 h-6 rounded-full bg-sky-600 text-white text-[10px] font-black flex items-center justify-center">5.2</span>
-                            <div class="text-[11px] leading-tight"><b>QC <span class="font-normal opacity-70">(ตรวจแต่ละประเภท)</span></b><span class="block text-sky-700 font-normal">ตรวจ In-house/Outsource แยกทุกประเภท — ทำซ้ำทุกประเภทที่มี</span></div>
+                            <div class="text-[11px] leading-tight"><b>QC <span class="font-normal opacity-70">(ตรวจแต่ละประเภท / Inspect per type)</span></b><span class="block text-sky-700 font-normal">ตรวจ In-house/Outsource แยกทุกประเภท — ทำซ้ำทุกประเภทที่มี <span class="opacity-70">(Checks In-house/Outsource separately, per type — repeated for every type present)</span></span></div>
                         </div>
                         <!-- Node 6 -->
                         <div class="absolute bg-emerald-50 border-2 border-emerald-400 rounded-xl p-2 flex items-center gap-2" style="left:875px; top:500px; width:190px; height:70px;">
@@ -1277,7 +1401,7 @@
                     <p class="text-[9px] text-slate-400 px-4 pb-3">หมายเหตุ: งานปัก / พิมพ์ / เอ็ม (ทุกประเภท ทั้ง In-house และ Outsource) แต่ละประเภทเมื่อทำเสร็จจะต้องผ่าน QC ตรวจก่อนเสมอ — Outsource ที่ไม่ผ่านจะ reject กลับไปซ่อมหรือตัดเปลี่ยนใหม่/แจ้ง Vendor — จากนั้นจึงส่งประเภทถัดไปหรือเข้าซุปเปอร์มาร์เก็ต (เฉพาะกรณีมีงาน) <span class="opacity-70">(Note: every embellishment type — in-house and outsource alike — goes through its own QC check right after it's done; a failed Outsource check gets rejected back for repair/cut-replace or a vendor notice; only then does it move to the next type or Supermarket, when applicable)</span></p>
                     <p class="text-[9px] text-slate-400 px-4 pb-1">หมายเหตุเพิ่มเติม (ยังไม่ได้วาดเป็นแผนภาพ):</p>
                     <ul class="text-[9px] text-slate-400 px-4 pb-3 list-disc list-inside space-y-0.5">
-                        <li>คำขอประเภท <b>"แจ้งขอ ACC"</b> (ไม่มีชิ้นส่วนตัดเปลี่ยน) จะข้ามขั้นตอน 4-5 (แผนกตัด/โต๊ะตัด) ทั้งหมด ไปที่ ACC โดยตรงหลัง FM อนุมัติ เช่นเดียวกับ Heat Transfer ขอ ACC <span class="opacity-70">("ACC only" requests skip nodes 4-5 entirely and go straight to ACC after FM approval)</span></li>
+                        <li>คำขอประเภท <b>"แจ้งขอเบิกอุปกรณ์ (ACC)"</b> (ไม่มีชิ้นส่วนตัดเปลี่ยน) จะข้ามขั้นตอน 4-5 (แผนกตัด/โต๊ะตัด) ทั้งหมด ไปที่ ACC โดยตรงหลัง FM อนุมัติ เช่นเดียวกับ Heat Transfer ขอ ACC <span class="opacity-70">("ACC only" requests skip nodes 4-5 entirely and go straight to ACC after FM approval)</span></li>
                         <li>ก่อนส่งงานจาก Marker จะต้องระบุ <b>วางมาร์ค/ไม่วางมาร์ค</b> เพิ่มเติมจากประเภทผ้า <span class="opacity-70">(Marker must record marker-laid status before handing off)</span></li>
                         <li>ที่ขั้นตอน 5.2 (QC) นอกจาก ผ่าน/ตัดเปลี่ยนใหม่/แจ้ง Vendor แล้ว ยังมีผล <b>"ส่งซ่อม"</b> ที่ตีกลับไปให้แผนกเดิม (5.1) ทำใหม่แล้วส่งกลับมา QC อีกครั้ง <span class="opacity-70">(QC can also send back for repair — looping back to node 5.1 before returning to QC)</span></li>
                         <li>ที่ขั้นตอน 5 (โต๊ะตัด) สามารถเลือกส่งเฉพาะชิ้นที่ตัดเสร็จได้ ชิ้นที่ยังไม่ติ๊กจะกลายเป็นรายการค้างตัด <span class="opacity-70">(Cutting can send only the parts checked as done — unchecked parts become a pending-cut backlog)</span></li>
@@ -1375,10 +1499,26 @@
     <!-- MODAL: ADD / EDIT REPAIR ORDER -->
     <div id="formModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
-            <div class="px-6 py-4 border-b bg-white sticky top-0 z-10 flex justify-between items-center">
+            <div class="px-6 py-4 border-b bg-white sticky top-0 z-10 flex justify-between items-center gap-4 flex-wrap">
                 <div>
                     <h3 id="formModalTitle" class="text-lg font-black text-slate-800">แจ้งซ่อมงาน / ขอตัดเปลี่ยนใหม่</h3>
                     <p id="formModalSubtitle" class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Garment Repair Request Form</p>
+                </div>
+                <!-- Request type toggle — moved up into the header bar's spare space, per
+                     "ต้องการให้ขยับประเภทคำขอขึ้นไปอีกเนื่องจากด้านบนมีพื้นที่เหลือค่อนข้างมาก".
+                     Per "ให้มีติ๊กเลือกด้านบนข้อมูลว่าแจ้งขอตัดเปลี่ยน กับ แจ้งขอเบิกอุปกรณ์ (ACC)
+                     ...ถ้าเป็น ACC จะไม่บังคับให้กรอกข้อมูลส่วนของรายการชิ้นส่วนที่ต้องตัดซ่อม
+                     เนื่องจาก ACC จะไม่ได้มีรายการชิ้นส่วนผ้า". -->
+                <div class="bg-slate-50 border rounded-xl p-2.5">
+                    <label class="text-[9px] font-black text-slate-500 uppercase mb-1 block">ประเภทคำขอ <span class="font-normal normal-case opacity-70">(Request Type)</span> *</label>
+                    <div class="flex gap-3 text-xs">
+                        <label class="flex items-center gap-1"><input type="radio" name="fRequestType" value="CutReplace" checked onchange="onRequestTypeChange()"> แจ้งขอตัดเปลี่ยน <span class="opacity-70">(Cut-Replace)</span></label>
+                        <label class="flex items-center gap-1"><input type="radio" name="fRequestType" value="ACCOnly" onchange="onRequestTypeChange()"> แจ้งขอเบิกอุปกรณ์ <span class="opacity-70">(ACC)</span></label>
+                    </div>
+                    <!-- Locked once editing an existing record — per "ล็อคหน้าการเลือกประเภทคำขอ
+                         หากทำงานในหน้าตัดเปลี่ยน...แต่เผลอไปโดนปุ่มเลื่อนไปที่หน้า ACC ทำให้
+                         รายการขอนั้นขึ้นผิดประเภทรายการ". -->
+                    <p id="fRequestTypeLockNote" class="hidden text-[9px] text-amber-600 font-bold mt-1">🔒 ล็อกไว้หลังสร้างรายการแล้ว เพื่อป้องกันการสลับประเภทโดยไม่ตั้งใจ <span class="font-normal opacity-70">(Locked after creation)</span></p>
                 </div>
                 <button onclick="closeModal('formModal')" class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600">✕</button>
             </div>
@@ -1386,34 +1526,19 @@
             <form id="repairForm" class="p-6 space-y-6 flex-grow">
                 <input type="hidden" id="editItemIndex" value="-1">
 
-                <!-- Request type toggle — per "ให้มีติ๊กเลือกด้านบนข้อมูลว่าแจ้งขอตัดเปลี่ยน กับ
-                     แจ้งขอ ACC...ถ้าเป็น แจ้งขอ ACC จะไม่บังคับให้กรอกข้อมูลส่วนของรายการชิ้นส่วน
-                     ที่ต้องตัดซ่อม เนื่องจาก ACC จะไม่ได้มีรายการชิ้นส่วนผ้า". -->
-                <div class="bg-slate-50 border rounded-xl p-3">
-                    <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ประเภทคำขอ <span class="font-normal normal-case opacity-70">(Request Type)</span> *</label>
-                    <div class="flex gap-4 text-xs">
-                        <label class="flex items-center gap-1"><input type="radio" name="fRequestType" value="CutReplace" checked onchange="onRequestTypeChange()"> แจ้งขอตัดเปลี่ยน <span class="opacity-70">(Cut-Replace)</span></label>
-                        <label class="flex items-center gap-1"><input type="radio" name="fRequestType" value="ACCOnly" onchange="onRequestTypeChange()"> แจ้งขอ ACC <span class="opacity-70">(ACC Only)</span></label>
-                    </div>
-                    <!-- Locked once editing an existing record — per "ล็อคหน้าการเลือกประเภทคำขอ
-                         หากทำงานในหน้าตัดเปลี่ยน...แต่เผลอไปโดนปุ่มเลื่อนไปที่หน้า ACC ทำให้
-                         รายการขอนั้นขึ้นผิดประเภทรายการ". -->
-                    <p id="fRequestTypeLockNote" class="hidden text-[9px] text-amber-600 font-bold mt-1">🔒 ล็อกไว้หลังสร้างรายการแล้ว เพื่อป้องกันการสลับประเภทโดยไม่ตั้งใจ <span class="font-normal opacity-70">(Locked after creation)</span></p>
-                </div>
-
                 <!-- Header Information -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันที่แจ้งซ่อม <span class="font-normal normal-case opacity-70">(Date Reported)</span></label>
-                        <input type="datetime-local" id="fDate" class="w-full text-xs" required>
+                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันที่แจ้งซ่อม <span class="font-normal normal-case opacity-70">(Date Reported — read only)</span></label>
+                        <input type="datetime-local" id="fDate" class="w-full text-xs bg-slate-100 text-slate-500" readonly required>
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันที่ต้องการของ <span class="font-normal normal-case opacity-70">(Need Date)</span></label>
                         <input type="date" id="fNeedDate" class="w-full text-xs">
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันส่งออก <span class="font-normal normal-case opacity-70">(Ship-Out Date)</span></label>
-                        <input type="date" id="fShipOutDate" class="w-full text-xs">
+                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วันส่งออก <span class="font-normal normal-case opacity-70">(Ship-Out Date)</span> *</label>
+                        <input type="date" id="fShipOutDate" class="w-full text-xs" required>
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">แผนกที่แจ้ง <span class="font-normal normal-case opacity-70">(Dept)</span> *</label>
@@ -1442,9 +1567,9 @@
                     <div class="sm:col-span-2 md:col-span-4">
                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ผ้าจับลายหรือไม่ <span class="font-normal normal-case opacity-70">(Fabric Type — optional)</span></label>
                         <div class="flex gap-3 text-xs bg-slate-50 p-2.5 rounded-lg border h-[34px] items-center">
-                            <label class="flex items-center gap-1"><input type="radio" name="fFabricType" value="matched"> ผ้าจับลาย</label>
-                            <label class="flex items-center gap-1"><input type="radio" name="fFabricType" value="unmatched"> ผ้าไม่จับลาย</label>
-                            <label class="flex items-center gap-1"><input type="radio" name="fFabricType" value="" checked> ไม่ระบุ</label>
+                            <label class="flex items-center gap-1"><input type="radio" name="fFabricType" value="matched"> ผ้าจับลาย <span class="opacity-70">(Pattern-matched)</span></label>
+                            <label class="flex items-center gap-1"><input type="radio" name="fFabricType" value="unmatched"> ผ้าไม่จับลาย <span class="opacity-70">(Non-directional)</span></label>
+                            <label class="flex items-center gap-1"><input type="radio" name="fFabricType" value="" checked> ไม่ระบุ <span class="opacity-70">(Unspecified)</span></label>
                         </div>
                     </div>
                     <div id="lineSelectContainer">
@@ -1452,6 +1577,17 @@
                         <select id="fLine" class="w-full text-xs border-indigo-200 bg-indigo-50/30">
                             <!-- Populated dynamically -->
                         </select>
+                    </div>
+                    <!-- Optional urgency tag — per "ต้องการให้มีปุ่มติ๊ก...ว่า ด่วน, ด่วนมาก,
+                         ด่วนที่สุด ส่วนนี้ไม่บังคับติ๊ก" (not required). -->
+                    <div class="sm:col-span-2 md:col-span-4">
+                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ความเร่งด่วน <span class="font-normal normal-case opacity-70">(Urgency — optional)</span></label>
+                        <div class="flex gap-3 text-xs bg-slate-50 p-2.5 rounded-lg border h-[34px] items-center">
+                            <label class="flex items-center gap-1"><input type="radio" name="fUrgency" value="" checked> ไม่ระบุ <span class="opacity-70">(Unspecified)</span></label>
+                            <label class="flex items-center gap-1"><input type="radio" name="fUrgency" value="urgent"> 🔶 ด่วน <span class="opacity-70">(Urgent)</span></label>
+                            <label class="flex items-center gap-1"><input type="radio" name="fUrgency" value="veryUrgent"> 🔴 ด่วนมาก <span class="opacity-70">(Very Urgent)</span></label>
+                            <label class="flex items-center gap-1"><input type="radio" name="fUrgency" value="mostUrgent"> ‼️ ด่วนที่สุด <span class="opacity-70">(Most Urgent)</span></label>
+                        </div>
                     </div>
                 </div>
 
@@ -1473,7 +1609,7 @@
                         <datalist id="itemList"></datalist>
                     </div>
                     <div>
-                        <label class="text-[10px] font-extrabold text-slate-600 block mb-1">สี (Color) *</label>
+                        <label class="text-[10px] font-extrabold text-slate-600 block mb-1">CW (Colorway) *</label>
                         <input type="text" id="fColor" list="colorList" placeholder="เช่น Navy Blue" class="w-full text-xs bg-white" required>
                         <datalist id="colorList"></datalist>
                     </div>
@@ -2118,20 +2254,24 @@
 
         // Official company holidays (ประกาศวันหยุดประจำปี) — "YYYY-MM-DD": ชื่อวันหยุด.
         // Extend this object with more years as new announcements come out.
+        // English weekday/holiday names are the standard terms used on official Thai public
+        // holiday calendars — added per "ต้องการแปลข้อมูลทั้งหมดในระบบเป็นไทยหลัก และมีภาษาอังกฤษ
+        // ด้วยในทุกๆคำ ทุกรายการ".
+        const WEEKDAY_EN = { 'จันทร์': 'Monday', 'อังคาร': 'Tuesday', 'พุธ': 'Wednesday', 'พฤหัสบดี': 'Thursday', 'ศุกร์': 'Friday', 'เสาร์': 'Saturday', 'อาทิตย์': 'Sunday' };
         const COMPANY_HOLIDAYS_2026 = {
-            "2026-01-01": { weekday: "พฤหัสบดี", name: "วันขึ้นปีใหม่" },
-            "2026-03-03": { weekday: "อังคาร", name: "วันมาฆบูชา" },
-            "2026-04-13": { weekday: "จันทร์", name: "วันสงกรานต์" },
-            "2026-04-14": { weekday: "อังคาร", name: "วันสงกรานต์" },
-            "2026-04-15": { weekday: "พุธ", name: "วันสงกรานต์" },
-            "2026-05-01": { weekday: "ศุกร์", name: "วันแรงงานแห่งชาติ" },
-            "2026-06-03": { weekday: "พุธ", name: "วันเฉลิมพระชนมพรรษา สมเด็จพระนางเจ้าสุทิดา พัชรสุธาพิมลลักษณ พระบรมราชินี" },
-            "2026-07-28": { weekday: "อังคาร", name: "วันพระบรมราชสมภพ พระบาทสมเด็จพระปรเมนทรรามาธิบดีศรีสินทรมหาวชิราลงกรณ พระวชิรเกล้าเจ้าอยู่หัว" },
-            "2026-07-29": { weekday: "พุธ", name: "วันอาสาฬหบูชา" },
-            "2026-08-12": { weekday: "พุธ", name: "วันเฉลิมพระชนมพรรษา สมเด็จพระนางเจ้าสิริกิติ์ พระบรมราชินีนาถ พระบรมราชชนนีพันปีหลวง" },
-            "2026-10-13": { weekday: "อังคาร", name: "วันคล้ายวันสวรรคต พระบาทสมเด็จพระบรมชนกาธิเบศร มหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร" },
-            "2026-12-05": { weekday: "เสาร์", name: "วันคล้ายวันพระบรมราชสมภพ พระบาทสมเด็จพระบรมชนกาธิเบศร มหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร วันชาติ และวันพ่อแห่งชาติ" },
-            "2026-12-31": { weekday: "พฤหัสบดี", name: "วันสิ้นปี" }
+            "2026-01-01": { weekday: "พฤหัสบดี", name: "วันขึ้นปีใหม่", nameEn: "New Year's Day" },
+            "2026-03-03": { weekday: "อังคาร", name: "วันมาฆบูชา", nameEn: "Makha Bucha Day" },
+            "2026-04-13": { weekday: "จันทร์", name: "วันสงกรานต์", nameEn: "Songkran Festival (Thai New Year)" },
+            "2026-04-14": { weekday: "อังคาร", name: "วันสงกรานต์", nameEn: "Songkran Festival (Thai New Year)" },
+            "2026-04-15": { weekday: "พุธ", name: "วันสงกรานต์", nameEn: "Songkran Festival (Thai New Year)" },
+            "2026-05-01": { weekday: "ศุกร์", name: "วันแรงงานแห่งชาติ", nameEn: "National Labour Day" },
+            "2026-06-03": { weekday: "พุธ", name: "วันเฉลิมพระชนมพรรษา สมเด็จพระนางเจ้าสุทิดา พัชรสุธาพิมลลักษณ พระบรมราชินี", nameEn: "HM Queen Suthida's Birthday" },
+            "2026-07-28": { weekday: "อังคาร", name: "วันพระบรมราชสมภพ พระบาทสมเด็จพระปรเมนทรรามาธิบดีศรีสินทรมหาวชิราลงกรณ พระวชิรเกล้าเจ้าอยู่หัว", nameEn: "HM King Vajiralongkorn's Birthday" },
+            "2026-07-29": { weekday: "พุธ", name: "วันอาสาฬหบูชา", nameEn: "Asalha Bucha Day" },
+            "2026-08-12": { weekday: "พุธ", name: "วันเฉลิมพระชนมพรรษา สมเด็จพระนางเจ้าสิริกิติ์ พระบรมราชินีนาถ พระบรมราชชนนีพันปีหลวง", nameEn: "HM Queen Mother Sirikit's Birthday (Mother's Day)" },
+            "2026-10-13": { weekday: "อังคาร", name: "วันคล้ายวันสวรรคต พระบาทสมเด็จพระบรมชนกาธิเบศร มหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร", nameEn: "HM King Bhumibol Memorial Day" },
+            "2026-12-05": { weekday: "เสาร์", name: "วันคล้ายวันพระบรมราชสมภพ พระบาทสมเด็จพระบรมชนกาธิเบศร มหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร วันชาติ และวันพ่อแห่งชาติ", nameEn: "HM King Bhumibol's Birthday / National Day / Father's Day" },
+            "2026-12-31": { weekday: "พฤหัสบดี", name: "วันสิ้นปี", nameEn: "New Year's Eve" }
         };
         const COMPANY_HOLIDAYS = { ...COMPANY_HOLIDAYS_2026 };
 
@@ -2194,7 +2334,10 @@
         }
         function apiReplaceAll(sheetName, rows) { return apiPost({ sheet: sheetName, action: 'replaceAll', rows }); }
         function apiAppend(sheetName, row) { return apiPost({ sheet: sheetName, action: 'append', row }); }
-        const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', 'ST', 'MT', 'LT', 'XLT', '2XLT', '3XLT', '4XLT'];
+        // ST-4XLT (SET-T) used to sit in this default grid — moved out per "ต้องการลบกลุ่ม
+        // SET-T ที่เป็น ST-4XLT ออกจาก size ปกติที่แสดงก่อน ต้องการให้เลือกเพิ่มจากปุ่มด้านล่าง".
+        // It's still available exactly as before, just only via the group-picker (SIZE_GROUPS.setT).
+        const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'];
         // Supplementary size groups a part can opt into beyond the standard grid above — each
         // group's codes get appended as extra Size Ratio cells when picked, per "ต้องการให้เพิ่ม
         // Size ที่นอกเหนือจากตาราง...แล้วรายการไซส์ที่เลือกจะมาแสดงในบล็อค ระบุจำนวนแต่ละไซส์ต่อกัน".
@@ -2229,7 +2372,14 @@
             { value: 'NeckTape', label: 'เทปดามคอ (Neck Tape)' },
             { value: 'NeckSupportFabric', label: 'ผ้าดามคอ (Neck Support Fabric)' },
             { value: 'NeckBinding', label: 'กุ้นคอ (Neck Binding)' },
-            { value: 'BindingFabric', label: 'ผ้ากุ้น (Binding Fabric)' }
+            { value: 'BindingFabric', label: 'ผ้ากุ้น (Binding Fabric)' },
+            { value: 'Lining', label: 'ชิ้นซับใน (Lining)' },
+            { value: 'OuterFront', label: 'ชิ้นหน้านอก (Outer Front)' },
+            { value: 'InnerFront', label: 'ชิ้นหน้าใน (Inner Front)' },
+            { value: 'InnerBack', label: 'หลังใน (Inner Back)' },
+            { value: 'OuterBack', label: 'หลังนอก (Outer Back)' },
+            { value: 'InnerSidePanel', label: 'ชิ้นแต่งข้างใน (Inner Side Panel)' },
+            { value: 'OuterSidePanel', label: 'ชิ้นแต่งข้างนอก (Outer Side Panel)' }
         ];
         const PART_NAME_LABELS = Object.fromEntries(PART_NAME_OPTIONS.map(p => [p.value, p.label]));
         // ACC requisition checklist — items besides embellishment (care/size labels, hang
@@ -2367,7 +2517,7 @@
             return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         }
 
-        const FIELD_LABELS = { date: 'วันที่แจ้ง', needDate: 'วันที่ต้องการของ', shipOutDate: 'วันส่งออก', dept: 'แผนก', line: 'ไลน์', style: 'Style', job: 'Job', item: 'Item', color: 'สี', po: 'PO No.', remark: 'Remark' };
+        const FIELD_LABELS = { date: 'วันที่แจ้ง', needDate: 'วันที่ต้องการของ', shipOutDate: 'วันส่งออก', dept: 'แผนก', line: 'ไลน์', style: 'Style', job: 'Job', item: 'Item', color: 'CW', po: 'PO No.', remark: 'Remark' };
         // Returns BOTH the existing human-readable summary text (unchanged, still used for the
         // toast/one-line log detail) AND a structured old/new value list — per "เพิ่มการเก็บ log
         // history...รายการแก้ไขทั้งเก่าและใหม่" — kept for the Admin-only detail view instead of
@@ -3360,7 +3510,7 @@
             const editId = isEditing && repairs[idx] ? repairs[idx].id : '';
             document.getElementById('formModalTitle').innerText = isEditing
                 ? (isAccOnly ? `แก้ไขรายการเบิก ACC (${editId})` : `แก้ไขรายการสั่งซ่อม (${editId})`)
-                : (isAccOnly ? 'แจ้งขอเบิก ACC' : 'แจ้งซ่อมงาน / ขอตัดเปลี่ยนใหม่');
+                : (isAccOnly ? 'แจ้งขอเบิกอุปกรณ์ (ACC)' : 'แจ้งซ่อมงาน / ขอตัดเปลี่ยนใหม่');
             document.getElementById('formModalSubtitle').innerText = isAccOnly ? 'ACC Requisition Form' : 'Garment Repair Request Form';
         }
 
@@ -3589,7 +3739,50 @@
                 </div>`;
         }
 
-        function addPartRow(name = '', part = '', sizes = null, reason = '', sample = false, embEntries = null, itemNo = '', fabricItem = '', cw = '') {
+        // One labeled row for a single added size group — group name on the left, its size
+        // cells on the right, a remove button on the far right.
+        function sizeGroupRowHtml(key, label, sizes, sizeQtys) {
+            return `
+                <div class="pSizeGroupRow flex items-center gap-2 flex-wrap bg-indigo-50/50 border border-indigo-100 rounded-lg p-2" data-group-key="${escapeHtml(key)}">
+                    <span class="text-[9px] font-bold text-indigo-600 shrink-0">${escapeHtml(label)}</span>
+                    <div class="flex flex-wrap gap-1.5">
+                        ${sizes.map(s => `
+                            <div class="flex flex-col items-center">
+                                <span class="text-[8px] font-bold text-slate-400">${escapeHtml(s)}</span>
+                                <input type="number" class="pSizeQty w-11 text-xs text-center" min="0" data-size="${escapeHtml(s)}" value="${sizeQtys[s] || ''}">
+                            </div>`).join('')}
+                    </div>
+                    <button type="button" class="pSizeGroupRemove text-[9px] text-rose-400 hover:text-rose-600 ml-auto shrink-0" title="ลบกลุ่มไซส์นี้ (Remove group)">✕</button>
+                </div>`;
+        }
+        // Reconstructs one row per SIZE_GROUPS entry that has any saved size present in
+        // sizeQtys (editing an existing record) — matches how the group-picker below adds
+        // groups fresh, so reopening a record shows the exact same grouped layout it was
+        // saved with. Any saved size that doesn't belong to a known group still gets a
+        // fallback "อื่นๆ" row so nothing entered previously is ever silently dropped.
+        function buildSizeGroupRowsHtml(sizeQtys) {
+            const extraKeys = Object.keys(sizeQtys).filter(s => !SIZE_OPTIONS.includes(s));
+            if (!extraKeys.length) return '';
+            let rows = '';
+            const claimed = new Set();
+            SIZE_GROUPS.forEach(g => {
+                const present = g.sizes.filter(s => extraKeys.includes(s));
+                if (!present.length) return;
+                present.forEach(s => claimed.add(s));
+                rows += sizeGroupRowHtml(g.key, g.label, g.sizes, sizeQtys);
+            });
+            const leftover = extraKeys.filter(s => !claimed.has(s));
+            if (leftover.length) rows += sizeGroupRowHtml('__other__', 'อื่นๆ (Other)', leftover, sizeQtys);
+            return rows;
+        }
+        // Delegated listeners for group rows: remove the whole row (all its size inputs go
+        // with it) and re-add the group to the picker's dropdown if it still has one there.
+        document.getElementById('partsContainer').addEventListener('click', (e) => {
+            if (!e.target.classList.contains('pSizeGroupRemove')) return;
+            e.target.closest('.pSizeGroupRow').remove();
+        });
+
+        function addPartRow(name = '', part = '', sizes = null, reason = '', sample = false, embEntries = null, itemNo = '', fabricItem = '', cw = '', bundleNo = '') {
             const container = document.getElementById('partsContainer');
             const rowId = 'row-' + Date.now() + Math.random().toString(36).substr(2, 4);
             const sizeQtys = sizes || {};
@@ -3600,7 +3793,7 @@
             const isOtherReason = !!reason && !reasonOpts.some(r => r.value === reason);
             const div = document.createElement('div');
             div.id = rowId;
-            div.className = "relative grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end bg-slate-50 p-3.5 pt-8 rounded-xl border border-slate-200";
+            div.className = "relative grid grid-cols-1 sm:grid-cols-[repeat(14,minmax(0,1fr))] gap-2.5 items-end bg-slate-50 p-3.5 pt-8 rounded-xl border border-slate-200";
             div.innerHTML = `
                 <button type="button" onclick="removePartRow('${rowId}')" class="absolute top-2 right-3 text-rose-400 hover:text-rose-600 font-bold text-[10px] flex items-center gap-1">✕ ลบรายการ</button>
                 <div class="sm:col-span-2">
@@ -3626,8 +3819,12 @@
                     </div>
                 </div>
                 <div class="sm:col-span-2">
-                    <label class="text-[9px] font-bold text-slate-400 block mb-1">CW. <span class="opacity-70">(Colorway)</span></label>
+                    <label class="text-[9px] font-bold text-slate-400 block mb-1">สี <span class="opacity-70">(Color)</span></label>
                     <input type="text" class="pCW w-full text-xs" value="${escapeHtml(cw)}" placeholder="ระบุ CW.">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="text-[9px] font-bold text-slate-400 block mb-1">มัดที่ <span class="opacity-70">(Bundle No.)</span></label>
+                    <input type="number" min="0" class="pBundleNo w-full text-xs" value="${escapeHtml(bundleNo)}" placeholder="ระบุมัดที่">
                 </div>
                 <div class="sm:col-span-2 flex items-center justify-center h-[34px] border rounded-lg bg-white px-2">
                     <label class="pSampleLabel flex items-center gap-1.5 cursor-pointer">
@@ -3643,19 +3840,17 @@
                                 <span class="text-[8px] font-bold text-slate-400">${s}</span>
                                 <input type="number" class="pSizeQty w-11 text-xs text-center" min="0" data-size="${s}" value="${sizeQtys[s] || ''}">
                             </div>`).join('')}
-                        <!-- Extra sizes from a group already saved on this part (editing an existing
-                             record) — rendered so they aren't silently dropped, same shape as ones
-                             the group-picker below adds fresh. -->
-                        ${Object.keys(sizeQtys).filter(s => !SIZE_OPTIONS.includes(s)).map(s => `
-                            <div class="flex flex-col items-center">
-                                <span class="text-[8px] font-bold text-slate-400">${escapeHtml(s)}</span>
-                                <input type="number" class="pSizeQty w-11 text-xs text-center" min="0" data-size="${escapeHtml(s)}" value="${sizeQtys[s] || ''}">
-                            </div>`).join('')}
                         <div class="pTotalWrap flex flex-col items-center ml-2 pl-2 border-l border-slate-200">
                             <span class="text-[8px] font-bold text-indigo-600">Total</span>
                             <span class="pTotalDisplay text-xs font-black text-indigo-700 w-11 text-center">${Object.values(sizeQtys).reduce((a, b) => a + (parseInt(b) || 0), 0)}</span>
                         </div>
                     </div>
+                    <!-- Each added size group gets its own labeled row, per "ต้องการให้แสดงรายการ
+                         Size นั้นแต่ละกลุ่มไซส์จะอยู่คนละบรรทัด และต้องการให้มีชื่อกลุ่มไซส์" —
+                         reconstructed here (editing an existing record) by matching any saved size
+                         not in the standard grid back to the SIZE_GROUPS it belongs to, so nothing
+                         saved earlier is silently dropped. -->
+                    <div class="pSizeGroupRows flex flex-col gap-1.5 mt-1.5">${buildSizeGroupRowsHtml(sizeQtys)}</div>
                     <div class="flex items-center gap-1.5 mt-1.5">
                         <select class="pSizeGroupSelect text-[10px] w-56 bg-white">
                             <option value="">-- เพิ่มกลุ่มไซส์อื่น (Add size group) --</option>
@@ -3664,7 +3859,7 @@
                         <button type="button" class="pSizeGroupAdd text-[10px] font-bold text-indigo-600 hover:underline">+ เพิ่มกลุ่มไซส์</button>
                     </div>
                 </div>
-                <div class="sm:col-span-8">
+                <div class="sm:col-span-10">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">สาเหตุการสั่งซ่อม (รายการนี้) *</label>
                     <div class="flex gap-1.5">
                         <select class="pReason w-1/2 text-xs" required>
@@ -3747,26 +3942,22 @@
             }
         });
 
-        // Appends a supplementary size group's codes as extra Size Ratio cells (before the
-        // Total readout), skipping any code the row already has — either from the standard
-        // grid or a previously-added group — so re-clicking the same group is a no-op.
+        // Adds a supplementary size group as its own labeled row (below the standard grid),
+        // per "แต่ละกลุ่มไซส์จะอยู่คนละบรรทัด และต้องการให้มีชื่อกลุ่มไซส์" — a no-op if that
+        // group's row is already present.
         document.getElementById('partsContainer').addEventListener('click', (e) => {
             if (!e.target.classList.contains('pSizeGroupAdd')) return;
             const row = e.target.closest('#partsContainer > div');
             const select = row.querySelector('.pSizeGroupSelect');
             const group = SIZE_GROUPS.find(g => g.key === select.value);
             if (!group) { showToast('กรุณาเลือกกลุ่มไซส์ก่อน (Please choose a size group)', 'warning'); return; }
-            const box = row.querySelector('.pSizeRatioBox');
-            const totalWrap = row.querySelector('.pTotalWrap');
-            const existingSizes = new Set(Array.from(row.querySelectorAll('.pSizeQty')).map(inp => inp.dataset.size));
-            const toAdd = group.sizes.filter(s => !existingSizes.has(s));
-            toAdd.forEach(s => {
-                const cell = document.createElement('div');
-                cell.className = 'flex flex-col items-center';
-                cell.innerHTML = `<span class="text-[8px] font-bold text-slate-400">${escapeHtml(s)}</span><input type="number" class="pSizeQty w-11 text-xs text-center" min="0" data-size="${escapeHtml(s)}" value="">`;
-                box.insertBefore(cell, totalWrap);
-            });
-            if (!toAdd.length) showToast('กลุ่มไซส์นี้มีอยู่ในรายการแล้ว (Already added)', 'info');
+            const groupRows = row.querySelector('.pSizeGroupRows');
+            if (groupRows.querySelector(`.pSizeGroupRow[data-group-key="${group.key}"]`)) {
+                showToast('กลุ่มไซส์นี้มีอยู่ในรายการแล้ว (Already added)', 'info');
+                select.value = '';
+                return;
+            }
+            groupRows.insertAdjacentHTML('beforeend', sizeGroupRowHtml(group.key, group.label, group.sizes, {}));
             select.value = '';
         });
 
@@ -3847,30 +4038,34 @@
                 : `<span class="text-[9px] font-bold text-orange-700 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 block mt-1">🔔 ใกล้ถึงนัดของ ACC: ${escapeHtml(labels.join(', '))}</span>`;
         }
 
+        // Every value here is used in both HTML (innerHTML) AND plain-text contexts (<option>
+        // text, log message strings) — so the English translation is kept inline in the same
+        // plain string (label (English)) rather than a <span>, which would leak raw tags into
+        // the plain-text spots.
         const STATUS_LABELS = {
-            PendingApproval: 'รอ BU ตรวจสอบ',
-            Rejected: 'BU ไม่ผ่านตรวจสอบ',
-            PendingFMApproval: 'รอ Factory Manager อนุมัติ',
-            FMRejected: 'Factory Manager ไม่อนุมัติ',
-            Approved: 'รอมาร์คเกอร์รับงาน',
-            MarkerReceived: 'มาร์คเกอร์กำลังดำเนินการ',
-            MarkerSent: 'รอใบปูตัดรับงาน',
-            CuttingSheetReceived: 'ใบปูตัดกำลังดำเนินการ',
-            FabricCheckPending: 'รอเช็คผ้ารับงาน',
-            FabricCheckReceived: 'กำลังเช็คผ้า',
-            PPCFabricPending: 'รอ PPC Fabric รับงาน',
-            PPCFabricReceived: 'PPC Fabric กำลังจองผ้า',
-            StockFabricPending: 'รอสต็อคผ้ารับงาน',
-            StockFabricReceived: 'สต็อคผ้ากำลังดำเนินการ',
-            StockFabricSent: 'รอแผนกตัดรับงาน',
-            CuttingReceived: 'กำลังตัดซ่อม',
-            CuttingSent: 'ตัดเสร็จ รอเริ่มงานต่อ (Embellishment/QC)',
-            ACCReceived: 'ACC กำลังดำเนินการ',
-            SupermarketPending: 'พร้อมส่งเข้าซุปเปอร์มาร์เก็ต',
-            SupermarketReceived: 'ซุปเปอร์มาร์เก็ตรับแล้ว',
-            SupermarketSent: 'ส่งเข้าไลน์แล้ว รอต้นทางรับ',
-            Received: 'รับงานเสร็จสมบูรณ์',
-            Cancelled: 'ยกเลิกใบสั่งซ่อม'
+            PendingApproval: 'รอ BU ตรวจสอบ (Pending BU Review)',
+            Rejected: 'BU ไม่ผ่านตรวจสอบ (Rejected by BU)',
+            PendingFMApproval: 'รอ Factory Manager อนุมัติ (Pending FM Approval)',
+            FMRejected: 'Factory Manager ไม่อนุมัติ (Rejected by FM)',
+            Approved: 'รอมาร์คเกอร์รับงาน (Pending Marker)',
+            MarkerReceived: 'มาร์คเกอร์กำลังดำเนินการ (Marker In Progress)',
+            MarkerSent: 'รอใบปูตัดรับงาน (Pending Cutting Sheet)',
+            CuttingSheetReceived: 'ใบปูตัดกำลังดำเนินการ (Cutting Sheet In Progress)',
+            FabricCheckPending: 'รอเช็คผ้ารับงาน (Pending Fabric Check)',
+            FabricCheckReceived: 'กำลังเช็คผ้า (Fabric Check In Progress)',
+            PPCFabricPending: 'รอ PPC Fabric รับงาน (Pending PPC Fabric)',
+            PPCFabricReceived: 'PPC Fabric กำลังจองผ้า (PPC Fabric Booking)',
+            StockFabricPending: 'รอสต็อคผ้ารับงาน (Pending Stock Fabric)',
+            StockFabricReceived: 'สต็อคผ้ากำลังดำเนินการ (Stock Fabric In Progress)',
+            StockFabricSent: 'รอแผนกตัดรับงาน (Pending Cutting Dept)',
+            CuttingReceived: 'กำลังตัดซ่อม (Cutting In Progress)',
+            CuttingSent: 'ตัดเสร็จ รอเริ่มงานต่อ (Cut Complete — next: Embellishment/QC)',
+            ACCReceived: 'ACC กำลังดำเนินการ (ACC In Progress)',
+            SupermarketPending: 'พร้อมส่งเข้าซุปเปอร์มาร์เก็ต (Ready for Supermarket)',
+            SupermarketReceived: 'ซุปเปอร์มาร์เก็ตรับแล้ว (Received by Supermarket)',
+            SupermarketSent: 'ส่งเข้าไลน์แล้ว รอต้นทางรับ (Sent to Line — Pending Origin Receive)',
+            Received: 'รับงานเสร็จสมบูรณ์ (Fully Received)',
+            Cancelled: 'ยกเลิกใบสั่งซ่อม (Cancelled)'
         };
         // PPCFabricReceived covers two different real situations (still actively booking the
         // fabric vs. sitting held waiting for it to physically arrive) but shares one status
@@ -3880,13 +4075,13 @@
         // สอดคล้องกัน" [กับ KPI การ์ด "รอผ้าเข้า"].
         function displayStatusLabel(item) {
             if (item.status === 'PPCFabricReceived' && item.ppcFabric && !item.ppcFabric.actualArrivalDate) {
-                return 'รอผ้าเข้า (PPC Fabric)';
+                return 'รอผ้าเข้า (Waiting for Fabric Arrival — PPC Fabric)';
             }
             // ACCOnly requests skip Supermarket entirely (see checkAdvanceToSupermarket) — the
             // generic "SupermarketSent" label ("sent into the line") doesn't fit a hand
             // -delivery from ACC, so it gets its own wording once that hand-off actually happened.
             if (item.status === 'SupermarketSent' && item.requestType === 'ACCOnly' && !item.supermarketReceive) {
-                return 'ACC ส่งตรงถึงผู้ขอ รอผู้ขอรับ';
+                return 'ACC ส่งตรงถึงผู้ขอ รอผู้ขอรับ (Sent Directly by ACC — Pending Requester Receive)';
             }
             return STATUS_LABELS[item.status] || item.status;
         }
@@ -3966,10 +4161,25 @@
             // Every KPI card shows both its count and how many of those are overdue —
             // setKpi tolerates cards with no "...Overdue" element (e.g. terminal states
             // where "overdue" doesn't apply) by simply skipping that part.
+            // Also surfaces, per "ต้องการให้เพิ่มแสดงรายการเป็นจำนวนใบแจ้งซ่อมหรือแจ้งขอ,
+            // จำนวนรายการที่ขอ, จำนวนชิ้นงานที่ขอ ต้องการให้มีในทุกๆสเตตัส", how many line-items
+            // and pieces sit behind that document count — for the roomier rows this fills the
+            // empty middle space with a "N รายการ / N ชิ้น" mini-stat; for the tight QC
+            // type/source grid (no room for extra text) it goes in that cell's hover tooltip.
             const setKpi = (id, group) => {
                 document.getElementById(id).innerText = group.length;
                 const ovEl = document.getElementById(id + 'Overdue');
                 if (ovEl) ovEl.innerText = group.filter(r => alertInfo(r)).length;
+                const { lines, qty } = kpiLineQtyCounts(group);
+                const linesEl = document.getElementById(id + 'Lines');
+                const qtyEl = document.getElementById(id + 'Qty');
+                if (linesEl && qtyEl) {
+                    linesEl.innerText = lines;
+                    qtyEl.innerText = qty;
+                } else {
+                    const td = document.getElementById(id).closest('td');
+                    if (td) td.title = `${lines} รายการ / ${qty} ชิ้น (Line items / Pieces)`;
+                }
             };
             setKpi('kpiTotal', active);
             setKpi('kpiPending', byStatus('PendingApproval'));
@@ -4147,13 +4357,12 @@
             setKpi('kpiWaitingAccOnly', active.filter(r => r.status === 'CuttingSent' && mainPipelineDone(r) && !r.accSend));
             setKpi('kpiWaitingMainOnly', active.filter(r => r.status === 'CuttingSent' && !mainPipelineDone(r) && !!r.accSend));
             setKpi('kpiWaitingBoth', active.filter(r => r.status === 'CuttingSent' && !mainPipelineDone(r) && !r.accSend));
-            document.getElementById('kpiOverdue').innerText = active.filter(r => alertInfo(r)).length;
+            setKpi('kpiOverdue', active.filter(r => alertInfo(r)));
             // "เสร็จสมบูรณ์" must mean actually-received, not just archived — Cancelled
             // records also set archived:true, so a blanket archived-count here was silently
             // counting cancelled orders as completed.
-            document.getElementById('kpiCompleted').innerText = repairs.filter(r => r.status === 'Received').length;
-            const cancelledEl = document.getElementById('kpiCancelled');
-            if (cancelledEl) cancelledEl.innerText = repairs.filter(r => r.status === 'Cancelled').length;
+            setKpi('kpiCompleted', repairs.filter(r => r.status === 'Received'));
+            if (document.getElementById('kpiCancelled')) setKpi('kpiCancelled', repairs.filter(r => r.status === 'Cancelled'));
 
             if (data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 text-xs">ไม่พบข้อมูลรายการสั่งซ่อมตามเงื่อนไข</td></tr>`;
@@ -4682,6 +4891,8 @@
             document.getElementById('fDate').value = item.date;
             document.getElementById('fNeedDate').value = dateOnlyPart(item.needDate) || '';
             document.getElementById('fShipOutDate').value = dateOnlyPart(item.shipOutDate) || '';
+            const urgencyRadio = document.querySelector(`input[name="fUrgency"][value="${item.urgency || ''}"]`);
+            if (urgencyRadio) urgencyRadio.checked = true;
             document.getElementById('fDept').value = item.dept;
             toggleLineSelect();
             if (item.dept === 'HeatTransfer') document.getElementById('fHeatTransferType').value = item.heatTransferType || 'fabric';
@@ -4704,13 +4915,13 @@
             item.parts.forEach(p => {
                 const key = (p.name || '') + '||' + (p.part || '');
                 if (!groupMap[key]) {
-                    groupMap[key] = { name: p.name, part: p.part || '', sizes: {}, reason: p.reason, sample: false, embellishment: p.embellishment || [], itemNo: p.itemNo || '', fabricItem: p.fabricItem || '', cw: p.cw || '' };
+                    groupMap[key] = { name: p.name, part: p.part || '', sizes: {}, reason: p.reason, sample: false, embellishment: p.embellishment || [], itemNo: p.itemNo || '', fabricItem: p.fabricItem || '', cw: p.cw || '', bundleNo: p.bundleNo || '' };
                     groups.push(groupMap[key]);
                 }
                 groupMap[key].sizes[p.size] = (groupMap[key].sizes[p.size] || 0) + parseInt(p.qty || 0);
                 if (p.sample) groupMap[key].sample = true;
             });
-            groups.forEach(g => addPartRow(g.name, g.part, g.sizes, g.reason, g.sample, g.embellishment, g.itemNo, g.fabricItem, g.cw));
+            groups.forEach(g => addPartRow(g.name, g.part, g.sizes, g.reason, g.sample, g.embellishment, g.itemNo, g.fabricItem, g.cw, g.bundleNo));
             renderAccRequestChecklist(item.accRequestList || []);
 
             populateDatalists();
@@ -4719,6 +4930,7 @@
 
         document.getElementById('repairForm').onsubmit = (e) => {
             e.preventDefault();
+            if (hasRole(currentUser, 'ViewOnly')) { showToast('โหมดดูอย่างเดียว ไม่สามารถบันทึกข้อมูลได้ (View Only — cannot save)', 'warning'); return; }
 
             const dept = document.getElementById('fDept').value;
             const line = document.getElementById('fLine').value;
@@ -4750,6 +4962,7 @@
                 const itemNo = row.querySelector('.pItemNo').value;
                 const fabricItem = row.querySelector('.pFabricItem').value.trim();
                 const cw = row.querySelector('.pCW').value.trim();
+                const bundleNo = row.querySelector('.pBundleNo').value.trim();
                 // Embellishment is no longer entered here — BU fills it in during approval
                 // review (see the approvalModal embellishment section), so a freshly
                 // created/edited part always starts with none and BU (re-)confirms it.
@@ -4758,7 +4971,7 @@
                     .map(inp => ({ size: inp.dataset.size, qty: parseInt(inp.value) || 0 }))
                     .filter(s => s.qty > 0);
                 if (sizeEntries.length === 0) zeroRatioRow = true;
-                return sizeEntries.map(s => ({ name, part, size: s.size, qty: s.qty, sample, reason, embellishment, itemNo, fabricItem, cw }));
+                return sizeEntries.map(s => ({ name, part, size: s.size, qty: s.qty, sample, reason, embellishment, itemNo, fabricItem, cw, bundleNo }));
             });
             const isAccOnlyRequest = currentRequestType() === 'ACCOnly';
             if (zeroRatioRow && !isAccOnlyRequest) {
@@ -4783,6 +4996,7 @@
             const shipOutDateOnly = document.getElementById('fShipOutDate').value;
             const needDate = needDateOnly ? `${needDateOnly}T${requestTimePart}` : '';
             const shipOutDate = shipOutDateOnly ? `${shipOutDateOnly}T${requestTimePart}` : '';
+            const urgency = (document.querySelector('input[name="fUrgency"]:checked') || {}).value || '';
 
             let savedId;
             if (editIndex >= 0) {
@@ -4795,6 +5009,8 @@
                 const newFields = {
                     date: dateVal,
                     needDate,
+                    shipOutDate,
+                    urgency,
                     dept, line, heatTransferType, originFabricType,
                     style: document.getElementById('fStyle').value,
                     job: document.getElementById('fJob').value,
@@ -4823,6 +5039,7 @@
                     date: dateVal,
                     needDate,
                     shipOutDate,
+                    urgency,
                     dept, line, heatTransferType, originFabricType,
                     style: document.getElementById('fStyle').value,
                     job: document.getElementById('fJob').value,
@@ -5192,6 +5409,25 @@
             }
             return chainHtml;
         }
+        // How many distinct part/ACC line-items and total pieces a KPI bucket's records
+        // represent — same grouping convention as buildInfoBlock's totalQty/partCount, so the
+        // numbers read consistently between the dashboard and a record's own detail view.
+        function kpiLineQtyCounts(records) {
+            let lines = 0, qty = 0;
+            records.forEach(r => {
+                const partKeys = new Set((r.parts || []).map(p => (p.name || '') + '||' + (p.part || '')));
+                lines += partKeys.size + (r.accRequestList || []).length;
+                qty += (r.parts || []).reduce((s, p) => s + (parseInt(p.qty) || 0), 0)
+                    + (r.accRequestList || []).reduce((s, a) => s + (parseInt(a.qty) || 0), 0);
+            });
+            return { lines, qty };
+        }
+        const URGENCY_LABELS = { urgent: '🔶 ด่วน', veryUrgent: '🔴 ด่วนมาก', mostUrgent: '‼️ ด่วนที่สุด' };
+        const URGENCY_STYLES = { urgent: 'bg-amber-100 text-amber-700', veryUrgent: 'bg-orange-100 text-orange-700', mostUrgent: 'bg-red-100 text-red-700' };
+        function urgencyBadgeHtml(item) {
+            if (!item.urgency || !URGENCY_LABELS[item.urgency]) return '';
+            return ` <span class="text-[9px] ${URGENCY_STYLES[item.urgency]} px-1.5 py-0.5 rounded font-bold align-middle">${URGENCY_LABELS[item.urgency]}</span>`;
+        }
         function buildInfoBlock(item) {
             const totalQty = item.parts.reduce((sum, p) => sum + parseInt(p.qty || 0), 0);
             const totalAccQty = (item.accRequestList || []).reduce((sum, a) => sum + parseInt(a.qty || 0), 0);
@@ -5200,7 +5436,7 @@
             const requester = escapeHtml(item.requesterUser) + (userDisplayName(item.requesterUser) ? ' - ' + escapeHtml(userDisplayName(item.requesterUser)) : '');
             return `
                 ${cuttingIssueBadge(item)}
-                <div class="font-bold text-slate-800 mb-1.5">${item.requestType === 'ACCOnly' ? 'รหัสใบเบิก ACC' : 'รหัสใบสั่งซ่อม'}: ${escapeHtml(item.id)} ${item.docNo ? `<span class="text-slate-500 font-normal">(${escapeHtml(item.docNo)})</span>` : ''} ${item.requestType === 'ACCOnly' ? '<span class="text-[9px] bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded font-bold align-middle">แจ้งขอ ACC</span>' : ''}</div>
+                <div class="font-bold text-slate-800 mb-1.5">${item.requestType === 'ACCOnly' ? 'รหัสใบเบิก ACC' : 'รหัสใบสั่งซ่อม'}: ${escapeHtml(item.id)} ${item.docNo ? `<span class="text-slate-500 font-normal">(${escapeHtml(item.docNo)})</span>` : ''} ${item.requestType === 'ACCOnly' ? '<span class="text-[9px] bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded font-bold align-middle">แจ้งขอเบิกอุปกรณ์ (ACC)</span>' : ''}${urgencyBadgeHtml(item)}</div>
                 ${item.sourceQcRejectId ? `<div class="text-[10px] text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1 mb-1.5">✂️ สร้างอัตโนมัติจาก QC Reject ของ <b>${escapeHtml(item.sourceQcRejectId)}</b>${buildQcRejectChainHtml(item.sourceQcRejectId)}</div>` : ''}
                 ${item.qcCutReplace && item.qcCutReplace.resolved && item.qcCutReplace.createdRequestId ? `<div class="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-2 py-1 mb-1.5">✅ สร้างใบแจ้งตัดเปลี่ยนใหม่แล้ว: <b>${escapeHtml(item.qcCutReplace.createdRequestId)}</b></div>` : ''}
                 <!-- Prominent total-work summary, per "ยอดงานที่ต้องทำ ต้องการให้มีสรุป total
@@ -5223,7 +5459,7 @@
                         ${infoRow('Job No.', escapeHtml(item.job))}
                         ${infoRow('Item', escapeHtml(item.item))}
                         ${infoRow('Style', escapeHtml(item.style))}
-                        ${infoRow('สี', escapeHtml(item.color))}
+                        ${infoRow('CW', escapeHtml(item.color))}
                         ${infoRow('แผนก', escapeHtml(item.dept))}
                         ${item.line !== '-' ? infoRow('ไลน์ผลิต', escapeHtml(item.line)) : ''}
                         ${infoRow('ผู้ขอ', requester)}
@@ -5291,12 +5527,15 @@
                 const entryByType = Object.fromEntries(g.embellishment.map(e => [e.type, e]));
                 return `
                     <div class="pEmbGroup border rounded-lg p-2 bg-white" data-key="${escapeHtml(g.key)}">
-                        <div class="flex items-center justify-between mb-1.5 gap-2">
-                            <span class="text-[10px] font-bold text-slate-700">${escapeHtml(g.name)}${g.part ? ' - ' + escapeHtml(g.part) : ''}</span>
+                        <div class="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
+                            <span class="text-[10px] font-bold text-slate-700">${escapeHtml(g.name)}</span>
                             <label class="flex items-center gap-1 text-[9px] font-bold text-slate-500 shrink-0">
                                 <input type="checkbox" class="pEmbNone" ${g.embNone ? 'checked' : ''}> ไม่มี <span class="opacity-70">(None)</span>
                             </label>
                         </div>
+                        <label class="block text-[9px] font-bold text-slate-500 mb-1.5">พาร์ท (Part) *
+                            <input type="text" class="pApprovalPart w-full text-xs border rounded px-1.5 py-1 mt-0.5" placeholder="ระบุพาร์ท (Part)" value="${escapeHtml(g.part)}">
+                        </label>
                         <div class="pEmbTypesWrap grid grid-cols-1 sm:grid-cols-2 gap-1.5 ${g.embNone ? 'hidden' : ''}">
                             ${EMBELLISHMENT_OPTIONS.map(o => embTypeRowHtml(o, entryByType[o.value])).join('')}
                         </div>
@@ -5355,6 +5594,7 @@
             const byKey = {};
             for (const el of groupEls) {
                 const key = el.dataset.key;
+                const part = el.querySelector('.pApprovalPart').value.trim();
                 const embNone = el.querySelector('.pEmbNone').checked;
                 const embellishment = embNone ? [] : Array.from(el.querySelectorAll('.pEmbTypeRow'))
                     .filter(tr => tr.querySelector('.pEmbType').checked)
@@ -5365,8 +5605,9 @@
                         source: tr.querySelector('.pEmbSource').value,
                         vendor: tr.querySelector('.pEmbVendor').value.trim(),
                     }));
+                if (requireComplete && !part) return null;
                 if (requireComplete && !embNone && embellishment.length === 0) return null;
-                byKey[key] = { embNone, embellishment };
+                byKey[key] = { part, embNone, embellishment };
             }
             return byKey;
         }
@@ -5386,14 +5627,14 @@
 
             const embByKey = collectApprovalEmb(decision === 'Approved');
             if (decision === 'Approved' && !embByKey) {
-                showToast('กรุณาระบุ Embellishment ให้ครบทุกชิ้นส่วน — ถ้าไม่มี ให้ติ๊ก "ไม่มี" (Please decide Embellishment for every part, or tick "None")', 'warning');
+                showToast('กรุณาระบุ พาร์ท (Part) และ Embellishment ให้ครบทุกชิ้นส่วน — ถ้าไม่มี Embellishment ให้ติ๊ก "ไม่มี" (Please specify Part and decide Embellishment for every part, or tick "None")', 'warning');
                 return;
             }
             if (embByKey) {
                 repairs[idx].parts = repairs[idx].parts.map(p => {
                     const key = (p.name || '') + '||' + (p.part || '');
                     const g = embByKey[key];
-                    return g ? { ...p, embellishment: g.embellishment, embNone: g.embNone } : p;
+                    return g ? { ...p, part: g.part, embellishment: g.embellishment, embNone: g.embNone } : p;
                 });
             }
 
@@ -5403,6 +5644,15 @@
             repairs[idx].job = jobField || repairs[idx].job;
             // BU approval no longer goes straight to "ready for cutting" — it now routes to
             // Factory Manager for a second approval first.
+            // Root cause of the recurring "kickback can't be submitted" report: this transition
+            // (and several others below) used to set `status` directly without ever recording
+            // the status being left into statusHistory — so a record that had only gone through
+            // BU/FM approval (i.e. most records) had an EMPTY statusHistory, meaning the
+            // KICKBACK FOR CORRECTION dropdown had literally nothing to offer, and any reason +
+            // submit silently hit the "no earlier stage" guard. Reproduced live: create → BU
+            // approve → FM approve → open kickback modal → dropdown shows only the placeholder,
+            // confirmKickback() no-ops. Fixed by pushing the outgoing status here too.
+            pushStatusHistory(repairs[idx]);
             repairs[idx].status = decision === 'Approved' ? 'PendingFMApproval' : 'Rejected';
             repairs[idx].approval = {
                 by: currentUser.username,
@@ -5456,6 +5706,10 @@
             // การวางมาร์ค จึงต้องการให้ผ่านไปที่ใบปูตัดเลย แต่ถ้าไม่จับลายก็จะส่งให้มาร์คเกอร์
             // ทำงานก่อน แล้วค่อยส่งต่อให้ปูตัด".
             const isMatchedFabricSkip = decision === 'Approved' && !isHeatTransferAccSkip && repairs[idx].originFabricType === 'matched';
+            // See the matching note in submitApproval — this transition was another spot
+            // silently leaving statusHistory empty, which is what broke the KICKBACK FOR
+            // CORRECTION dropdown for records that had only gone through BU+FM approval so far.
+            pushStatusHistory(repairs[idx]);
             repairs[idx].status = isHeatTransferAccSkip ? 'CuttingSent' : (isMatchedFabricSkip ? 'MarkerSent' : decision);
             if (isHeatTransferAccSkip) {
                 // checkAdvanceToSupermarket() now gates on the cuttingSend field (not status)
@@ -5771,6 +6025,11 @@
 
             if (actionMode === 'receive') {
                 repairs[idx].cuttingReceive = { by: currentUser.username, name: currentUser.name, attachment, ts };
+                // Cutting's receive/send predates the generic STAGE_RECEIVE/STAGE_SEND system
+                // (used by Marker/CuttingSheet/FabricCheck/PPCFabric/StockFabric/ACC) and was
+                // never updated to push into statusHistory — same root cause as the approval
+                // transitions above.
+                pushStatusHistory(repairs[idx]);
                 repairs[idx].status = 'CuttingReceived';
                 logAction('CuttingReceive', repairs[idx].id, `${currentUser.name} รับงานตัด`);
                 showToast('บันทึกการรับงานตัดเรียบร้อย (Cutting receipt saved)', 'success');
@@ -5812,6 +6071,7 @@
                     repairs[idx].cuttingPending = { ...repairs[idx].cuttingPending, resolved: true };
                 }
                 repairs[idx].cuttingSend = { by: currentUser.username, name: currentUser.name, attachment, ts, finishDate };
+                pushStatusHistory(repairs[idx]);
                 repairs[idx].status = 'CuttingSent';
                 repairs[idx].currentEmbStage = nextEmbStage;
                 // ACC may have already finished earlier (it runs independently from FM
@@ -6030,11 +6290,10 @@
             acc: {
                 field: 'accSend',
                 buildExtra: () => ({}),
-                // Sending never blocks on payment/issue state — a line left unspecified or
-                // marked partial/pending simply stays outstanding (see hasOutstandingAcc) and
-                // can be finished later via "ดำเนินการรายการค้างจ่าย ACC ต่อ", per "ถ้าไม่ระบุ
-                // อะไรเลยจะต้องให้ผ่านไป".
-                validate: () => null,
+                // Sending no longer allows any line to stay unspecified — every ACC line
+                // (additional requisition + embellishment-in-ACC parts) must have a decision,
+                // either this round or from an earlier partial round, before send is allowed.
+                validate: () => accFulfillmentIncomplete() ? 'กรุณาระบุรายละเอียด ACC ให้ครบทุกรายการก่อนส่งงานต่อ (Please complete every ACC line before sending)' : null,
                 // ACC is parallel — saveStageAction() calls checkAdvanceToSupermarket()
                 // directly for PARALLEL_STAGE_PERM stages and never reads nextStatus.
                 nextStatus: () => null,
@@ -6509,6 +6768,32 @@
         // Merges the checklist's current form state into whatever was already saved, so a
         // partial payment's running total/history survives across repeated visits instead of
         // being overwritten each time collectAccFulfillment() runs.
+        // Every ACC checklist line (additional requisition + embellishment-in-ACC parts) must
+        // be resolved — either decided THIS round (a mode ticked) or already carrying a prior
+        // decision from an earlier partial round — before ACC can send. Reverses the earlier
+        // "unspecified is fine" behavior per "ถ้าระบุรายละเอียดไม่ครบไม่สามารถส่งงานต่อได้".
+        function accFulfillmentIncomplete() {
+            const idx = repairs.findIndex(r => r.id === activeActionId);
+            const existing = (idx !== -1 && repairs[idx].accFulfillment) || { parts: [], accRequest: [] };
+            const existingMap = { parts: Object.fromEntries((existing.parts || []).map(l => [l.idx, l])), accRequest: Object.fromEntries((existing.accRequest || []).map(l => [l.idx, l])) };
+            const rows = Array.from(document.querySelectorAll('.accFulfillRow'));
+            return rows.some(row => {
+                const group = row.dataset.fulfillGroup;
+                const idxNum = parseInt(row.dataset.fulfillIdx, 10);
+                const prior = existingMap[group][idxNum];
+                // "ไม่ต้องจ่าย" is only ever set by an explicit click — never the pre-checked
+                // default — so seeing it checked always means a real decision.
+                if (row.querySelector('.accFulfillMode[value="noNeed"]:checked')) return false;
+                // "จ่าย" is pre-checked on every fresh line so its fields stay visible/fillable,
+                // so its being checked does NOT by itself mean anything was decided — only an
+                // actual qty entered this round, or an already-recorded decision from an earlier
+                // round, counts as resolved.
+                const qtyInput = row.querySelector('.accFulfillQty');
+                const enteredThisRound = qtyInput && (parseInt(qtyInput.value) || 0) > 0;
+                const resolvedEarlier = !!prior && (prior.noNeed || prior.decision);
+                return !enteredThisRound && !resolvedEarlier;
+            });
+        }
         function collectAccFulfillment() {
             const idx = repairs.findIndex(r => r.id === activeActionId);
             const existing = (idx !== -1 && repairs[idx].accFulfillment) || { parts: [], accRequest: [] };
@@ -7463,6 +7748,7 @@
 
             if (marketMode === 'receive') {
                 repairs[idx].supermarketReceive = { by: currentUser.username, name: currentUser.name, attachment, ts };
+                pushStatusHistory(repairs[idx]);
                 repairs[idx].status = 'SupermarketReceived';
                 const rcvCheck = collectReceiveCheck('marketExtraFields');
                 repairs[idx].supermarketReceiveCheck = rcvCheck;
@@ -7471,6 +7757,7 @@
                 showToast('บันทึกการรับงานเข้าซุปเปอร์มาร์เก็ตเรียบร้อย (Supermarket receipt saved)', 'success');
             } else {
                 repairs[idx].supermarketSend = { by: currentUser.username, name: currentUser.name, attachment, ts };
+                pushStatusHistory(repairs[idx]);
                 repairs[idx].status = 'SupermarketSent';
                 const sendCheck = collectReceiveCheck('marketExtraFields');
                 repairs[idx].supermarketSendCheck = sendCheck;
@@ -7500,6 +7787,7 @@
             if (idx === -1) return;
             const attachment = null; // attachment upload removed
             repairs[idx].originReceive = { by: currentUser.username, name: currentUser.name, attachment, ts: getLocalTime() };
+            pushStatusHistory(repairs[idx]);
             repairs[idx].status = 'Received';
             repairs[idx].archived = true;
             autoSave(repairs[idx].id);
@@ -7626,7 +7914,7 @@
                             <p class="text-[10px] text-slate-500">ใบสั่งตัดซ่อมชิ้นส่วนสินค้า</p>
                         </div>
                         <div class="text-right">
-                            <span class="font-black text-sm text-indigo-600">${escapeHtml(item.id)}</span> ${item.docNo ? `<span class="text-[10px] text-slate-500">(${escapeHtml(item.docNo)})</span>` : ''} ${item.requestType === 'ACCOnly' ? '<span class="text-[9px] bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded font-bold">แจ้งขอ ACC</span>' : ''}
+                            <span class="font-black text-sm text-indigo-600">${escapeHtml(item.id)}</span> ${item.docNo ? `<span class="text-[10px] text-slate-500">(${escapeHtml(item.docNo)})</span>` : ''} ${item.requestType === 'ACCOnly' ? '<span class="text-[9px] bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded font-bold">แจ้งขอเบิกอุปกรณ์ (ACC)</span>' : ''}${urgencyBadgeHtml(item)}
                             <p class="text-[9px] text-slate-400">วันที่แจ้ง: ${fmtDT(item.date)}</p>
                         </div>
                     </div>
@@ -7640,7 +7928,7 @@
                         <div><b>Job No:</b> ${escapeHtml(item.job)}</div>
                         <div><b>Item:</b> ${escapeHtml(item.item)}</div>
                         <div><b>Style:</b> ${escapeHtml(item.style)}</div>
-                        <div><b>สี:</b> ${escapeHtml(item.color)}</div>
+                        <div><b>CW:</b> ${escapeHtml(item.color)}</div>
                         <div><b>แผนกที่แจ้ง:</b> ${escapeHtml(item.dept)}</div>
                         <div><b>ไลน์ผลิต:</b> ${escapeHtml(item.line)}</div>
                         <div><b>สถานะ:</b> ${displayStatusLabel(item)}</div>
@@ -7878,7 +8166,7 @@
             document.getElementById('detailModalBody').innerHTML = `
                 <div class="flex flex-wrap justify-between items-start gap-2 border-b pb-3">
                     <div>
-                        <div class="font-black text-lg text-slate-800">${escapeHtml(item.id)} <span class="status-pill ${STATUS_STYLES[item.status]} ml-1">${displayStatusLabel(item)}</span> ${item.requestType === 'ACCOnly' ? '<span class="text-[9px] bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded font-bold align-middle ml-1">แจ้งขอ ACC</span>' : ''}</div>
+                        <div class="font-black text-lg text-slate-800">${escapeHtml(item.id)} <span class="status-pill ${STATUS_STYLES[item.status]} ml-1">${displayStatusLabel(item)}</span> ${item.requestType === 'ACCOnly' ? '<span class="text-[9px] bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded font-bold align-middle ml-1">แจ้งขอเบิกอุปกรณ์ (ACC)</span>' : ''}${urgencyBadgeHtml(item)}</div>
                         <div class="text-xs text-slate-500 mt-1">${escapeHtml(item.style)} / ${escapeHtml(item.job)} — ${escapeHtml(item.item)} (${escapeHtml(item.color)})</div>
                         <div class="text-xs text-slate-500">แผนก: ${escapeHtml(item.dept)} ${item.line !== '-' ? '| ไลน์: ' + escapeHtml(item.line) : ''} | ผู้ขอ: ${escapeHtml(item.requesterUser)}${userDisplayName(item.requesterUser) ? ' - ' + escapeHtml(userDisplayName(item.requesterUser)) : ''}</div>
                     </div>
@@ -8047,32 +8335,32 @@
             // working on it yet); 'active' = time actually spent once received; 'mixed' = a
             // single-action step (no separate receive/send) so the two can't be split apart.
             const stages = [
-                { label: 'แจ้งซ่อม → BU ตรวจสอบ', type: 'mixed', from: r => r.date ? parseLocalDateTime(r.date) : null, to: ts('approval.ts') },
-                { label: 'BU ตรวจสอบ → FM อนุมัติ', type: 'mixed', from: ts('approval.ts'), to: ts('fmApproval.ts') },
-                { label: 'รอ Marker รับงาน', type: 'downtime', from: ts('fmApproval.ts'), to: ts('markerAction.ts') },
-                { label: 'Marker ทำงาน (ไม่จับลาย) → ส่งต่อ', type: 'active', from: ts('markerAction.ts'), to: ts('markerSend.ts') },
-                { label: 'รอใบปูตัดรับงาน', type: 'downtime', from: r => { const t = (r.markerSend && r.markerSend.ts) || (r.markerAction && r.markerAction.ts); return t ? new Date(t) : null; }, to: ts('cuttingSheetReceive.ts') },
-                { label: 'ใบปูตัดทำงาน → ส่งต่อ', type: 'active', from: ts('cuttingSheetReceive.ts'), to: ts('cuttingSheetSend.ts') },
-                { label: 'รอเช็คผ้ารับงาน', type: 'downtime', from: beforeFabricCheck, to: ts('fabricCheckReceive.ts') },
-                { label: 'เช็คผ้าทำงาน → ส่งต่อ', type: 'active', from: ts('fabricCheckReceive.ts'), to: ts('fabricCheckSend.ts') },
-                { label: 'รอ PPC Fabric รับงาน', type: 'downtime', from: ts('fabricCheckSend.ts'), to: ts('ppcFabricReceive.ts') },
-                { label: 'PPC Fabric ทำงาน → จองผ้า/ส่งต่อ', type: 'active', from: ts('ppcFabricReceive.ts'), to: ts('ppcFabric.ts') },
-                { label: 'รอสต็อคผ้ารับงาน', type: 'downtime', from: beforeStockFabric, to: ts('stockFabricReceive.ts') },
-                { label: 'สต็อคผ้าทำงาน → ส่งต่อ', type: 'active', from: ts('stockFabricReceive.ts'), to: ts('stockFabricSend.ts') },
-                { label: 'รอแผนกตัดรับงาน', type: 'downtime', from: ts('stockFabricSend.ts'), to: ts('cuttingReceive.ts') },
-                { label: 'แผนกตัดทำงาน → ตัดเสร็จ', type: 'active', from: ts('cuttingReceive.ts'), to: ts('cuttingSend.ts') },
-                { label: 'รอ ACC รับงาน (แยกอิสระตั้งแต่ FM อนุมัติ)', type: 'downtime', from: ts('fmApproval.ts'), to: ts('accReceive.ts') },
-                { label: 'ACC ทำงาน → ส่งต่อ', type: 'active', from: ts('accReceive.ts'), to: ts('accSend.ts') },
+                { label: 'แจ้งซ่อม → BU ตรวจสอบ', labelEn: 'Reported → BU Review', type: 'mixed', from: r => r.date ? parseLocalDateTime(r.date) : null, to: ts('approval.ts') },
+                { label: 'BU ตรวจสอบ → FM อนุมัติ', labelEn: 'BU Review → FM Approval', type: 'mixed', from: ts('approval.ts'), to: ts('fmApproval.ts') },
+                { label: 'รอ Marker รับงาน', labelEn: 'Waiting for Marker to receive', type: 'downtime', from: ts('fmApproval.ts'), to: ts('markerAction.ts') },
+                { label: 'Marker ทำงาน (ไม่จับลาย) → ส่งต่อ', labelEn: 'Marker working (non-matched) → Forwarded', type: 'active', from: ts('markerAction.ts'), to: ts('markerSend.ts') },
+                { label: 'รอใบปูตัดรับงาน', labelEn: 'Waiting for Cutting Sheet to receive', type: 'downtime', from: r => { const t = (r.markerSend && r.markerSend.ts) || (r.markerAction && r.markerAction.ts); return t ? new Date(t) : null; }, to: ts('cuttingSheetReceive.ts') },
+                { label: 'ใบปูตัดทำงาน → ส่งต่อ', labelEn: 'Cutting Sheet working → Forwarded', type: 'active', from: ts('cuttingSheetReceive.ts'), to: ts('cuttingSheetSend.ts') },
+                { label: 'รอเช็คผ้ารับงาน', labelEn: 'Waiting for Fabric Check to receive', type: 'downtime', from: beforeFabricCheck, to: ts('fabricCheckReceive.ts') },
+                { label: 'เช็คผ้าทำงาน → ส่งต่อ', labelEn: 'Fabric Check working → Forwarded', type: 'active', from: ts('fabricCheckReceive.ts'), to: ts('fabricCheckSend.ts') },
+                { label: 'รอ PPC Fabric รับงาน', labelEn: 'Waiting for PPC Fabric to receive', type: 'downtime', from: ts('fabricCheckSend.ts'), to: ts('ppcFabricReceive.ts') },
+                { label: 'PPC Fabric ทำงาน → จองผ้า/ส่งต่อ', labelEn: 'PPC Fabric working → Reserve/Forward', type: 'active', from: ts('ppcFabricReceive.ts'), to: ts('ppcFabric.ts') },
+                { label: 'รอสต็อคผ้ารับงาน', labelEn: 'Waiting for Stock Fabric to receive', type: 'downtime', from: beforeStockFabric, to: ts('stockFabricReceive.ts') },
+                { label: 'สต็อคผ้าทำงาน → ส่งต่อ', labelEn: 'Stock Fabric working → Forwarded', type: 'active', from: ts('stockFabricReceive.ts'), to: ts('stockFabricSend.ts') },
+                { label: 'รอแผนกตัดรับงาน', labelEn: 'Waiting for Cutting Dept to receive', type: 'downtime', from: ts('stockFabricSend.ts'), to: ts('cuttingReceive.ts') },
+                { label: 'แผนกตัดทำงาน → ตัดเสร็จ', labelEn: 'Cutting Dept working → Cut complete', type: 'active', from: ts('cuttingReceive.ts'), to: ts('cuttingSend.ts') },
+                { label: 'รอ ACC รับงาน (แยกอิสระตั้งแต่ FM อนุมัติ)', labelEn: 'Waiting for ACC to receive (independent since FM approval)', type: 'downtime', from: ts('fmApproval.ts'), to: ts('accReceive.ts') },
+                { label: 'ACC ทำงาน → ส่งต่อ', labelEn: 'ACC working → Forwarded', type: 'active', from: ts('accReceive.ts'), to: ts('accSend.ts') },
                 ...EMB_STAGE_TYPES.flatMap(t => [
-                    { label: `รอ${EMB_LABELS[t]}รับงาน`, type: 'downtime', from: embStageFrom(t), to: embStageTs(t, 'receive') },
-                    { label: `${EMB_LABELS[t]}ทำงาน → ส่งต่อ`, type: 'active', from: embStageTs(t, 'receive'), to: embStageTs(t, 'send') },
+                    { label: `รอ${EMB_LABELS[t]}รับงาน`, labelEn: `Waiting for ${EMB_LABELS_EN[t]} to receive`, type: 'downtime', from: embStageFrom(t), to: embStageTs(t, 'receive') },
+                    { label: `${EMB_LABELS[t]}ทำงาน → ส่งต่อ`, labelEn: `${EMB_LABELS_EN[t]} working → Forwarded`, type: 'active', from: embStageTs(t, 'receive'), to: embStageTs(t, 'send') },
                 ]),
-                { label: 'รอ QC รับงาน', type: 'downtime', from: beforeQC, to: r => (r.qcInspection && r.qcInspection.receive && r.qcInspection.receive.ts) ? new Date(r.qcInspection.receive.ts) : null },
-                { label: 'QC ทำงาน → บันทึกผลตรวจ', type: 'active', from: r => (r.qcInspection && r.qcInspection.receive && r.qcInspection.receive.ts) ? new Date(r.qcInspection.receive.ts) : null, to: r => (r.qcInspection && r.qcInspection.send && r.qcInspection.send.ts) ? new Date(r.qcInspection.send.ts) : null },
-                { label: 'รอซุปเปอร์มาร์เก็ตรับงาน', type: 'downtime', from: beforeSupermarket, to: ts('supermarketReceive.ts') },
-                { label: 'ซุปเปอร์มาร์เก็ตทำงาน → ส่งเข้าไลน์', type: 'active', from: ts('supermarketReceive.ts'), to: ts('supermarketSend.ts') },
-                { label: 'รอต้นทางรับงาน', type: 'downtime', from: ts('supermarketSend.ts'), to: ts('originReceive.ts') },
-                { label: 'รวมทั้งกระบวนการ (แจ้งซ่อม → รับงานสมบูรณ์)', type: 'mixed', from: r => r.date ? parseLocalDateTime(r.date) : null, to: ts('originReceive.ts') },
+                { label: 'รอ QC รับงาน', labelEn: 'Waiting for QC to receive', type: 'downtime', from: beforeQC, to: r => (r.qcInspection && r.qcInspection.receive && r.qcInspection.receive.ts) ? new Date(r.qcInspection.receive.ts) : null },
+                { label: 'QC ทำงาน → บันทึกผลตรวจ', labelEn: 'QC working → Record inspection result', type: 'active', from: r => (r.qcInspection && r.qcInspection.receive && r.qcInspection.receive.ts) ? new Date(r.qcInspection.receive.ts) : null, to: r => (r.qcInspection && r.qcInspection.send && r.qcInspection.send.ts) ? new Date(r.qcInspection.send.ts) : null },
+                { label: 'รอซุปเปอร์มาร์เก็ตรับงาน', labelEn: 'Waiting for Supermarket to receive', type: 'downtime', from: beforeSupermarket, to: ts('supermarketReceive.ts') },
+                { label: 'ซุปเปอร์มาร์เก็ตทำงาน → ส่งเข้าไลน์', labelEn: 'Supermarket working → Sent to line', type: 'active', from: ts('supermarketReceive.ts'), to: ts('supermarketSend.ts') },
+                { label: 'รอต้นทางรับงาน', labelEn: 'Waiting for origin dept to receive', type: 'downtime', from: ts('supermarketSend.ts'), to: ts('originReceive.ts') },
+                { label: 'รวมทั้งกระบวนการ (แจ้งซ่อม → รับงานสมบูรณ์)', labelEn: 'Total process (Reported → Fully received)', type: 'mixed', from: r => r.date ? parseLocalDateTime(r.date) : null, to: ts('originReceive.ts') },
             ];
 
             // Averages are measured in working time (Mon-Sat 08:00-17:00 Bangkok), matching
@@ -8082,31 +8370,44 @@
                 active: '<span class="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5">⚙️ Active</span>',
                 mixed: '<span class="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5">— รวม</span>',
             };
+            // Alongside the average, also track the fastest/slowest single case seen for that
+            // stage — per "ต้องการให้เพิ่ม Max Min ของเวลาในการทำงานแต่ละขั้นตอนไปในตารางด้วย" —
+            // so an average that looks fine can still reveal an outlier worth investigating.
             const rows = stages.map(stage => {
-                let count = 0, totalHours = 0;
+                let count = 0, totalHours = 0, minHours = null, maxHours = null;
                 repairs.forEach(r => {
                     const from = stage.from(r), to = stage.to(r);
                     if (from && to && to >= from) {
-                        totalHours += businessHoursBetween(from, to);
+                        const h = businessHoursBetween(from, to);
+                        totalHours += h;
                         count++;
+                        if (minHours === null || h < minHours) minHours = h;
+                        if (maxHours === null || h > maxHours) maxHours = h;
                     }
                 });
                 const avgHours = count ? totalHours / count : 0;
                 const avgLabel = count ? formatBusinessDuration(avgHours) : '-';
-                return { label: stage.label, type: stage.type, count, avgHours, avgLabel };
+                const minLabel = count ? formatBusinessDuration(minHours) : '-';
+                const maxLabel = count ? formatBusinessDuration(maxHours) : '-';
+                return { label: stage.label, labelEn: stage.labelEn, type: stage.type, count, avgHours, avgLabel, minLabel, maxLabel };
             });
 
             // Downtime/Active/Mixed are now separate columns instead of one column tagged
             // with a type badge — each row only has a value in the column matching its type.
+            // Min/Max apply regardless of type (every row has exactly one active type), so
+            // they're plain shared columns rather than split three ways like the average.
+            const TYPE_TEXT_COLOR = { downtime: 'text-amber-700', active: 'text-emerald-700', mixed: 'text-slate-500' };
             body.innerHTML = rows.map(r => `
                 <tr class="border-b border-slate-100">
-                    <td class="py-2 px-3 text-slate-700">${r.label}</td>
+                    <td class="py-2 px-3 text-slate-700">${escapeHtml(r.label)} <span class="block text-slate-400 text-[9px] font-normal">${escapeHtml(r.labelEn)}</span></td>
                     <td class="py-2 px-3 text-center text-slate-600">${r.count}</td>
                     <td class="py-2 px-3 text-center font-semibold text-amber-700">${r.type === 'downtime' ? r.avgLabel : '-'}</td>
                     <td class="py-2 px-3 text-center font-semibold text-emerald-700">${r.type === 'active' ? r.avgLabel : '-'}</td>
                     <td class="py-2 px-3 text-center font-semibold text-slate-500">${r.type === 'mixed' ? r.avgLabel : '-'}</td>
+                    <td class="py-2 px-3 text-center font-semibold ${TYPE_TEXT_COLOR[r.type]}">${r.minLabel}</td>
+                    <td class="py-2 px-3 text-center font-semibold ${TYPE_TEXT_COLOR[r.type]}">${r.maxLabel}</td>
                 </tr>
-            `).join('') || `<tr><td colspan="5" class="py-4 text-center text-slate-400">ยังไม่มีข้อมูล</td></tr>`;
+            `).join('') || `<tr><td colspan="7" class="py-4 text-center text-slate-400">ยังไม่มีข้อมูล</td></tr>`;
 
             // Pair each department's downtime + active stages into one group for the chart,
             // so a single bar shows exactly how that department's time splits between
@@ -8387,7 +8688,7 @@
                 const t = r.requestType === 'ACCOnly' ? 'ACCOnly' : 'CutReplace';
                 requestTypeMap[t]++;
             });
-            const requestTypeLabels = ['แจ้งขอตัดเปลี่ยน (Cut-Replace)', 'แจ้งขอ ACC (ACC Only)'];
+            const requestTypeLabels = ['แจ้งขอตัดเปลี่ยน (Cut-Replace)', 'แจ้งขอเบิกอุปกรณ์ (ACC)'];
             const requestTypeData = [requestTypeMap.CutReplace, requestTypeMap.ACCOnly];
             const requestTypeCtx = document.getElementById('requestTypeChart').getContext('2d');
             myCharts.requestTypeChart = new Chart(requestTypeCtx, {
@@ -8514,16 +8815,18 @@
             if (!tbody) return;
             const THAI_MONTHS_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
                 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+            const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
             const sortedDates = Object.keys(COMPANY_HOLIDAYS).sort();
             tbody.innerHTML = sortedDates.map((dateStr, i) => {
                 const h = COMPANY_HOLIDAYS[dateStr];
                 const [y, m, d] = dateStr.split('-');
+                const dayNum = parseInt(d, 10), monthIdx = parseInt(m, 10) - 1, yearNum = parseInt(y, 10);
                 return `
                     <tr class="hover:bg-slate-50/80">
                         <td class="px-4 py-3 text-xs font-bold text-slate-800">${i + 1}</td>
-                        <td class="px-4 py-3 text-xs text-slate-600">${escapeHtml(h.weekday)}</td>
-                        <td class="px-4 py-3 text-xs text-slate-600">${parseInt(d, 10)} ${THAI_MONTHS_FULL[parseInt(m, 10) - 1]} ${parseInt(y, 10) + 543}</td>
-                        <td class="px-4 py-3 text-xs text-slate-700">${escapeHtml(h.name)}</td>
+                        <td class="px-4 py-3 text-xs text-slate-600">${escapeHtml(h.weekday)}<span class="block text-slate-400 text-[9px]">${WEEKDAY_EN[h.weekday] || ''}</span></td>
+                        <td class="px-4 py-3 text-xs text-slate-600">${dayNum} ${THAI_MONTHS_FULL[monthIdx]} ${yearNum + 543}<span class="block text-slate-400 text-[9px]">${MONTHS_EN[monthIdx]} ${dayNum}, ${yearNum}</span></td>
+                        <td class="px-4 py-3 text-xs text-slate-700">${escapeHtml(h.name)}${h.nameEn ? `<span class="block text-slate-400 text-[9px] font-normal">${escapeHtml(h.nameEn)}</span>` : ''}</td>
                     </tr>
                 `;
             }).join('') || `<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400 text-xs">ยังไม่มีข้อมูลวันหยุด</td></tr>`;
@@ -8733,7 +9036,7 @@
         // --- CSV Export ---
         function exportCSV() {
             let csvContent = "data:text/csv;charset=utf-8,﻿";
-            csvContent += "ID,เลขที่เอกสาร (Doc No.),วันที่แจ้ง,วันที่ต้องการ,วันส่งออก,แผนก,ไลน์ผลิต,ประเภทคำขอ (Heat Transfer),ประเภทคำขอ (Cut-Replace/ACC Only),อ้างอิง QC Reject,ผู้ขอ,Style,Job,Item,Color,PO No.,สาเหตุ (รายชิ้น),Remark,Alert,สถานะ,ผู้ตรวจสอบ (BU),วันที่ตรวจสอบ (BU),ผู้อนุมัติ (FM),วันที่อนุมัติ (FM),Remark (FM),ผู้รับงาน (Marker),ประเภทผ้า (Marker),วางมาร์ค (Marker),ผู้รับงาน (ใบปูตัด),ผู้ส่งต่อ (ใบปูตัด),ผู้รับงาน (เช็คผ้า),มีผ้าหรือไม่ (เช็คผ้า),ผู้รับงาน (PPC Fabric),วันผ้าเข้าจริง (PPC Fabric),ผู้รับงาน (สต็อคผ้า),ผู้ส่งต่อ (สต็อคผ้า),ปัญหาแผนกตัด,ผู้รับงานตัด,ผู้ตัดเสร็จ,ค้างตัด (Cutting Pending),ผู้รับงาน (ACC),คงค้างจ่าย (ACC),ประวัติปัญหา ACC (จำนวนรอบ),ผู้ส่งต่อ (ACC)," +
+            csvContent += "ID,เลขที่เอกสาร (Doc No.),วันที่แจ้ง,วันที่ต้องการ,วันส่งออก,แผนก,ไลน์ผลิต,ประเภทคำขอ (Heat Transfer),ประเภทคำขอ (Cut-Replace/ACC Only),อ้างอิง QC Reject,ผู้ขอ,Style,Job,Item,CW,PO No.,สาเหตุ (รายชิ้น),Remark,Alert,สถานะ,ผู้ตรวจสอบ (BU),วันที่ตรวจสอบ (BU),ผู้อนุมัติ (FM),วันที่อนุมัติ (FM),Remark (FM),ผู้รับงาน (Marker),ประเภทผ้า (Marker),วางมาร์ค (Marker),ผู้รับงาน (ใบปูตัด),ผู้ส่งต่อ (ใบปูตัด),ผู้รับงาน (เช็คผ้า),มีผ้าหรือไม่ (เช็คผ้า),ผู้รับงาน (PPC Fabric),วันผ้าเข้าจริง (PPC Fabric),ผู้รับงาน (สต็อคผ้า),ผู้ส่งต่อ (สต็อคผ้า),ปัญหาแผนกตัด,ผู้รับงานตัด,ผู้ตัดเสร็จ,ค้างตัด (Cutting Pending),ผู้รับงาน (ACC),คงค้างจ่าย (ACC),ประวัติปัญหา ACC (จำนวนรอบ),ผู้ส่งต่อ (ACC)," +
                 EMB_STAGE_TYPES.map(t => `ผู้รับงาน (${EMB_LABELS[t]}),ผู้ส่งต่อ (${EMB_LABELS[t]}),Vendor Outsource (${EMB_LABELS[t]})`).join(',') +
                 ",ผู้รับงาน (QC),จำนวนตรวจรับ (QC),จำนวน Defect (QC),ผลตรวจ (QC),รอบส่งซ่อม QC (QC Repair Rounds),ผู้รับงาน (ซุปเปอร์มาร์เก็ต),ผู้ส่งงานเข้าไลน์ (ซุปเปอร์มาร์เก็ต),ผู้รับงานต้นทาง\n";
             repairs.forEach(r => {
@@ -8741,7 +9044,7 @@
                 const row = [
                     r.id, `"${r.docNo || ''}"`, r.date, r.needDate || '', r.shipOutDate || '', r.dept, r.line,
                     r.heatTransferType === 'acc' ? 'ขอ ACC' : (r.heatTransferType === 'fabric' ? 'ขอผ้า' : ''),
-                    r.requestType === 'ACCOnly' ? 'แจ้งขอ ACC' : 'แจ้งขอตัดเปลี่ยน',
+                    r.requestType === 'ACCOnly' ? 'แจ้งขอเบิกอุปกรณ์ (ACC)' : 'แจ้งขอตัดเปลี่ยน',
                     `"${r.sourceQcRejectId || ''}"`,
                     r.requesterUser || '',
                     `"${r.style}"`, `"${r.job}"`, `"${r.item}"`, `"${r.color}"`, `"${r.po || ''}"`,
