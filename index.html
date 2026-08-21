@@ -232,61 +232,56 @@
                     <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest px-3 pt-1.5 pb-1">ภาพรวม <span class="font-normal normal-case text-slate-300">(Overview)</span></p>
                     <!-- Column header row, per "ต้องการปรับ ให้ใส่เป็นหัวข้อข้างบนที่เป็นจำนวนรายการเบิก,
                          จำนวนชิ้น, และจำนวนของใบขอ และช่วยจัดเป็นคอลัมส่วนให้ดูง่าย" -->
-                    <div class="flex items-center justify-between gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
+                    <div class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
                         <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider">สถานะ <span class="opacity-70 text-[9px]">(Status)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 px-2 w-[170px] text-center">รายการ / ชิ้น <span class="opacity-70 text-[9px]">(Lines/Pcs)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 w-[120px] text-center">จำนวนใบ / เกิน <span class="opacity-70 text-[9px]">(Docs/Overdue)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">รายการ<span class="block opacity-70 text-[9px] normal-case">(Lines)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">ชิ้น<span class="block opacity-70 text-[9px] normal-case">(Pcs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">จำนวนใบ<span class="block opacity-70 text-[9px] normal-case">(Docs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">เกิน<span class="block opacity-70 text-[9px] normal-case">(Overdue)</span></span>
                     </div>
                     <div class="flex flex-col divide-y divide-slate-100 border-t border-slate-100">
-                        <div onclick="filterByKpi('all')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-slate-50 transition-colors border-l-2 border-l-slate-400">
+                        <div onclick="filterByKpi('all')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-slate-50 transition-colors border-l-2 border-l-slate-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
                                 <p class="text-[10px] font-bold uppercase text-slate-500 leading-tight">งานซ่อมกำลังดำเนินการ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Active Repair Jobs</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiTotalLines">0</span> รายการ</span>
-                                <span><span id="kpiTotalQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiTotal" class="text-lg font-black text-slate-800 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiTotalOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiTotalLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiTotalQty">0</span></span>
+                            <h4 id="kpiTotal" class="text-sm font-black text-slate-800 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiTotalOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('overdue')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-500">
+                        <div onclick="filterByKpi('overdue')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">⚠️</span>
                                 <p class="text-[10px] font-bold uppercase text-red-600 leading-tight">🚨 เกิน 2 วัน / เกินวันที่ต้องการของ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Overdue 2 Days / Past Need Date</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiOverdueLines">0</span> รายการ</span>
-                                <span><span id="kpiOverdueQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 w-[120px] text-center"><h4 id="kpiOverdue" class="text-lg font-black text-red-600 leading-none">0</h4></div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiOverdueLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiOverdueQty">0</span></span>
+                            <h4 id="kpiOverdue" class="text-sm font-black text-red-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"></span>
                         </div>
-                        <div onclick="goToCompletedHistory()" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-emerald-50 transition-colors border-l-2 border-l-emerald-500">
+                        <div onclick="goToCompletedHistory()" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-emerald-50 transition-colors border-l-2 border-l-emerald-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">✅</span>
                                 <p class="text-[10px] font-bold uppercase text-emerald-600 leading-tight">เสร็จสมบูรณ์ทั้งหมด <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">All Completed</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiCompletedLines">0</span> รายการ</span>
-                                <span><span id="kpiCompletedQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 w-[120px] text-center"><h4 id="kpiCompleted" class="text-lg font-black text-emerald-600 leading-none">0</h4></div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCompletedLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCompletedQty">0</span></span>
+                            <h4 id="kpiCompleted" class="text-sm font-black text-emerald-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"></span>
                         </div>
                         <!-- Cancelled orders also set archived:true (same as a real completion),
                              so without this row they'd have zero visibility anywhere on the
                              dashboard once cancelled. -->
-                        <div onclick="goToCompletedHistory()" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-slate-50 transition-colors border-l-2 border-l-slate-300">
+                        <div onclick="goToCompletedHistory()" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-slate-50 transition-colors border-l-2 border-l-slate-300">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🚫</span>
                                 <p class="text-[10px] font-bold uppercase text-slate-500 leading-tight">ยกเลิกแล้ว <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Cancelled</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiCancelledLines">0</span> รายการ</span>
-                                <span><span id="kpiCancelledQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 w-[120px] text-center"><h4 id="kpiCancelled" class="text-lg font-black text-slate-500 leading-none">0</h4></div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCancelledLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCancelledQty">0</span></span>
+                            <h4 id="kpiCancelled" class="text-sm font-black text-slate-500 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"></span>
                         </div>
                     </div>
                 </div>
@@ -295,53 +290,43 @@
                     <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest px-3 pt-1.5 pb-1">การอนุมัติ <span class="font-normal normal-case text-slate-300">(Approval: BU → FM)</span></p>
                     <!-- Column header row, per "ต้องการปรับ ให้ใส่เป็นหัวข้อข้างบนที่เป็นจำนวนรายการเบิก,
                          จำนวนชิ้น, และจำนวนของใบขอ และช่วยจัดเป็นคอลัมส่วนให้ดูง่าย" -->
-                    <div class="flex items-center justify-between gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
+                    <div class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
                         <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider">สถานะ <span class="opacity-70 text-[9px]">(Status)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 px-2 w-[170px] text-center">รายการ / ชิ้น <span class="opacity-70 text-[9px]">(Lines/Pcs)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 w-[120px] text-center">จำนวนใบ / เกิน <span class="opacity-70 text-[9px]">(Docs/Overdue)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">รายการ<span class="block opacity-70 text-[9px] normal-case">(Lines)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">ชิ้น<span class="block opacity-70 text-[9px] normal-case">(Pcs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">จำนวนใบ<span class="block opacity-70 text-[9px] normal-case">(Docs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">เกิน<span class="block opacity-70 text-[9px] normal-case">(Overdue)</span></span>
                     </div>
                     <div class="flex flex-col divide-y divide-slate-100 border-t border-slate-100">
-                        <div onclick="filterByKpi('PendingApproval')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-500">
+                        <div onclick="filterByKpi('PendingApproval')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">⏳</span>
                                 <p class="text-[10px] font-bold uppercase text-amber-600 leading-tight">รอ BU ตรวจสอบ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending BU</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiPendingLines">0</span> รายการ</span>
-                                <span><span id="kpiPendingQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiPending" class="text-lg font-black text-amber-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiPendingOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiPendingLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiPendingQty">0</span></span>
+                            <h4 id="kpiPending" class="text-sm font-black text-amber-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiPendingOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('PendingFMApproval')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-500">
+                        <div onclick="filterByKpi('PendingFMApproval')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🗂️</span>
                                 <p class="text-[10px] font-bold uppercase text-orange-600 leading-tight">รอ PM/FM อนุมัติ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending PM/FM</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiPendingFMLines">0</span> รายการ</span>
-                                <span><span id="kpiPendingFMQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiPendingFM" class="text-lg font-black text-orange-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiPendingFMOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiPendingFMLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiPendingFMQty">0</span></span>
+                            <h4 id="kpiPendingFM" class="text-sm font-black text-orange-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiPendingFMOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('anyRejected')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-rose-50 transition-colors border-l-2 border-l-rose-400">
+                        <div onclick="filterByKpi('anyRejected')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-rose-50 transition-colors border-l-2 border-l-rose-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🚫</span>
                                 <p class="text-[10px] font-bold uppercase text-rose-500 leading-tight">ถูกตีกลับ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Returned (BU/FM)</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiRejectedLines">0</span> รายการ</span>
-                                <span><span id="kpiRejectedQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiRejected" class="text-lg font-black text-rose-500 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiRejectedOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiRejectedLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiRejectedQty">0</span></span>
+                            <h4 id="kpiRejected" class="text-sm font-black text-rose-500 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiRejectedOverdue">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -350,67 +335,53 @@
                     <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest px-3 pt-1.5 pb-1">Marker <span class="font-normal normal-case text-slate-300">(Cutting Prep)</span></p>
                     <!-- Column header row, per "ต้องการปรับ ให้ใส่เป็นหัวข้อข้างบนที่เป็นจำนวนรายการเบิก,
                          จำนวนชิ้น, และจำนวนของใบขอ และช่วยจัดเป็นคอลัมส่วนให้ดูง่าย" -->
-                    <div class="flex items-center justify-between gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
+                    <div class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
                         <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider">สถานะ <span class="opacity-70 text-[9px]">(Status)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 px-2 w-[170px] text-center">รายการ / ชิ้น <span class="opacity-70 text-[9px]">(Lines/Pcs)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 w-[120px] text-center">จำนวนใบ / เกิน <span class="opacity-70 text-[9px]">(Docs/Overdue)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">รายการ<span class="block opacity-70 text-[9px] normal-case">(Lines)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">ชิ้น<span class="block opacity-70 text-[9px] normal-case">(Pcs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">จำนวนใบ<span class="block opacity-70 text-[9px] normal-case">(Docs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">เกิน<span class="block opacity-70 text-[9px] normal-case">(Overdue)</span></span>
                     </div>
                     <div class="flex flex-col divide-y divide-slate-100 border-t border-slate-100">
-                        <div onclick="filterByKpi('Approved')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-sky-50 transition-colors border-l-2 border-l-sky-500">
+                        <div onclick="filterByKpi('Approved')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-sky-50 transition-colors border-l-2 border-l-sky-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📝</span>
                                 <p class="text-[10px] font-bold uppercase text-sky-600 leading-tight">รอ Marker รับงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Marker</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiApprovedLines">0</span> รายการ</span>
-                                <span><span id="kpiApprovedQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiApproved" class="text-lg font-black text-sky-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiApprovedOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiApprovedLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiApprovedQty">0</span></span>
+                            <h4 id="kpiApproved" class="text-sm font-black text-sky-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiApprovedOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('waitCuttingSheet')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-violet-50 transition-colors border-l-2 border-l-violet-400">
+                        <div onclick="filterByKpi('waitCuttingSheet')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-violet-50 transition-colors border-l-2 border-l-violet-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📐</span>
                                 <p class="text-[10px] font-bold uppercase text-violet-600 leading-tight">รอรับงานทำใบปูตัด <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Cutting Sheet</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiWaitCuttingSheetLines">0</span> รายการ</span>
-                                <span><span id="kpiWaitCuttingSheetQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiWaitCuttingSheet" class="text-lg font-black text-violet-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiWaitCuttingSheetOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitCuttingSheetLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitCuttingSheetQty">0</span></span>
+                            <h4 id="kpiWaitCuttingSheet" class="text-sm font-black text-violet-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiWaitCuttingSheetOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('markerWorking')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-fuchsia-50 transition-colors border-l-2 border-l-fuchsia-400">
+                        <div onclick="filterByKpi('markerWorking')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-fuchsia-50 transition-colors border-l-2 border-l-fuchsia-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">✍️</span>
                                 <p class="text-[10px] font-bold uppercase text-fuchsia-600 leading-tight">Marker กำลังทำงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Marker In Progress</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiMarkerWorkingLines">0</span> รายการ</span>
-                                <span><span id="kpiMarkerWorkingQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiMarkerWorking" class="text-lg font-black text-fuchsia-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiMarkerWorkingOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiMarkerWorkingLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiMarkerWorkingQty">0</span></span>
+                            <h4 id="kpiMarkerWorking" class="text-sm font-black text-fuchsia-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiMarkerWorkingOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('cuttingSheetWorking')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-violet-50 transition-colors border-l-2 border-l-violet-500">
+                        <div onclick="filterByKpi('cuttingSheetWorking')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-violet-50 transition-colors border-l-2 border-l-violet-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📐</span>
                                 <p class="text-[10px] font-bold uppercase text-violet-700 leading-tight">ใบปูตัดกำลังทำงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Cutting Sheet In Progress</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiCuttingSheetWorkingLines">0</span> รายการ</span>
-                                <span><span id="kpiCuttingSheetWorkingQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiCuttingSheetWorking" class="text-lg font-black text-violet-700 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiCuttingSheetWorkingOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCuttingSheetWorkingLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCuttingSheetWorkingQty">0</span></span>
+                            <h4 id="kpiCuttingSheetWorking" class="text-sm font-black text-violet-700 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiCuttingSheetWorkingOverdue">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -419,110 +390,85 @@
                     <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest px-3 pt-1.5 pb-1">ผ้า <span class="font-normal normal-case text-slate-300">(Fabric)</span></p>
                     <!-- Column header row, per "ต้องการปรับ ให้ใส่เป็นหัวข้อข้างบนที่เป็นจำนวนรายการเบิก,
                          จำนวนชิ้น, และจำนวนของใบขอ และช่วยจัดเป็นคอลัมส่วนให้ดูง่าย" -->
-                    <div class="flex items-center justify-between gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
+                    <div class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
                         <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider">สถานะ <span class="opacity-70 text-[9px]">(Status)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 px-2 w-[170px] text-center">รายการ / ชิ้น <span class="opacity-70 text-[9px]">(Lines/Pcs)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 w-[120px] text-center">จำนวนใบ / เกิน <span class="opacity-70 text-[9px]">(Docs/Overdue)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">รายการ<span class="block opacity-70 text-[9px] normal-case">(Lines)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">ชิ้น<span class="block opacity-70 text-[9px] normal-case">(Pcs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">จำนวนใบ<span class="block opacity-70 text-[9px] normal-case">(Docs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">เกิน<span class="block opacity-70 text-[9px] normal-case">(Overdue)</span></span>
                     </div>
                     <div class="flex flex-col divide-y divide-slate-100 border-t border-slate-100">
-                        <div onclick="filterByKpi('waitFabricCheck')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-blue-50 transition-colors border-l-2 border-l-blue-400">
+                        <div onclick="filterByKpi('waitFabricCheck')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-blue-50 transition-colors border-l-2 border-l-blue-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🔎</span>
                                 <p class="text-[10px] font-bold uppercase text-blue-600 leading-tight">รอเช็คผ้า <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Fabric Check</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiWaitFabricCheckLines">0</span> รายการ</span>
-                                <span><span id="kpiWaitFabricCheckQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiWaitFabricCheck" class="text-lg font-black text-blue-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiWaitFabricCheckOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitFabricCheckLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitFabricCheckQty">0</span></span>
+                            <h4 id="kpiWaitFabricCheck" class="text-sm font-black text-blue-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiWaitFabricCheckOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('fabricCheckWorking')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-blue-50 transition-colors border-l-2 border-l-blue-500">
+                        <div onclick="filterByKpi('fabricCheckWorking')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-blue-50 transition-colors border-l-2 border-l-blue-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🔎</span>
                                 <p class="text-[10px] font-bold uppercase text-blue-700 leading-tight">เช็คผ้ากำลังทำงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Fabric Check In Progress</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiFabricCheckWorkingLines">0</span> รายการ</span>
-                                <span><span id="kpiFabricCheckWorkingQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiFabricCheckWorking" class="text-lg font-black text-blue-700 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiFabricCheckWorkingOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiFabricCheckWorkingLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiFabricCheckWorkingQty">0</span></span>
+                            <h4 id="kpiFabricCheckWorking" class="text-sm font-black text-blue-700 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiFabricCheckWorkingOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('waitPPCFabric')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-fuchsia-50 transition-colors border-l-2 border-l-fuchsia-500">
+                        <div onclick="filterByKpi('waitPPCFabric')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-fuchsia-50 transition-colors border-l-2 border-l-fuchsia-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🧵</span>
                                 <p class="text-[10px] font-bold uppercase text-fuchsia-600 leading-tight">รอ PPC เบิกผ้า <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending PPC Fabric</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiWaitPPCFabricLines">0</span> รายการ</span>
-                                <span><span id="kpiWaitPPCFabricQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiWaitPPCFabric" class="text-lg font-black text-fuchsia-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiWaitPPCFabricOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitPPCFabricLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitPPCFabricQty">0</span></span>
+                            <h4 id="kpiWaitPPCFabric" class="text-sm font-black text-fuchsia-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiWaitPPCFabricOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('waitingFabric')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-400">
+                        <div onclick="filterByKpi('waitingFabric')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🚚</span>
                                 <p class="text-[10px] font-bold uppercase text-amber-500 leading-tight">รอผ้าเข้า <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Waiting for fabric to arrive</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiWaitingFabricLines">0</span> รายการ</span>
-                                <span><span id="kpiWaitingFabricQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiWaitingFabric" class="text-lg font-black text-amber-500 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiWaitingFabricOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitingFabricLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitingFabricQty">0</span></span>
+                            <h4 id="kpiWaitingFabric" class="text-sm font-black text-amber-500 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiWaitingFabricOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('waitStockFabric')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-sky-50 transition-colors border-l-2 border-l-sky-400">
+                        <div onclick="filterByKpi('waitStockFabric')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-sky-50 transition-colors border-l-2 border-l-sky-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
                                 <p class="text-[10px] font-bold uppercase text-sky-500 leading-tight">รอสต็อคจ่ายผ้า <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Stock Fabric</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiWaitStockFabricLines">0</span> รายการ</span>
-                                <span><span id="kpiWaitStockFabricQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiWaitStockFabric" class="text-lg font-black text-sky-500 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiWaitStockFabricOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitStockFabricLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitStockFabricQty">0</span></span>
+                            <h4 id="kpiWaitStockFabric" class="text-sm font-black text-sky-500 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiWaitStockFabricOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('stockFabricWorking')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-sky-50 transition-colors border-l-2 border-l-sky-600">
+                        <div onclick="filterByKpi('stockFabricWorking')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-sky-50 transition-colors border-l-2 border-l-sky-600">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
                                 <p class="text-[10px] font-bold uppercase text-sky-700 leading-tight">สต็อคผ้ากำลังทำงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Stock Fabric In Progress</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiStockFabricWorkingLines">0</span> รายการ</span>
-                                <span><span id="kpiStockFabricWorkingQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiStockFabricWorking" class="text-lg font-black text-sky-700 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiStockFabricWorkingOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiStockFabricWorkingLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiStockFabricWorkingQty">0</span></span>
+                            <h4 id="kpiStockFabricWorking" class="text-sm font-black text-sky-700 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiStockFabricWorkingOverdue">0</span></span>
                         </div>
                         <!-- Cross-job fabric usage report — per "ให้มีรีพอร์ตสำหรับข้อมูลจากสต็อค
                              ที่มีการใช้ของจาก Job อื่นไปแสดงรายการในส่วนของ PPC Fabric". -->
-                        <div onclick="filterByKpi('crossJobFabric')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-violet-50 transition-colors border-l-2 border-l-violet-500">
+                        <div onclick="filterByKpi('crossJobFabric')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-violet-50 transition-colors border-l-2 border-l-violet-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🔀</span>
                                 <p class="text-[10px] font-bold uppercase text-violet-600 leading-tight">ใช้ผ้าจาก Job อื่น <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Fabric borrowed from another Job</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiCrossJobFabricLines">0</span> รายการ</span>
-                                <span><span id="kpiCrossJobFabricQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiCrossJobFabric" class="text-lg font-black text-violet-600 leading-none">0</h4>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCrossJobFabricLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCrossJobFabricQty">0</span></span>
+                            <h4 id="kpiCrossJobFabric" class="text-sm font-black text-violet-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"></span>
                         </div>
                         <div id="crossJobFabricReport" class="px-3 py-1.5 space-y-1"></div>
                     </div>
@@ -532,82 +478,65 @@
                     <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest px-3 pt-1.5 pb-1">แผนกตัด <span class="font-normal normal-case text-slate-300">(Cutting Department)</span></p>
                     <!-- Column header row, per "ต้องการปรับ ให้ใส่เป็นหัวข้อข้างบนที่เป็นจำนวนรายการเบิก,
                          จำนวนชิ้น, และจำนวนของใบขอ และช่วยจัดเป็นคอลัมส่วนให้ดูง่าย" -->
-                    <div class="flex items-center justify-between gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
+                    <div class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
                         <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider">สถานะ <span class="opacity-70 text-[9px]">(Status)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 px-2 w-[170px] text-center">รายการ / ชิ้น <span class="opacity-70 text-[9px]">(Lines/Pcs)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 w-[120px] text-center">จำนวนใบ / เกิน <span class="opacity-70 text-[9px]">(Docs/Overdue)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">รายการ<span class="block opacity-70 text-[9px] normal-case">(Lines)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">ชิ้น<span class="block opacity-70 text-[9px] normal-case">(Pcs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">จำนวนใบ<span class="block opacity-70 text-[9px] normal-case">(Docs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">เกิน<span class="block opacity-70 text-[9px] normal-case">(Overdue)</span></span>
                     </div>
                     <div class="flex flex-col divide-y divide-slate-100 border-t border-slate-100">
-                        <div onclick="filterByKpi('waitCuttingDept')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-indigo-50 transition-colors border-l-2 border-l-indigo-400">
+                        <div onclick="filterByKpi('waitCuttingDept')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-indigo-50 transition-colors border-l-2 border-l-indigo-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">✂️</span>
                                 <p class="text-[10px] font-bold uppercase text-indigo-500 leading-tight">รอแผนกตัดรับงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Cutting Dept</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiWaitCuttingDeptLines">0</span> รายการ</span>
-                                <span><span id="kpiWaitCuttingDeptQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiWaitCuttingDept" class="text-lg font-black text-indigo-500 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiWaitCuttingDeptOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitCuttingDeptLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitCuttingDeptQty">0</span></span>
+                            <h4 id="kpiWaitCuttingDept" class="text-sm font-black text-indigo-500 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiWaitCuttingDeptOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('CuttingReceived')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-indigo-50 transition-colors border-l-2 border-l-indigo-500">
+                        <div onclick="filterByKpi('CuttingReceived')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-indigo-50 transition-colors border-l-2 border-l-indigo-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">✂️</span>
                                 <p class="text-[10px] font-bold uppercase text-indigo-600 leading-tight">กำลังตัดซ่อม <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Cutting In Progress</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiCuttingReceivedLines">0</span> รายการ</span>
-                                <span><span id="kpiCuttingReceivedQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiCuttingReceived" class="text-lg font-black text-indigo-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiCuttingReceivedOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCuttingReceivedLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCuttingReceivedQty">0</span></span>
+                            <h4 id="kpiCuttingReceived" class="text-sm font-black text-indigo-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiCuttingReceivedOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('cuttingSentFresh')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-purple-50 transition-colors border-l-2 border-l-purple-500">
+                        <div onclick="filterByKpi('cuttingSentFresh')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-purple-50 transition-colors border-l-2 border-l-purple-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
                                 <p class="text-[10px] font-bold uppercase text-purple-600 leading-tight">ตัดเสร็จ รอเริ่มงานต่อ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Awaiting next stage</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiCuttingSentLines">0</span> รายการ</span>
-                                <span><span id="kpiCuttingSentQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiCuttingSent" class="text-lg font-black text-purple-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiCuttingSentOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCuttingSentLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCuttingSentQty">0</span></span>
+                            <h4 id="kpiCuttingSent" class="text-sm font-black text-purple-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiCuttingSentOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('cuttingIssue')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-500">
+                        <div onclick="filterByKpi('cuttingIssue')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">⚠️</span>
                                 <p class="text-[10px] font-bold uppercase text-red-600 leading-tight">แผนกตัดแจ้งปัญหา <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Cutting Issue Reported</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiCuttingIssueLines">0</span> รายการ</span>
-                                <span><span id="kpiCuttingIssueQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiCuttingIssue" class="text-lg font-black text-red-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiCuttingIssueOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCuttingIssueLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCuttingIssueQty">0</span></span>
+                            <h4 id="kpiCuttingIssue" class="text-sm font-black text-red-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiCuttingIssueOverdue">0</span></span>
                         </div>
                         <!-- Per-item cut checklist backlog — per "ส่วนที่เว้นว่างไม่ได้ติ๊ก...
                              จะเป็นรายการคงค้างตัดอยู่". -->
-                        <div onclick="filterByKpi('cuttingPending')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-500">
+                        <div onclick="filterByKpi('cuttingPending')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">✂️</span>
                                 <p class="text-[10px] font-bold uppercase text-amber-600 leading-tight">รายการตัดคงค้าง <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Cut Items</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiCuttingPendingLines">0</span> รายการ</span>
-                                <span><span id="kpiCuttingPendingQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiCuttingPending" class="text-lg font-black text-amber-600 leading-none">0</h4>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCuttingPendingLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiCuttingPendingQty">0</span></span>
+                            <h4 id="kpiCuttingPending" class="text-sm font-black text-amber-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"></span>
                         </div>
                     </div>
                 </div>
@@ -616,74 +545,60 @@
                     <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest px-3 pt-1.5 pb-1">ACC</p>
                     <!-- Column header row, per "ต้องการปรับ ให้ใส่เป็นหัวข้อข้างบนที่เป็นจำนวนรายการเบิก,
                          จำนวนชิ้น, และจำนวนของใบขอ และช่วยจัดเป็นคอลัมส่วนให้ดูง่าย" -->
-                    <div class="flex items-center justify-between gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
+                    <div class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
                         <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider">สถานะ <span class="opacity-70 text-[9px]">(Status)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 px-2 w-[170px] text-center">รายการ / ชิ้น <span class="opacity-70 text-[9px]">(Lines/Pcs)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 w-[120px] text-center">จำนวนใบ / เกิน <span class="opacity-70 text-[9px]">(Docs/Overdue)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">รายการ<span class="block opacity-70 text-[9px] normal-case">(Lines)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">ชิ้น<span class="block opacity-70 text-[9px] normal-case">(Pcs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">จำนวนใบ<span class="block opacity-70 text-[9px] normal-case">(Docs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">เกิน<span class="block opacity-70 text-[9px] normal-case">(Overdue)</span></span>
                     </div>
                     <div class="flex flex-col divide-y divide-slate-100 border-t border-slate-100">
                         <!-- Was missing entirely — accActionable() items that haven't been
                              received yet had no row anywhere on this card (same class of gap
                              found on the Supermarket card: a state that exists in the data but
                              isn't represented by any bucket). -->
-                        <div onclick="filterByKpi('accWaitingReceive')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-lime-50 transition-colors border-l-2 border-l-lime-300">
+                        <div onclick="filterByKpi('accWaitingReceive')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-lime-50 transition-colors border-l-2 border-l-lime-300">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🏷️</span>
                                 <p class="text-[10px] font-bold uppercase text-lime-500 leading-tight">รอ ACC รับงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending ACC receipt</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiAccWaitingReceiveLines">0</span> รายการ</span>
-                                <span><span id="kpiAccWaitingReceiveQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiAccWaitingReceive" class="text-lg font-black text-lime-500 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiAccWaitingReceiveOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiAccWaitingReceiveLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiAccWaitingReceiveQty">0</span></span>
+                            <h4 id="kpiAccWaitingReceive" class="text-sm font-black text-lime-500 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiAccWaitingReceiveOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('acc')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-lime-50 transition-colors border-l-2 border-l-lime-500">
+                        <div onclick="filterByKpi('acc')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-lime-50 transition-colors border-l-2 border-l-lime-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🏷️</span>
                                 <p class="text-[10px] font-bold uppercase text-lime-600 leading-tight">ACC กำลังดำเนินการ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">ACC In Progress</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiAccLines">0</span> รายการ</span>
-                                <span><span id="kpiAccQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiAcc" class="text-lg font-black text-lime-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiAccOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiAccLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiAccQty">0</span></span>
+                            <h4 id="kpiAcc" class="text-sm font-black text-lime-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiAccOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('accPending')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-400">
+                        <div onclick="filterByKpi('accPending')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📮</span>
                                 <p class="text-[10px] font-bold uppercase text-orange-500 leading-tight">รายการที่ติดปัญหา (ACC) <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending / issue reported</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiAccPendingLines">0</span> รายการ</span>
-                                <span><span id="kpiAccPendingQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiAccPending" class="text-lg font-black text-orange-500 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiAccPendingOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiAccPendingLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiAccPendingQty">0</span></span>
+                            <h4 id="kpiAccPending" class="text-sm font-black text-orange-500 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiAccPendingOverdue">0</span></span>
                         </div>
                         <!-- Per-line "คงค้าง" (pending) count, separate from the whole-record
                              accPending/accIssue flag above — this is for records already SENT
                              but with individual lines still outstanding to dispense. -->
-                        <div onclick="filterByKpi('accFulfillmentPending')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-500">
+                        <div onclick="filterByKpi('accFulfillmentPending')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🧾</span>
                                 <p class="text-[10px] font-bold uppercase text-amber-600 leading-tight">ค้างจ่ายบางรายการ (ACC) <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Some lines still pending</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiAccFulfillmentPendingLines">0</span> รายการ</span>
-                                <span><span id="kpiAccFulfillmentPendingQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiAccFulfillmentPending" class="text-lg font-black text-amber-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiAccFulfillmentPendingOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiAccFulfillmentPendingLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiAccFulfillmentPendingQty">0</span></span>
+                            <h4 id="kpiAccFulfillmentPending" class="text-sm font-black text-amber-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiAccFulfillmentPendingOverdue">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -703,41 +618,35 @@
                     <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest px-3 pt-1.5 pb-1">QC <span class="font-normal normal-case text-slate-300 block">(ตรวจทุกงาน — In-house/Outsource — ก่อนส่งต่อแผนกถัดไป)</span></p>
                     <!-- Column header row, per "ต้องการปรับ ให้ใส่เป็นหัวข้อข้างบนที่เป็นจำนวนรายการเบิก,
                          จำนวนชิ้น, และจำนวนของใบขอ และช่วยจัดเป็นคอลัมส่วนให้ดูง่าย" -->
-                    <div class="flex items-center justify-between gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
+                    <div class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
                         <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider">สถานะ <span class="opacity-70 text-[9px]">(Status)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 px-2 w-[170px] text-center">รายการ / ชิ้น <span class="opacity-70 text-[9px]">(Lines/Pcs)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 w-[120px] text-center">จำนวนใบ / เกิน <span class="opacity-70 text-[9px]">(Docs/Overdue)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">รายการ<span class="block opacity-70 text-[9px] normal-case">(Lines)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">ชิ้น<span class="block opacity-70 text-[9px] normal-case">(Pcs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">จำนวนใบ<span class="block opacity-70 text-[9px] normal-case">(Docs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">เกิน<span class="block opacity-70 text-[9px] normal-case">(Overdue)</span></span>
                     </div>
                     <div class="flex flex-col divide-y divide-slate-100 border-t border-slate-100">
                         <!-- Split waiting-vs-in-progress, same as every other department card,
                              instead of one combined "QC In Progress (Total)" row. -->
-                        <div onclick="filterByKpi('qcWaiting')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-fuchsia-50 transition-colors border-l-2 border-l-fuchsia-300">
+                        <div onclick="filterByKpi('qcWaiting')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-fuchsia-50 transition-colors border-l-2 border-l-fuchsia-300">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🔍</span>
                                 <p class="text-[10px] font-bold uppercase text-fuchsia-500 leading-tight">รอ QC รับงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending QC receipt</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiQcWaitingLines">0</span> รายการ</span>
-                                <span><span id="kpiQcWaitingQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiQcWaiting" class="text-lg font-black text-fuchsia-500 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiQcWaitingOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiQcWaitingLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiQcWaitingQty">0</span></span>
+                            <h4 id="kpiQcWaiting" class="text-sm font-black text-fuchsia-500 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiQcWaitingOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('qc')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-fuchsia-50 transition-colors border-l-2 border-l-fuchsia-400">
+                        <div onclick="filterByKpi('qc')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-fuchsia-50 transition-colors border-l-2 border-l-fuchsia-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🔍</span>
                                 <p class="text-[10px] font-bold uppercase text-fuchsia-600 leading-tight">QC กำลังตรวจสอบ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">QC In Progress</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiQcLines">0</span> รายการ</span>
-                                <span><span id="kpiQcQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiQc" class="text-lg font-black text-fuchsia-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiQcOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiQcLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiQcQty">0</span></span>
+                            <h4 id="kpiQc" class="text-sm font-black text-fuchsia-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiQcOverdue">0</span></span>
                         </div>
                         <!-- Per-type breakdown as a real table, In-house/Outsource headers
                              pinned at the TOP once instead of repeated per row, per "ต้องการให้
@@ -788,35 +697,27 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div onclick="filterByKpi('qcCutReplacePending')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-500">
+                        <div onclick="filterByKpi('qcCutReplacePending')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">✂️</span>
                                 <p class="text-[10px] font-bold uppercase text-red-600 leading-tight">รอ QC แจ้งตัดเปลี่ยนใหม่ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending QC cut-replace notice</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiQcCutReplaceLines">0</span> รายการ</span>
-                                <span><span id="kpiQcCutReplaceQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiQcCutReplace" class="text-lg font-black text-red-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiQcCutReplaceOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiQcCutReplaceLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiQcCutReplaceQty">0</span></span>
+                            <h4 id="kpiQcCutReplace" class="text-sm font-black text-red-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiQcCutReplaceOverdue">0</span></span>
                         </div>
                         <!-- Same follow-up-tracking gap as CutReplace had — "แจ้ง Vendor" was
                              just a decision label with no pending queue at all. -->
-                        <div onclick="filterByKpi('qcNotifyVendorPending')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-400">
+                        <div onclick="filterByKpi('qcNotifyVendorPending')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📨</span>
                                 <p class="text-[10px] font-bold uppercase text-red-500 leading-tight">รอ QC แจ้ง Vendor <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending QC vendor notice</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiQcNotifyVendorLines">0</span> รายการ</span>
-                                <span><span id="kpiQcNotifyVendorQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiQcNotifyVendor" class="text-lg font-black text-red-500 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiQcNotifyVendorOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiQcNotifyVendorLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiQcNotifyVendorQty">0</span></span>
+                            <h4 id="kpiQcNotifyVendor" class="text-sm font-black text-red-500 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiQcNotifyVendorOverdue">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -825,10 +726,12 @@
                     <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest px-3 pt-1.5 pb-1">Supermarket & ส่งมอบ <span class="font-normal normal-case text-slate-300">(Delivery)</span></p>
                     <!-- Column header row, per "ต้องการปรับ ให้ใส่เป็นหัวข้อข้างบนที่เป็นจำนวนรายการเบิก,
                          จำนวนชิ้น, และจำนวนของใบขอ และช่วยจัดเป็นคอลัมส่วนให้ดูง่าย" -->
-                    <div class="flex items-center justify-between gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
+                    <div class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
                         <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider">สถานะ <span class="opacity-70 text-[9px]">(Status)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 px-2 w-[170px] text-center">รายการ / ชิ้น <span class="opacity-70 text-[9px]">(Lines/Pcs)</span></span>
-                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider shrink-0 w-[120px] text-center">จำนวนใบ / เกิน <span class="opacity-70 text-[9px]">(Docs/Overdue)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">รายการ<span class="block opacity-70 text-[9px] normal-case">(Lines)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">ชิ้น<span class="block opacity-70 text-[9px] normal-case">(Pcs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">จำนวนใบ<span class="block opacity-70 text-[9px] normal-case">(Docs)</span></span>
+                        <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">เกิน<span class="block opacity-70 text-[9px] normal-case">(Overdue)</span></span>
                     </div>
                     <div class="flex flex-col divide-y divide-slate-100 border-t border-slate-100">
                         <!-- "Partially closed" boxes — a CuttingSent item always has cutting
@@ -837,89 +740,65 @@
                              QC chain. Per user feedback ("มีทั้ง 3 ส่วนหลักคือ ผ้า, ACC,
                              embellishment"), that's 3 distinct waiting-states to surface —
                              not just 2 — since a box can be waiting on EITHER or BOTH. -->
-                        <div onclick="filterByKpi('waitingAccOnly')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-500">
+                        <div onclick="filterByKpi('waitingAccOnly')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
                                 <p class="text-[10px] font-bold uppercase text-orange-600 leading-tight">รอ ACC เท่านั้น <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Emb/QC done — waiting on ACC only</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiWaitingAccOnlyLines">0</span> รายการ</span>
-                                <span><span id="kpiWaitingAccOnlyQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiWaitingAccOnly" class="text-lg font-black text-orange-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiWaitingAccOnlyOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitingAccOnlyLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitingAccOnlyQty">0</span></span>
+                            <h4 id="kpiWaitingAccOnly" class="text-sm font-black text-orange-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiWaitingAccOnlyOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('waitingMainPipelineOnly')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-400">
+                        <div onclick="filterByKpi('waitingMainPipelineOnly')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
                                 <p class="text-[10px] font-bold uppercase text-orange-500 leading-tight">รอตกแต่ง/QC เท่านั้น <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">ACC done — waiting on Emb/QC only</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiWaitingMainOnlyLines">0</span> รายการ</span>
-                                <span><span id="kpiWaitingMainOnlyQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiWaitingMainOnly" class="text-lg font-black text-orange-500 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiWaitingMainOnlyOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitingMainOnlyLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitingMainOnlyQty">0</span></span>
+                            <h4 id="kpiWaitingMainOnly" class="text-sm font-black text-orange-500 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiWaitingMainOnlyOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('waitingBoth')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-400">
+                        <div onclick="filterByKpi('waitingBoth')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
                                 <p class="text-[10px] font-bold uppercase text-red-500 leading-tight">รอทั้ง ACC และตกแต่ง/QC <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Waiting on both ACC and Emb/QC</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiWaitingBothLines">0</span> รายการ</span>
-                                <span><span id="kpiWaitingBothQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiWaitingBoth" class="text-lg font-black text-red-500 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiWaitingBothOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitingBothLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitingBothQty">0</span></span>
+                            <h4 id="kpiWaitingBoth" class="text-sm font-black text-red-500 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiWaitingBothOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('SupermarketPending')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-teal-50 transition-colors border-l-2 border-l-teal-400">
+                        <div onclick="filterByKpi('SupermarketPending')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-teal-50 transition-colors border-l-2 border-l-teal-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🏬</span>
                                 <p class="text-[10px] font-bold uppercase text-teal-500 leading-tight">รอ SM รับงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Supermarket</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiSupermarketPendingLines">0</span> รายการ</span>
-                                <span><span id="kpiSupermarketPendingQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiSupermarketPending" class="text-lg font-black text-teal-500 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiSupermarketPendingOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiSupermarketPendingLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiSupermarketPendingQty">0</span></span>
+                            <h4 id="kpiSupermarketPending" class="text-sm font-black text-teal-500 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiSupermarketPendingOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('SupermarketReceived')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-teal-50 transition-colors border-l-2 border-l-teal-500">
+                        <div onclick="filterByKpi('SupermarketReceived')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-teal-50 transition-colors border-l-2 border-l-teal-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🏬</span>
                                 <p class="text-[10px] font-bold uppercase text-teal-600 leading-tight">SM รับแล้ว <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Supermarket Received</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiSupermarketReceivedLines">0</span> รายการ</span>
-                                <span><span id="kpiSupermarketReceivedQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiSupermarketReceived" class="text-lg font-black text-teal-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiSupermarketReceivedOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiSupermarketReceivedLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiSupermarketReceivedQty">0</span></span>
+                            <h4 id="kpiSupermarketReceived" class="text-sm font-black text-teal-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiSupermarketReceivedOverdue">0</span></span>
                         </div>
-                        <div onclick="filterByKpi('SupermarketSent')" class="flex items-center justify-between gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-cyan-50 transition-colors border-l-2 border-l-cyan-500">
+                        <div onclick="filterByKpi('SupermarketSent')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-cyan-50 transition-colors border-l-2 border-l-cyan-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">🚚</span>
                                 <p class="text-[10px] font-bold uppercase text-cyan-600 leading-tight">ส่งเข้าไลน์ รอต้นทางรับ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Sent to Line, Pending Receipt</span></p>
                             </div>
-                            <div class="text-[9px] font-bold text-slate-400 shrink-0 px-2 leading-tight grid grid-cols-2 gap-[18px] w-[170px] text-center">
-                                <span><span id="kpiSupermarketSentLines">0</span> รายการ</span>
-                                <span><span id="kpiSupermarketSentQty">0</span> ชิ้น</span>
-                            </div>
-                            <div class="shrink-0 grid grid-cols-2 gap-1 items-center w-[120px] text-center">
-                                <h4 id="kpiSupermarketSent" class="text-lg font-black text-cyan-600 leading-none">0</h4>
-                                <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน <span id="kpiSupermarketSentOverdue">0</span></span>
-                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiSupermarketSentLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiSupermarketSentQty">0</span></span>
+                            <h4 id="kpiSupermarketSent" class="text-sm font-black text-cyan-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiSupermarketSentOverdue">0</span></span>
                         </div>
                     </div>
                 </div>
@@ -944,18 +823,32 @@
                      needing its own third "mixed" block, per "แยกส่วนงานไปในบล็อคก่อนหน้า". Sized
                      down ~30% and kept on one line (no-wrap), per "ปรับขนาดให้เล็กลงอีก 30%
                      ต้องการให้ทั้งหมดเรียงอยู่...ในบรรทัดเดียว...ลดสเปซลงมา". -->
-                <div class="flex items-center gap-1.5">
-                    <div class="flex items-center gap-1 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-1 whitespace-nowrap">
-                        <span class="text-[8px] font-bold text-indigo-600 uppercase">ตัดเปลี่ยน</span>
-                        <span id="dashCutReplaceDocs" class="text-xs font-black text-indigo-700">0</span><span class="text-[7px] text-indigo-400">ใบขอ</span>
-                        <span id="dashCutReplaceLines" class="text-xs font-black text-indigo-700 ml-0.5">0</span><span class="text-[7px] text-indigo-400">รายการ</span>
-                        <span id="dashCutReplaceQty" class="text-xs font-black text-indigo-700 ml-0.5">0</span><span class="text-[7px] text-indigo-400">ชิ้น</span>
+                <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-1.5">
+                        <div class="flex items-center gap-1 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-1 whitespace-nowrap">
+                            <span class="text-[8px] font-bold text-indigo-600 uppercase">ตัดเปลี่ยน</span>
+                            <span id="dashCutReplaceDocs" class="text-xs font-black text-indigo-700">0</span><span class="text-[7px] text-indigo-400">ใบขอ</span>
+                            <span id="dashCutReplaceLines" class="text-xs font-black text-indigo-700 ml-0.5">0</span><span class="text-[7px] text-indigo-400">รายการ</span>
+                            <span id="dashCutReplaceQty" class="text-xs font-black text-indigo-700 ml-0.5">0</span><span class="text-[7px] text-indigo-400">ชิ้น</span>
+                        </div>
+                        <div class="flex items-center gap-1 bg-lime-50 border border-lime-100 rounded-lg px-2 py-1 whitespace-nowrap">
+                            <span class="text-[8px] font-bold text-lime-600 uppercase">เบิก ACC</span>
+                            <span id="dashAccDocs" class="text-xs font-black text-lime-700">0</span><span class="text-[7px] text-lime-400">ใบขอ</span>
+                            <span id="dashAccLines" class="text-xs font-black text-lime-700 ml-0.5">0</span><span class="text-[7px] text-lime-400">รายการ</span>
+                            <span id="dashAccQty" class="text-xs font-black text-lime-700 ml-0.5">0</span><span class="text-[7px] text-lime-400">ชิ้น</span>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-1 bg-lime-50 border border-lime-100 rounded-lg px-2 py-1 whitespace-nowrap">
-                        <span class="text-[8px] font-bold text-lime-600 uppercase">เบิก ACC</span>
-                        <span id="dashAccDocs" class="text-xs font-black text-lime-700">0</span><span class="text-[7px] text-lime-400">ใบขอ</span>
-                        <span id="dashAccLines" class="text-xs font-black text-lime-700 ml-0.5">0</span><span class="text-[7px] text-lime-400">รายการ</span>
-                        <span id="dashAccQty" class="text-xs font-black text-lime-700 ml-0.5">0</span><span class="text-[7px] text-lime-400">ชิ้น</span>
+                    <!-- New request type added later needs its own WIP count too, per "มีรายการ
+                         อื่นเพิ่ม ให้ช่วยเพิ่มรายการอยู่ด้านล่าง 2 ช่องนี้" — stacked as a second row
+                         instead of widening the row, so this whole block's height still just
+                         matches the title+subtitle block next to it (no extra page height). -->
+                    <div class="flex items-center gap-1.5">
+                        <div class="flex items-center gap-1 bg-orange-50 border border-orange-100 rounded-lg px-2 py-1 whitespace-nowrap">
+                            <span class="text-[8px] font-bold text-orange-600 uppercase">ตัดงานซ่อม (ซัพพลายเออร์)</span>
+                            <span id="dashSupplierDocs" class="text-xs font-black text-orange-700">0</span><span class="text-[7px] text-orange-400">ใบขอ</span>
+                            <span id="dashSupplierLines" class="text-xs font-black text-orange-700 ml-0.5">0</span><span class="text-[7px] text-orange-400">รายการ</span>
+                            <span id="dashSupplierQty" class="text-xs font-black text-orange-700 ml-0.5">0</span><span class="text-[7px] text-orange-400">ชิ้น</span>
+                        </div>
                     </div>
                 </div>
                 <div class="flex items-center gap-1 no-print">
@@ -995,6 +888,14 @@
                         <input type="text" id="searchInput" placeholder="ค้นหา (Search) Style, Job No., สี, สาเหตุ หรือ ID..." class="w-full pl-9 pr-3 text-xs bg-white">
                         <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
+                </div>
+                <div class="w-auto min-w-[150px]">
+                    <select id="filterRequestType" onchange="filterData()" class="w-full text-xs bg-white">
+                        <option value="all">ทุกประเภทคำขอ (All Types)</option>
+                        <option value="CutReplace">แจ้งขอตัดเปลี่ยน (Cut-Replace)</option>
+                        <option value="SupplierCutReplace">แจ้งตัดงานซ่อม (ซัพพลายเออร์)</option>
+                        <option value="ACCOnly">แจ้งขอเบิกอุปกรณ์ (ACC)</option>
+                    </select>
                 </div>
                 <div class="w-auto min-w-[150px]">
                     <!-- Every status the active-queue pipeline can actually be in, per
@@ -1582,12 +1483,18 @@
 
             <!-- User Management -->
             <div class="card overflow-hidden">
-                <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
+                <div class="p-4 border-b bg-slate-50 flex flex-wrap gap-3 justify-between items-center">
                     <div>
                         <h3 class="text-sm font-black text-slate-800">จัดการผู้ใช้งาน (Users)</h3>
                         <p class="text-[10px] text-slate-400">กำหนดบทบาทและขอบเขตไลน์/แผนกที่รับผิดชอบของผู้ใช้แต่ละคน (ผู้ใช้คนเดียวสามารถมีได้หลายบทบาท เช่น BU ที่ยื่นขอเองและตรวจสอบเองได้)</p>
                     </div>
-                    <button onclick="openUserModal()" class="btn-primary text-xs">+ เพิ่มผู้ใช้ <span class="text-[9px] font-normal opacity-70">(Add User)</span></button>
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <input type="text" id="userSearchInput" oninput="renderUsersTable()" placeholder="ค้นหา (Search) username, ชื่อ..." class="text-xs bg-white min-w-[200px]">
+                        <select id="userRoleFilter" onchange="renderUsersTable()" class="text-xs bg-white">
+                            <option value="">ทุกบทบาท (All Roles)</option>
+                        </select>
+                        <button onclick="openUserModal()" class="btn-primary text-xs">+ เพิ่มผู้ใช้ <span class="text-[9px] font-normal opacity-70">(Add User)</span></button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 text-left">
@@ -1785,6 +1692,7 @@
                             <span>+ เพิ่มรายการชิ้นส่วน <span class="text-[9px] font-normal opacity-70">(Add Part)</span></span>
                         </button>
                     </div>
+                    <datalist id="partNameDatalist"></datalist>
                     <div id="partsContainer" class="space-y-3">
                         <!-- Dynamic rows injected here -->
                     </div>
@@ -2544,6 +2452,12 @@
             { value: 'SleeveBindingFabric', label: 'ซกแขน (ผ้า) (Sleeve Binding — Fabric)' }
         ];
         const PART_NAME_LABELS = Object.fromEntries(PART_NAME_OPTIONS.map(p => [p.value, p.label]));
+        // Reverse lookup (label -> code) for the searchable part-name field below — typing/
+        // picking a known label resolves back to its internal code; anything typed that
+        // doesn't match a known label is kept as-is (same tolerance the app already has for
+        // legacy/custom part names elsewhere, e.g. the "(เดิม)" fallback option).
+        const PART_NAME_CODES = Object.fromEntries(PART_NAME_OPTIONS.map(p => [p.label, p.value]));
+        document.getElementById('partNameDatalist').innerHTML = PART_NAME_OPTIONS.map(p => `<option value="${escapeHtml(p.label)}">`).join('');
         // ACC requisition checklist — items besides embellishment (care/size labels, hang
         // tag/pack fasteners, pack bags) that a line can request alongside a repair job.
         const ACC_REQUEST_OPTIONS = [
@@ -3376,56 +3290,56 @@
             const scopeKey = scopeKeyOf(item);
             const inScope = scopesOf(currentUser).includes(scopeKey);
             if (item.status === 'PendingApproval' && hasRole(currentUser, 'Approver') && inScope) {
-                return `รอ BU ตรวจสอบ (Pending BU review): ${item.id} (${item.style}/${item.job})`;
+                return `รอ BU ตรวจสอบ (Pending BU review): ${docLabel(item)} (${item.style}/${item.job})`;
             }
             if (item.status === 'PendingFMApproval' && (hasRole(currentUser, 'FactoryManager') || hasRole(currentUser, 'ProductionManager'))) {
-                return `รอ PM / FM อนุมัติ (Pending PM/FM approval): ${item.id} (${item.style}/${item.job})`;
+                return `รอ PM / FM อนุมัติ (Pending PM/FM approval): ${docLabel(item)} (${item.style}/${item.job})`;
             }
             if (item.status === 'Approved' && hasRole(currentUser, 'Marker')) {
-                return `รอมาร์คเกอร์รับงาน (Ready for Marker): ${item.id} (${item.style}/${item.job})`;
+                return `รอมาร์คเกอร์รับงาน (Ready for Marker): ${docLabel(item)} (${item.style}/${item.job})`;
             }
             if (item.status === 'StockFabricSent' && hasRole(currentUser, 'Cutting')) {
-                return `งานพร้อมตัด (Ready for cutting): ${item.id} (${item.style}/${item.job})`;
+                return `งานพร้อมตัด (Ready for cutting): ${docLabel(item)} (${item.style}/${item.job})`;
             }
             if (item.status === 'MarkerSent' && hasRole(currentUser, 'CuttingSheet')) {
-                return `รอใบปูตัดรับงาน (Ready for Cutting Sheet): ${item.id} (${item.style}/${item.job})`;
+                return `รอใบปูตัดรับงาน (Ready for Cutting Sheet): ${docLabel(item)} (${item.style}/${item.job})`;
             }
             if (item.status === 'FabricCheckPending' && hasRole(currentUser, 'FabricCheck')) {
-                return `รอเช็คผ้ารับงาน (Ready for Fabric Check): ${item.id} (${item.style}/${item.job})`;
+                return `รอเช็คผ้ารับงาน (Ready for Fabric Check): ${docLabel(item)} (${item.style}/${item.job})`;
             }
             if (item.status === 'PPCFabricPending' && hasRole(currentUser, 'PPCFabric')) {
-                return `รอ PPC Fabric รับงาน (Ready for PPC Fabric): ${item.id} (${item.style}/${item.job})`;
+                return `รอ PPC Fabric รับงาน (Ready for PPC Fabric): ${docLabel(item)} (${item.style}/${item.job})`;
             }
             if (item.status === 'StockFabricPending' && hasRole(currentUser, 'StockFabric')) {
-                return `รอสต็อคผ้ารับงาน (Ready for Stock Fabric): ${item.id} (${item.style}/${item.job})`;
+                return `รอสต็อคผ้ารับงาน (Ready for Stock Fabric): ${docLabel(item)} (${item.style}/${item.job})`;
             }
             // ACC runs independently from FM approval straight through to Supermarket — it
             // doesn't wait on item.status at all. The embellishment chain + QC don't either
             // (they hinge on item.currentEmbStage instead of a shared status value).
             if (accActionable(item) && hasRole(currentUser, 'ACC')) {
-                return `รอ ACC รับงาน (Ready for ACC — waiting since FM approval): ${item.id}`;
+                return `รอ ACC รับงาน (Ready for ACC — waiting since FM approval): ${docLabel(item)}`;
             }
             if (item.currentEmbStage && EMB_STAGE_TYPES.includes(item.currentEmbStage) && hasRole(currentUser, item.currentEmbStage)) {
-                return `รอ${EMB_LABELS[item.currentEmbStage] || item.currentEmbStage}รับงาน (Ready for ${EMB_LABELS[item.currentEmbStage] || item.currentEmbStage}): ${item.id}`;
+                return `รอ${EMB_LABELS[item.currentEmbStage] || item.currentEmbStage}รับงาน (Ready for ${EMB_LABELS[item.currentEmbStage] || item.currentEmbStage}): ${docLabel(item)}`;
             }
             if (item.currentEmbStage === 'QC' && hasRole(currentUser, 'QC')) {
-                return `รอ QC รับงาน (Ready for QC): ${item.id}`;
+                return `รอ QC รับงาน (Ready for QC): ${docLabel(item)}`;
             }
             if (item.status === 'SupermarketPending' && hasRole(currentUser, 'Supermarket')) {
-                return `พร้อมส่งเข้าซุปเปอร์มาร์เก็ต (Ready for Supermarket): ${item.id}`;
+                return `พร้อมส่งเข้าซุปเปอร์มาร์เก็ต (Ready for Supermarket): ${docLabel(item)}`;
             }
             if (item.status === 'SupermarketSent' && hasRole(currentUser, 'Requester') && inScope) {
-                return `ส่งเข้าไลน์แล้ว รอต้นทางรับ (Sent to line, awaiting receipt): ${item.id}`;
+                return `ส่งเข้าไลน์แล้ว รอต้นทางรับ (Sent to line, awaiting receipt): ${docLabel(item)}`;
             }
             if (item.requesterUser === currentUser.username) {
-                if (item.status === 'Rejected') return `ใบสั่งซ่อม ${item.id} ถูก BU ตีกลับ — กรุณาแก้ไข (Rejected by BU — please revise)`;
-                if (item.status === 'FMRejected') return `ใบสั่งซ่อม ${item.id} ไม่ได้รับอนุมัติจาก PM / FM — กรุณาแก้ไข (Rejected by PM/FM — please revise)`;
+                if (item.status === 'Rejected') return `ใบสั่งซ่อม ${docLabel(item)} ถูก BU ตีกลับ — กรุณาแก้ไข (Rejected by BU — please revise)`;
+                if (item.status === 'FMRejected') return `ใบสั่งซ่อม ${docLabel(item)} ไม่ได้รับอนุมัติจาก PM / FM — กรุณาแก้ไข (Rejected by PM/FM — please revise)`;
             }
             if (item.cuttingIssue && (item.requesterUser === currentUser.username || hasRole(currentUser, 'Approver') || hasRole(currentUser, 'FactoryManager') || hasRole(currentUser, 'ProductionManager') || hasRole(currentUser, 'Admin')) && inScope) {
-                return `แผนกตัดแจ้งปัญหาในใบสั่งซ่อม (Cutting issue reported) ${item.id}`;
+                return `แผนกตัดแจ้งปัญหาในใบสั่งซ่อม (Cutting issue reported) ${docLabel(item)}`;
             }
             if (item.accIssue && (item.requesterUser === currentUser.username || hasRole(currentUser, 'Approver') || hasRole(currentUser, 'FactoryManager') || hasRole(currentUser, 'ProductionManager') || hasRole(currentUser, 'Admin')) && inScope) {
-                return `ACC แจ้งของคงค้างจ่ายในใบสั่งซ่อม (ACC pending supply) ${item.id}`;
+                return `ACC แจ้งของคงค้างจ่ายในใบสั่งซ่อม (ACC pending supply) ${docLabel(item)}`;
             }
             return null;
         }
@@ -3994,11 +3908,8 @@
                     <input type="text" class="pFabricItem w-full text-xs" value="${escapeHtml(fabricItem)}" placeholder="เลขที่ Item ผ้า">
                 </div>
                 <div class="sm:col-span-3">
-                    <label class="text-[9px] font-bold text-slate-400 block mb-1">ชื่อชิ้นส่วน *</label>
-                    <select class="pName w-full text-xs" required>
-                        ${name && !PART_NAME_OPTIONS.some(p => p.value === name) ? `<option value="${escapeHtml(name)}" selected>${escapeHtml(name)} (เดิม)</option>` : ''}
-                        ${PART_NAME_OPTIONS.map(p => `<option value="${p.value}" ${p.value === name ? 'selected' : ''}>${p.label}</option>`).join('')}
-                    </select>
+                    <label class="text-[9px] font-bold text-slate-400 block mb-1">ชื่อชิ้นส่วน * <span class="font-normal opacity-70">(พิมพ์เพื่อค้นหา / Type to search)</span></label>
+                    <input type="text" class="pName w-full text-xs" list="partNameDatalist" required value="${escapeHtml(PART_NAME_LABELS[name] || name)}" placeholder="เลือกหรือพิมพ์ค้นหาชื่อชิ้นส่วน">
                 </div>
                 <div class="sm:col-span-3">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">พาร์ท (Part)</label>
@@ -4274,7 +4185,10 @@
         function statusLabelHtml(label) {
             const m = label.match(/^(.+?)\s*\(([\s\S]+)\)$/);
             if (!m) return escapeHtml(label);
-            return `${escapeHtml(m[1])}<span class="block font-normal text-[9px] opacity-70 leading-tight">${escapeHtml(m[2])}</span>`;
+            // Thai line stays on one line even inside a wrapping pill (.status-pill-wrap sets
+            // white-space:normal!important on the whole badge) — the English line below is left
+            // free to wrap onto 2 lines instead, per "ให้เหลือไทยแค่บรรทัดเดียว อังกฤษ 2บรรทัดได้".
+            return `<span style="white-space:nowrap!important">${escapeHtml(m[1])}</span><span class="block font-normal text-[9px] opacity-70 leading-tight">${escapeHtml(m[2])}</span>`;
         }
         function displayStatusLabel(item) {
             if (item.status === 'PPCFabricReceived' && item.ppcFabric && !item.ppcFabric.actualArrivalDate) {
@@ -4303,6 +4217,20 @@
         // เอกสารแยก และ run no.ไปเรื่อย" — this is purely a DISPLAY identifier; item.id stays
         // the random internal key everything else (upsert/delete/kickback/etc.) is keyed on,
         // so this never risks a numbering collision breaking the underlying data model.
+        // The record's user-facing identifier everywhere in the UI — the Document No. once one
+        // exists (backfillMissingDocNos ensures it always does), falling back to the internal
+        // id only if a docNo is somehow still missing. Per "ให้เอาเลขเอกสารแสดงแทน ที่ขึ้นต้นด้วย
+        // R ทั้งหมด" — item.id itself stays the real lookup/upsert key everywhere else; this is
+        // purely a display substitution.
+        function docLabel(item) { return (item && (item.docNo || item.id)) || ''; }
+        // Same substitution for a bare record id referenced FROM another record (QC-reject
+        // chain, "created request" cross-references, Log's recordId column) — resolves it to
+        // that other record's docNo if it can still be found, else shows the raw id unchanged.
+        function docNoOf(id) {
+            if (!id) return id;
+            const r = repairs.find(x => x.id === id);
+            return (r && r.docNo) || id;
+        }
         function generateDocNo(requestType) {
             const prefix = requestType === 'ACCOnly' ? 'ACC' : (requestType === 'SupplierCutReplace' ? 'SP' : 'CR');
             const maxNum = repairs.reduce((max, r) => {
@@ -4312,15 +4240,56 @@
             }, 0);
             return `${prefix}-${String(maxNum + 1).padStart(6, '0')}`;
         }
+        // One-time (per record) backfill for records saved before docNo existed — assigns a
+        // number to every record that's still missing one, oldest-first by `date` within its
+        // own request-type sequence, then generateDocNo() picks up the running count normally
+        // from there on. Per "ต้องการให้แสดงเลข Document No. ทุกอัน หากงานก่อนหน้าไม่มีช่วยเติมให้
+        // ด้วย โดยเรียงจากวันที่และเวลา...และต่อไปก็รันต่ออัตโนมัติ". Runs once at load — after a
+        // record gets a docNo it's no longer "missing", so this becomes a no-op for it forever.
+        function backfillMissingDocNos() {
+            const missing = repairs.filter(r => !r.docNo);
+            if (!missing.length) return;
+            const byPrefix = { CR: [], SP: [], ACC: [] };
+            missing.forEach(r => {
+                const prefix = r.requestType === 'ACCOnly' ? 'ACC' : (r.requestType === 'SupplierCutReplace' ? 'SP' : 'CR');
+                byPrefix[prefix].push(r);
+            });
+            Object.entries(byPrefix).forEach(([prefix, list]) => {
+                if (!list.length) return;
+                list.sort((a, b) => new Date(a.date) - new Date(b.date));
+                let maxNum = repairs.reduce((max, r) => {
+                    if (!r.docNo || !r.docNo.startsWith(prefix + '-')) return max;
+                    const n = parseInt(r.docNo.slice(prefix.length + 1), 10);
+                    return isNaN(n) ? max : Math.max(max, n);
+                }, 0);
+                list.forEach(r => { maxNum++; r.docNo = `${prefix}-${String(maxNum).padStart(6, '0')}`; });
+            });
+            const changedIds = missing.map(r => r.id);
+            logAction('BackfillDocNo', null, `เติมเลข Document No. ย้อนหลังให้ ${changedIds.length} รายการ (เรียงตามวันที่แจ้ง)`);
+            autoSave(changedIds);
+        }
         // Work-in-process summary blocks above the records table — counted at the LINE-ITEM
         // level (parts vs accRequestList), not by the record's requestType flag, so a record
         // asking for both Cut-Replace AND ACC together contributes to both blocks naturally.
         function updateWipSummary(active) {
             let cutDocs = 0, cutLines = 0, cutQty = 0, accDocs = 0, accLines = 0, accQty = 0;
+            let supplierDocs = 0, supplierLines = 0, supplierQty = 0;
             active.forEach(r => {
-                if (r.parts.length) cutDocs++;
-                cutLines += r.parts.length;
-                cutQty += r.parts.reduce((s, p) => s + (parseInt(p.qty) || 0), 0);
+                if (r.parts.length) {
+                    // Supplier-caused cut-replace tracked as its own bucket instead of folding
+                    // into the plain Cut-Replace count, per "มีรายการอื่นเพิ่ม (ตัดงานซ่อม
+                    // ซัพพลายเออร์)" — the ACC bucket below stays cross-cutting/unaffected since
+                    // it counts by line-item presence, not by this requestType flag.
+                    if (r.requestType === 'SupplierCutReplace') {
+                        supplierDocs++;
+                        supplierLines += r.parts.length;
+                        supplierQty += r.parts.reduce((s, p) => s + (parseInt(p.qty) || 0), 0);
+                    } else {
+                        cutDocs++;
+                        cutLines += r.parts.length;
+                        cutQty += r.parts.reduce((s, p) => s + (parseInt(p.qty) || 0), 0);
+                    }
+                }
                 if ((r.accRequestList || []).length) accDocs++;
                 accLines += (r.accRequestList || []).length;
                 accQty += (r.accRequestList || []).reduce((s, a) => s + (parseInt(a.qty) || 0), 0);
@@ -4335,6 +4304,9 @@
             set('dashAccDocs', accDocs);
             set('dashAccLines', accLines);
             set('dashAccQty', accQty);
+            set('dashSupplierDocs', supplierDocs);
+            set('dashSupplierLines', supplierLines);
+            set('dashSupplierQty', supplierQty);
         }
         const STATUS_STYLES = {
             PendingApproval: 'bg-amber-100 text-amber-800 border border-amber-200',
@@ -4416,7 +4388,7 @@
             if (crossJobFabricReportEl) {
                 crossJobFabricReportEl.innerHTML = crossJobFabricItems.length ? crossJobFabricItems.map(r => `
                     <div class="text-[9px] bg-violet-50 border border-violet-100 rounded px-2 py-1 flex items-center justify-between gap-2">
-                        <span><b>${escapeHtml(r.job)}</b> <span class="text-slate-400">(${escapeHtml(r.id)})</span></span>
+                        <span><b>${escapeHtml(r.job)}</b> <span class="text-slate-400">(${escapeHtml(docLabel(r))})</span></span>
                         <span class="text-violet-600 font-bold">← ใช้ผ้าจาก ${escapeHtml(r.fabricCheckSend.sourceJobNo)}</span>
                     </div>`).join('') : '<p class="text-[9px] text-slate-300">ไม่มีรายการ</p>';
             }
@@ -4691,8 +4663,7 @@
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50/80 transition-colors">
                         <td class="px-5 py-4">
-                            <div class="text-xs font-black text-slate-800">${escapeHtml(item.id)}</div>
-                            ${item.docNo ? `<div class="text-[10px] font-bold ${item.requestType === 'ACCOnly' ? 'text-lime-600' : (item.requestType === 'SupplierCutReplace' ? 'text-orange-600' : 'text-indigo-600')}">${escapeHtml(item.docNo)}</div>` : ''}
+                            <div class="text-xs font-black ${item.requestType === 'ACCOnly' ? 'text-lime-600' : (item.requestType === 'SupplierCutReplace' ? 'text-orange-600' : 'text-indigo-600')}">${escapeHtml(docLabel(item))}</div>
                             <div class="text-[11px] font-bold text-rose-600 mt-0.5">${item.needDate ? 'รับ: ' + escapeHtml(dateOnlyPart(item.needDate)) : 'ไม่ระบุวันที่ต้องการของ'}</div>
                             <div class="text-[9px] text-slate-400">แจ้ง: ${fmtDT(item.date)}</div>
                         </td>
@@ -4755,6 +4726,7 @@
             markKpiSeen(status);
             switchTab('records');
             document.getElementById('searchInput').value = '';
+            document.getElementById('filterRequestType').value = 'all';
             document.getElementById('filterDept').value = 'all';
             if (status === 'overdue') {
                 document.getElementById('filterStatus').value = 'all';
@@ -5022,6 +4994,7 @@
 
         function filterData() {
             const search = document.getElementById('searchInput').value.toLowerCase().trim();
+            const requestType = document.getElementById('filterRequestType').value;
             const status = document.getElementById('filterStatus').value;
             const dept = document.getElementById('filterDept').value;
 
@@ -5032,9 +5005,10 @@
                                     r.color.toLowerCase().includes(search) ||
                                     r.parts.some(p => p.reason && (p.reason.toLowerCase().includes(search) || (REASON_LABELS[p.reason] || '').toLowerCase().includes(search))) ||
                                     r.parts.some(p => (p.embellishment || []).some(e => e.vendor && e.vendor.toLowerCase().includes(search)));
+                const matchRequestType = requestType === 'all' || (r.requestType || 'CutReplace') === requestType;
                 const matchStatus = status === 'all' || r.status === status;
                 const matchDept = dept === 'all' || r.dept === dept;
-                return matchSearch && matchStatus && matchDept;
+                return matchSearch && matchRequestType && matchStatus && matchDept;
             });
             renderTable(filtered);
         }
@@ -5043,6 +5017,7 @@
 
         function resetFilters() {
             document.getElementById('searchInput').value = '';
+            document.getElementById('filterRequestType').value = 'all';
             document.getElementById('filterStatus').value = 'all';
             document.getElementById('filterDept').value = 'all';
             renderTable();
@@ -5110,7 +5085,7 @@
             }
 
             document.getElementById('editItemIndex').value = idx;
-            document.getElementById('formModalTitle').innerText = `แก้ไขรายการสั่งซ่อม (${item.id})`;
+            document.getElementById('formModalTitle').innerText = `แก้ไขรายการสั่งซ่อม (${docLabel(item)})`;
             const requestTypeRadio = document.querySelector(`input[name="fRequestType"][value="${item.requestType || 'CutReplace'}"]`);
             if (requestTypeRadio) requestTypeRadio.checked = true;
             // Locked once a record already exists — an accidental click on the other option
@@ -5183,7 +5158,8 @@
             // of the app (review table, queue summary, CSV, totals) keeps working on the
             // familiar one-entry-per-size shape without needing to change.
             const parts = Array.from(partRows).flatMap(row => {
-                const name = row.querySelector('.pName').value;
+                const pNameTyped = row.querySelector('.pName').value.trim();
+                const name = PART_NAME_CODES[pNameTyped] || pNameTyped;
                 const partSel = row.querySelector('.pPart').value;
                 const part = partSel === '__other__' ? row.querySelector('.pPartOther').value.trim().toUpperCase() : partSel;
                 const sample = row.querySelector('.pSample').checked;
@@ -5319,7 +5295,7 @@
                 };
                 repairs.unshift(newItem);
                 logAction('Create', newItem.id, `สร้างใบสั่งซ่อมใหม่ (${newItem.style}/${newItem.job})`);
-                showToast(`สร้างใบสั่งซ่อม ${newItem.id} เรียบร้อยแล้ว รอ BU ตรวจสอบ (Created, pending BU review)`, 'success');
+                showToast(`สร้างใบสั่งซ่อม ${docLabel(newItem)} เรียบร้อยแล้ว รอ BU ตรวจสอบ (Created, pending BU review)`, 'success');
                 savedId = newItem.id;
             }
 
@@ -5642,7 +5618,7 @@
             while (currentId && depth < 10) {
                 const rec = repairs.find(r => r.id === currentId);
                 if (!rec || !rec.sourceQcRejectId) break;
-                chainHtml += ` → <span class="opacity-60">Ref. ${escapeHtml(rec.sourceQcRejectId)}</span>`;
+                chainHtml += ` → <span class="opacity-60">Ref. ${escapeHtml(docNoOf(rec.sourceQcRejectId))}</span>`;
                 currentId = rec.sourceQcRejectId;
                 depth++;
             }
@@ -5683,9 +5659,9 @@
             const requester = escapeHtml(item.requesterUser) + (userDisplayName(item.requesterUser) ? ' - ' + escapeHtml(userDisplayName(item.requesterUser)) : '');
             return `
                 ${cuttingIssueBadge(item)}
-                <div class="font-bold text-slate-800 mb-1.5">${item.requestType === 'ACCOnly' ? 'รหัสใบเบิก ACC' : 'รหัสใบสั่งซ่อม'}: ${escapeHtml(item.id)} ${item.docNo ? `<span class="text-slate-500 font-normal">(${escapeHtml(item.docNo)})</span>` : ''} ${requestTypeBadgeHtml(item, ' align-middle')}${urgencyBadgeHtml(item)}</div>
-                ${item.sourceQcRejectId ? `<div class="text-[10px] text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1 mb-1.5">✂️ สร้างอัตโนมัติจาก QC Reject ของ <b>${escapeHtml(item.sourceQcRejectId)}</b>${buildQcRejectChainHtml(item.sourceQcRejectId)}</div>` : ''}
-                ${item.qcCutReplace && item.qcCutReplace.resolved && item.qcCutReplace.createdRequestId ? `<div class="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-2 py-1 mb-1.5">✅ สร้างใบแจ้งตัดเปลี่ยนใหม่แล้ว: <b>${escapeHtml(item.qcCutReplace.createdRequestId)}</b></div>` : ''}
+                <div class="font-bold text-slate-800 mb-1.5">${item.requestType === 'ACCOnly' ? 'รหัสใบเบิก ACC' : 'รหัสใบสั่งซ่อม'}: ${escapeHtml(docLabel(item))} ${requestTypeBadgeHtml(item, ' align-middle')}${urgencyBadgeHtml(item)}</div>
+                ${item.sourceQcRejectId ? `<div class="text-[10px] text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1 mb-1.5">✂️ สร้างอัตโนมัติจาก QC Reject ของ <b>${escapeHtml(docNoOf(item.sourceQcRejectId))}</b>${buildQcRejectChainHtml(item.sourceQcRejectId)}</div>` : ''}
+                ${item.qcCutReplace && item.qcCutReplace.resolved && item.qcCutReplace.createdRequestId ? `<div class="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-2 py-1 mb-1.5">✅ สร้างใบแจ้งตัดเปลี่ยนใหม่แล้ว: <b>${escapeHtml(docNoOf(item.qcCutReplace.createdRequestId))}</b></div>` : ''}
                 <!-- Prominent total-work summary, per "ยอดงานที่ต้องทำ ต้องการให้มีสรุป total
                      ยอดให้ด้วยในหน้าที่รีวิว" — the info table below already has a "จำนวนรวม"
                      row, but that's easy to miss buried among a dozen other fields. -->
@@ -7433,7 +7409,7 @@
                 dept: item.dept, line: item.line, heatTransferType: null, originFabricType: item.originFabricType,
                 requestType: 'CutReplace',
                 style: item.style, job: item.job, item: item.item, color: item.color, po: item.po,
-                remark: `สร้างอัตโนมัติจาก QC Reject ของ ${item.id} (${(item.qcCutReplace.types || []).map(t => EMB_LABELS[t] || t).join(', ')})`,
+                remark: `สร้างอัตโนมัติจาก QC Reject ของ ${docLabel(item)} (${(item.qcCutReplace.types || []).map(t => EMB_LABELS[t] || t).join(', ')})`,
                 accRequestList: [],
                 status: 'PendingApproval', statusHistory: [], archived: false, requesterUser: currentUser.username,
                 approval: null, fmApproval: null,
@@ -7449,12 +7425,12 @@
             };
             repairs.unshift(newItem);
             item.qcCutReplace = { ...item.qcCutReplace, resolved: true, resolvedBy: currentUser.username, resolvedName: currentUser.name, resolvedTs: ts, createdRequestId: newItem.id };
-            logAction('QCCutReplaceAutoCreate', item.id, `${currentUser.name} สร้างใบแจ้งตัดเปลี่ยนใหม่อัตโนมัติจากข้อมูล QC reject — ${newItem.id}`);
-            logAction('Create', newItem.id, `สร้างอัตโนมัติจาก QC Reject ของ ${item.id}`);
+            logAction('QCCutReplaceAutoCreate', item.id, `${currentUser.name} สร้างใบแจ้งตัดเปลี่ยนใหม่อัตโนมัติจากข้อมูล QC reject — ${docLabel(newItem)}`);
+            logAction('Create', newItem.id, `สร้างอัตโนมัติจาก QC Reject ของ ${docLabel(item)}`);
             autoSave([item.id, newItem.id]);
             renderTable();
             closeModal('qcCutReplaceModal');
-            showToast(`สร้างใบแจ้งตัดเปลี่ยนใหม่ ${newItem.id} เรียบร้อยแล้ว — รอ BU ตรวจสอบ (Auto-created, pending BU review)`, 'success');
+            showToast(`สร้างใบแจ้งตัดเปลี่ยนใหม่ ${docLabel(newItem)} เรียบร้อยแล้ว — รอ BU ตรวจสอบ (Auto-created, pending BU review)`, 'success');
         }
 
         // Same follow-up mechanism as resolveQcCutReplace, for the "แจ้ง Vendor" decision —
@@ -8225,12 +8201,12 @@
                             <p class="text-[10px] text-slate-500">ใบสั่งตัดซ่อมชิ้นส่วนสินค้า</p>
                         </div>
                         <div class="text-right">
-                            <span class="font-black text-sm text-indigo-600">${escapeHtml(item.id)}</span> ${item.docNo ? `<span class="text-[10px] text-slate-500">(${escapeHtml(item.docNo)})</span>` : ''} ${requestTypeBadgeHtml(item)}${urgencyBadgeHtml(item)}
+                            <span class="font-black text-sm text-indigo-600">${escapeHtml(docLabel(item))}</span> ${requestTypeBadgeHtml(item)}${urgencyBadgeHtml(item)}
                             <p class="text-[9px] text-slate-400">วันที่แจ้ง: ${fmtDT(item.date)}</p>
                         </div>
                     </div>
 
-                    ${item.sourceQcRejectId ? `<div class="text-[10px] text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1">✂️ สร้างอัตโนมัติจาก QC Reject ของ <b>${escapeHtml(item.sourceQcRejectId)}</b></div>` : ''}
+                    ${item.sourceQcRejectId ? `<div class="text-[10px] text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1">✂️ สร้างอัตโนมัติจาก QC Reject ของ <b>${escapeHtml(docNoOf(item.sourceQcRejectId))}</b></div>` : ''}
                     ${item.markerSend && item.markerSend.markerLaid !== undefined ? `<div class="text-[10px]"><b>วางมาร์ค:</b> ${item.markerSend.markerLaid ? 'วางมาร์คแล้ว (Laid out)' : 'ไม่วางมาร์ค (Not laid out)'}</div>` : ''}
                     ${cuttingIssueBadge(item)}
 
@@ -8477,7 +8453,7 @@
             document.getElementById('detailModalBody').innerHTML = `
                 <div class="flex flex-wrap justify-between items-start gap-2 border-b pb-3">
                     <div>
-                        <div class="font-black text-lg text-slate-800">${escapeHtml(item.id)} <span class="status-pill ${STATUS_STYLES[item.status]} ml-1">${displayStatusLabel(item)}</span> ${requestTypeBadgeHtml(item, ' align-middle ml-1')}${urgencyBadgeHtml(item)}</div>
+                        <div class="font-black text-lg text-slate-800">${escapeHtml(docLabel(item))} <span class="status-pill ${STATUS_STYLES[item.status]} ml-1">${displayStatusLabel(item)}</span> ${requestTypeBadgeHtml(item, ' align-middle ml-1')}${urgencyBadgeHtml(item)}</div>
                         <div class="text-xs text-slate-500 mt-1">${escapeHtml(item.style)} / ${escapeHtml(item.job)} — ${escapeHtml(item.item)} (${escapeHtml(item.color)})</div>
                         <div class="text-xs text-slate-500">แผนก: ${escapeHtml(item.dept)} ${item.line !== '-' ? '| ไลน์: ' + escapeHtml(item.line) : ''} | ผู้ขอ: ${escapeHtml(item.requesterUser)}${userDisplayName(item.requesterUser) ? ' - ' + escapeHtml(userDisplayName(item.requesterUser)) : ''}</div>
                     </div>
@@ -8488,7 +8464,7 @@
                     </div>
                 </div>
 
-                ${item.sourceQcRejectId ? `<div class="text-[10px] text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1">✂️ สร้างอัตโนมัติจาก QC Reject ของ <b>${escapeHtml(item.sourceQcRejectId)}</b>${buildQcRejectChainHtml(item.sourceQcRejectId)}</div>` : ''}
+                ${item.sourceQcRejectId ? `<div class="text-[10px] text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1">✂️ สร้างอัตโนมัติจาก QC Reject ของ <b>${escapeHtml(docNoOf(item.sourceQcRejectId))}</b>${buildQcRejectChainHtml(item.sourceQcRejectId)}</div>` : ''}
                 ${cuttingIssueBadge(item)}
                 ${item.cuttingPending && !item.cuttingPending.resolved ? `<div class="bg-orange-50 border border-orange-200 rounded-lg p-2 text-orange-800 text-[11px] font-bold mb-1">✂️ ค้างตัด (${(item.cuttingPending.keys || []).length} ชิ้นส่วน)<span class="block font-normal normal-case text-orange-600">Cutting backlog pending${item.cuttingPending.name ? ' — by ' + escapeHtml(item.cuttingPending.name) : ''}</span></div>` : ''}
                 ${item.accIssue ? `<div class="bg-red-50 border border-red-200 rounded-lg p-2 text-red-800 text-[11px] font-bold mb-1">
@@ -9157,7 +9133,7 @@
             const canManage = isPrimaryAdmin(currentUser);
             tbody.innerHTML = archivedItems.map(item => `
                 <tr class="hover:bg-slate-50/80 cursor-pointer" onclick="openDetailModal('${item.id}')" title="คลิกเพื่อดูรายละเอียด (ดูอย่างเดียว)">
-                    <td class="px-4 py-3 text-xs font-black text-slate-800">${escapeHtml(item.id)} <span class="text-slate-400">🔍</span></td>
+                    <td class="px-4 py-3 text-xs font-black text-slate-800">${escapeHtml(docLabel(item))} <span class="text-slate-400">🔍</span></td>
                     <td class="px-4 py-3 text-xs">
                         <div class="font-bold text-slate-800">${escapeHtml(item.style)}</div>
                         <div class="text-slate-400 text-[10px] mt-0.5">${escapeHtml(item.job)}</div>
@@ -9188,9 +9164,29 @@
             QCHead: 'หัวหน้า QC', SupermarketHead: 'หัวหน้าซุปเปอร์มาร์เก็ต', FactoryManager: 'Factory Manager', ProductionManager: 'Production Manager'
         };
 
+        // Role filter's options are read straight from the Add/Edit User modal's own .uRole
+        // checkboxes (rather than a separately-maintained list) so the filter dropdown can
+        // never drift out of sync with whatever roles actually exist in the form.
+        function populateUserRoleFilter() {
+            const sel = document.getElementById('userRoleFilter');
+            if (sel.options.length > 1) return; // already populated
+            Array.from(document.querySelectorAll('.uRole')).forEach(cb => {
+                const label = cb.closest('label').textContent.trim();
+                sel.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(cb.value)}">${escapeHtml(label)}</option>`);
+            });
+        }
         function renderUsersTable() {
+            populateUserRoleFilter();
+            const q = (document.getElementById('userSearchInput').value || '').trim().toLowerCase();
+            const roleFilter = document.getElementById('userRoleFilter').value;
+            const filtered = users.filter(u => {
+                const matchesQ = !q || u.username.toLowerCase().includes(q) || (u.name || '').toLowerCase().includes(q);
+                const matchesRole = !roleFilter || (u.roles || []).includes(roleFilter);
+                return matchesQ && matchesRole;
+            });
             const tbody = document.getElementById('usersTableBody');
-            tbody.innerHTML = users.map(u => `
+            if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-xs text-slate-400">ไม่พบผู้ใช้ที่ตรงกับการค้นหา (No matching users)</td></tr>`; return; }
+            tbody.innerHTML = filtered.map(u => `
                 <tr class="hover:bg-slate-50/80">
                     <td class="px-4 py-3 text-xs font-bold text-slate-800">${escapeHtml(u.username)}</td>
                     <td class="px-4 py-3 text-xs text-slate-600">${escapeHtml(u.name)}${u.position ? `<div class="text-[9px] text-slate-400 font-bold">${escapeHtml(POSITION_LABELS[u.position] || u.position)}</div>` : ''}</td>
@@ -9288,7 +9284,7 @@
                     <td class="px-4 py-2.5 text-[10px] text-slate-400">${new Date(l.ts).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })}</td>
                     <td class="px-4 py-2.5 text-[10px] font-bold text-slate-700">${escapeHtml(l.userName || l.user)}</td>
                     <td class="px-4 py-2.5 text-[10px]"><span class="bg-slate-100 px-1.5 py-0.5 rounded font-bold text-slate-600">${escapeHtml(l.action)}</span></td>
-                    <td class="px-4 py-2.5 text-[10px] text-indigo-600 font-bold">${escapeHtml(l.recordId)}</td>
+                    <td class="px-4 py-2.5 text-[10px] text-indigo-600 font-bold">${escapeHtml(docNoOf(l.recordId))}</td>
                     <td class="px-4 py-2.5 text-[10px] text-slate-500">
                         ${escapeHtml(l.detail)}
                         ${(l.changes && l.changes.length) ? `
@@ -9485,6 +9481,7 @@
             await loadUsers();
             await loadLog();
             await loadFromStorage();
+            backfillMissingDocNos();
             seedNotificationBaseline();
             if (loginBtn) { loginBtn.disabled = false; loginBtn.innerText = 'เข้าสู่ระบบ'; }
             if (tryAutoLogin()) {
