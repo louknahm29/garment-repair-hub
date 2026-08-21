@@ -7173,11 +7173,20 @@
             const rows = [];
             item.parts.forEach((p, idx) => {
                 const line = (f.parts || []).find(l => l.idx === idx);
-                if (line) rows.push({ label: `${PART_NAME_LABELS[p.name] || p.name} — ${p.size}`, line });
+                if (!line) return;
+                // First column leads with the ACC/embellishment item itself (type + item
+                // numbers) — same info shown in the ACC checklist's "รายการ ACC"/"Item"
+                // columns — per "ให้แสดงเป็นชื่อรายการ...ที่มาจาก embellish ว่ามีรายการอะไรบ้าง
+                // ที่ขอ มีกี่ไอเทม", with the part name kept as a smaller line for context.
+                const embTypeLabel = [...new Set((p.embellishment || []).map(e => EMB_LABELS[e.type] || e.type))].join(', ');
+                const itemNos = [...new Set((p.embellishment || []).flatMap(e => (e.items && e.items.length) ? e.items : []).filter(Boolean))];
+                const partName = `${PART_NAME_LABELS[p.name] || p.name} — ${p.size}`;
+                const label = itemNos.length ? `${embTypeLabel} — Item: ${itemNos.join(', ')}` : (embTypeLabel || partName);
+                rows.push({ label, sub: partName, line });
             });
             (item.accRequestList || []).forEach((a, idx) => {
                 const line = (f.accRequest || []).find(l => l.idx === idx);
-                if (line) rows.push({ label: a.label || a.key, line });
+                if (line) rows.push({ label: a.label || a.key, sub: '', line });
             });
             if (!rows.length) return '<p class="text-[10px] text-slate-400">ยังไม่มีการบันทึกสถานะจ่าย</p>';
             const statusLabel = (line) => line.noNeed ? '<span class="text-slate-400 font-bold">ไม่ต้องจ่าย</span>' : `<span class="font-bold ${line.decision === 'full' ? 'text-emerald-600' : 'text-amber-600'}">${escapeHtml(ACC_FULFILL_DECISION_LABELS[line.decision] || line.decision || '-')}</span>`;
@@ -7191,9 +7200,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        ${rows.map(({ label, line }) => `
+                        ${rows.map(({ label, sub, line }) => `
                             <tr>
-                                <td class="border-2 border-slate-300 px-1.5 py-1 font-medium">${escapeHtml(label)}</td>
+                                <td class="border-2 border-slate-300 px-1.5 py-1 font-medium">${escapeHtml(label)}${sub ? `<span class="block font-normal text-slate-400">${escapeHtml(sub)}</span>` : ''}</td>
                                 <td class="border-2 border-slate-300 px-1.5 py-1">${statusLabel(line)}</td>
                                 <td class="border-2 border-slate-300 px-1.5 py-1">
                                     ${(line.history || []).length
