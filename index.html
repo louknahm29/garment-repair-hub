@@ -6181,8 +6181,16 @@
         }
         // ACC runs from FM approval straight through to Supermarket on its own timeline,
         // independent of what stage the main Marker->Cutting pipeline is currently on.
+        // Whether this record actually asked ACC for anything — an additional ACC requisition
+        // line, or at least one part with embellishment ticked (which needs ACC-supplied
+        // materials/items) — per "มีกดแจ้งขอแค่ส่วนของรายการชิ้นส่วนไม่ได้กดขอของ ACC แต่พบว่ามี
+        // รายการให้รับ ACC ต้องการกำหนดให้ไม่แสดงส่วนของที่ไม่ได้เลือก".
+        function hasAccContent(item) {
+            if ((item.accRequestList || []).length > 0) return true;
+            return (item.parts || []).some(p => (p.embellishment || []).length > 0);
+        }
         function accActionable(item) {
-            return !!(item.fmApproval && item.fmApproval.decision === 'Approved') && !item.accSend;
+            return !!(item.fmApproval && item.fmApproval.decision === 'Approved') && !item.accSend && hasAccContent(item);
         }
         // The main pipeline is only "done" once Cutting has actually sent AND (this item has
         // no embellishment ticked, or the full embellishment chain + QC has finished).
@@ -6721,14 +6729,20 @@
             const existing = item.accFulfillment || { parts: [], accRequest: [] };
             const partMap = Object.fromEntries((existing.parts || []).map(l => [l.idx, l]));
             const accMap = Object.fromEntries((existing.accRequest || []).map(l => [l.idx, l]));
-            const partRows = item.parts.map((p, idx) => {
-                // Each distinct embellishment item number gets its own line — per "ส่วนของ
-                // รายการที่เป็น item จะเรียงไอเทมลงมาถ้าเป็นคนละไอเทม" — instead of joining
-                // multiple different items into one comma-separated string.
-                const itemNos = [...new Set((p.embellishment || []).flatMap(e => (e.items && e.items.length) ? e.items : []).filter(Boolean))];
-                return accFulfillmentRowHtml('parts', idx,
-                    `${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}${p.part ? ' (' + escapeHtml(p.part) + ')' : ''}`, itemNos, p.size, p.qty, partMap[idx]);
-            }).join('');
+            // Only parts that actually have embellishment ticked need ACC to dispense
+            // anything — a plain cut-replace part (no embellishment) has nothing for ACC to
+            // receive/pay, so it must not show up as an outstanding ACC line at all.
+            const partRows = item.parts
+                .map((p, idx) => ({ p, idx }))
+                .filter(({ p }) => (p.embellishment || []).length > 0)
+                .map(({ p, idx }) => {
+                    // Each distinct embellishment item number gets its own line — per "ส่วนของ
+                    // รายการที่เป็น item จะเรียงไอเทมลงมาถ้าเป็นคนละไอเทม" — instead of joining
+                    // multiple different items into one comma-separated string.
+                    const itemNos = [...new Set((p.embellishment || []).flatMap(e => (e.items && e.items.length) ? e.items : []).filter(Boolean))];
+                    return accFulfillmentRowHtml('parts', idx,
+                        `${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}${p.part ? ' (' + escapeHtml(p.part) + ')' : ''}`, itemNos, p.size, p.qty, partMap[idx]);
+                }).join('');
             const accRows = (item.accRequestList || []).map((a, idx) => {
                 return accFulfillmentRowHtml('accRequest', idx, escapeHtml(a.label || a.key), a.itemName, a.size, a.qty, accMap[idx]);
             }).join('');
