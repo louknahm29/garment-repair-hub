@@ -891,6 +891,18 @@
                 </div>
             </div>
 
+            <!-- Merge-suggestion banner — same job/style/dept ordered the same day, still
+                 early enough (no department has actually started work) to safely combine into
+                 one document, per "ปุ่มกดรวบรวมจ๊อบเดียวกันสไตส์เดียวกันที่สั่งกันในวันเดียวกัน
+                 รวมในใบเดียวได้มั๊ย...จะได้ง่ายตั้งแต่คนวางมาร์ค ถึงคนตามงาน". Hidden entirely
+                 when there's nothing to suggest. -->
+            <div id="mergeSuggestBanner" class="card p-3 bg-indigo-50 border-indigo-200 hidden flex items-center justify-between gap-3 flex-wrap">
+                <div class="text-xs text-indigo-800">
+                    🔗 <span id="mergeSuggestText"></span>
+                </div>
+                <button onclick="openMergeModal()" class="btn-secondary text-xs shrink-0">ดูรายละเอียด / รวมใบ <span class="text-[9px] font-normal opacity-70">(Review / Merge)</span></button>
+            </div>
+
             <!-- FILTERS & SEARCH TOOLBAR -->
             <div class="card p-4 bg-slate-50/80 flex flex-wrap gap-3 items-center">
                 <div class="flex-1 min-w-[220px]">
@@ -900,7 +912,7 @@
                     </div>
                 </div>
                 <div class="w-auto min-w-[150px]">
-                    <select id="filterRequestType" onchange="filterData()" class="w-full text-xs bg-white">
+                    <select id="filterRequestType" onchange="onManualFilterChange()" class="w-full text-xs bg-white">
                         <option value="all">ทุกประเภทคำขอ (All Types)</option>
                         <option value="CutReplace">แจ้งขอตัดเปลี่ยน (Cut-Replace)</option>
                         <option value="SupplierCutReplace">แจ้งตัดงานซ่อม (ซัพพลายเออร์)</option>
@@ -916,51 +928,31 @@
                          are archived and never appear in this active-queue view anyway (they live
                          in the separate Completed History table), so listing them here would just
                          be a filter that always returns zero rows. -->
-                    <select id="filterStatus" onchange="filterData()" class="w-full text-xs bg-white">
-                        <option value="all">ทุกสถานะ (All Status)</option>
-                        <option value="PendingApproval">รอ BU ตรวจสอบ (Pending BU Review)</option>
-                        <option value="Rejected">BU ไม่ผ่านตรวจสอบ (Rejected by BU)</option>
-                        <option value="PendingFMApproval">รอ PM / FM อนุมัติ (Pending PM/FM Approval)</option>
-                        <option value="FMRejected">PM / FM ไม่อนุมัติ (Rejected by PM/FM)</option>
-                        <option value="Approved">รอมาร์คเกอร์รับงาน (Pending Marker)</option>
-                        <option value="MarkerReceived">มาร์คเกอร์กำลังดำเนินการ (Marker In Progress)</option>
-                        <option value="MarkerSent">รอใบปูตัดรับงาน (Pending Cutting Sheet)</option>
-                        <option value="CuttingSheetReceived">ใบปูตัดกำลังดำเนินการ (Cutting Sheet In Progress)</option>
-                        <option value="FabricCheckPending">รอเช็คผ้ารับงาน (Pending Fabric Check)</option>
-                        <option value="FabricCheckReceived">กำลังเช็คผ้า (Fabric Check In Progress)</option>
-                        <option value="PPCFabricPending">รอ PPC Fabric รับงาน (Pending PPC Fabric)</option>
-                        <option value="PPCFabricReceived">PPC Fabric กำลังจองผ้า (PPC Fabric Booking)</option>
-                        <option value="StockFabricPending">รอสต็อคผ้ารับงาน (Pending Stock Fabric)</option>
-                        <option value="StockFabricReceived">สต็อคผ้ากำลังดำเนินการ (Stock Fabric In Progress)</option>
-                        <option value="StockFabricSent">รอแผนกตัดรับงาน (Pending Cutting Dept)</option>
-                        <option value="CuttingReceived">กำลังตัดซ่อม (Cutting In Progress)</option>
-                        <option value="CuttingSent">ตัดเสร็จ รอเริ่มงานต่อ (Cut Complete)</option>
-                        <option value="ACCReceived">ACC กำลังดำเนินการ (ACC In Progress)</option>
-                        <option value="SupermarketPending">พร้อมส่งเข้าซุปเปอร์มาร์เก็ต (Ready for Supermarket)</option>
-                        <option value="SupermarketReceived">ซุปเปอร์มาร์เก็ตรับแล้ว (Received by Supermarket)</option>
-                        <option value="SupermarketSent">ส่งเข้าไลน์แล้ว รอต้นทางรับ (Sent to Line)</option>
-                    </select>
+                    <input type="text" id="filterStatus" onchange="onManualFilterChange()" list="filterStatusDatalist" placeholder="ทุกสถานะ (All Status)" class="w-full text-xs bg-white">
+                    <datalist id="filterStatusDatalist"></datalist>
                 </div>
                 <div class="w-auto min-w-[140px]">
-                    <select id="filterDept" onchange="filterData()" class="w-full text-xs bg-white">
-                        <option value="all">ทุกแผนกที่แจ้ง (All Depts)</option>
-                        <option value="Sewing">แผนกเย็บ (Sewing)</option>
-                        <option value="QC">แผนก QC/QA</option>
-                        <option value="BU">แผนก BU</option>
-                        <option value="ACC">แผนก ACC</option>
-                        <option value="Emb">แผนกปัก (Embroidery)</option>
-                        <option value="PadPrint">แผนกแพดปริ้น (Pad Print)</option>
-                        <option value="ScreenPrint">แผนกพิมพ์สกรีน (Screen Print)</option>
-                        <option value="Bonding">แผนกบอนด์ดิ้ง (Bonding)</option>
-                        <option value="Laser">แผนกเลเซอร์ (Laser)</option>
-                        <option value="HeatTransfer">แผนกฮีท (Heat Transfer)</option>
-                        <option value="Cutting">แผนกตัด (Cutting)</option>
-                        <option value="Supermarket">ซุปเปอร์มาร์เก็ต (Supermarket)</option>
-                    </select>
+                    <input type="text" id="filterDept" onchange="onManualFilterChange()" list="filterDeptDatalist" placeholder="ทุกแผนกที่แจ้ง (All Depts)" class="w-full text-xs bg-white">
+                    <datalist id="filterDeptDatalist"></datalist>
                 </div>
                 <button onclick="resetFilters()" class="text-xs text-slate-500 hover:text-indigo-600 font-bold px-2 py-1">
                     ล้างตัวกรอง <span class="text-[9px] font-normal opacity-70">(Clear Filters)</span>
                 </button>
+            </div>
+
+            <!-- Shows which KPI-card selection (if any) is currently narrowing the table below
+                 — these ad hoc criteria (overdue, QC waiting, by-vendor, etc.) can't be expressed
+                 by the Request Type/Status/Dept dropdowns above, so without this badge a user had
+                 no way to tell the list was still scoped to a card click after also touching the
+                 search box or a dropdown, per "กดเลือกที่ card ด้านบนแล้ว...ด้านล่างคลิกเลือกแต่ไม่
+                 align กัน". Touching search/Request Type/Status/Dept clears the card scope (see
+                 onManualFilterChange) since at that point the dropdowns/search already express
+                 the user's own intent.-->
+            <div id="activeKpiBadge" class="hidden -mt-2 mb-2">
+                <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-2.5 py-1">
+                    🔎 กำลังกรองตาม: <span id="activeKpiBadgeLabel"></span>
+                    <button onclick="resetFilters()" class="text-indigo-400 hover:text-indigo-700 ml-1" title="ล้างตัวกรองนี้">✕</button>
+                </span>
             </div>
 
             <!-- REPAIR TABLE -->
@@ -1003,6 +995,33 @@
                         <span>🖨️ พิมพ์เอกสาร <span class="text-[9px] font-normal opacity-70">(Print)</span></span>
                     </button>
                 </div>
+            </div>
+
+            <!-- Periodic Summary Export: a rolled-up report (counts, leadtime, repair rate,
+                 top defects) for a chosen date range, downloadable as CSV — separate from the
+                 full raw-data export above (Export File), which dumps every column per record
+                 instead of a period rollup. -->
+            <div class="card p-4 bg-gradient-to-br from-violet-50 to-white">
+                <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                    <h3 class="text-sm font-black text-slate-800">รายงานสรุปตามรอบ <span class="font-normal normal-case text-slate-400 text-xs">(Periodic Summary Report)</span></h3>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap no-print">
+                    <div class="flex rounded-lg border border-slate-200 overflow-hidden text-[10px] font-bold bg-white">
+                        <button onclick="setPeriodicSummaryPreset('week')" class="px-2.5 py-1.5 hover:bg-slate-50">สัปดาห์นี้</button>
+                        <button onclick="setPeriodicSummaryPreset('month')" class="px-2.5 py-1.5 hover:bg-slate-50 border-l border-slate-200">เดือนนี้</button>
+                        <button onclick="setPeriodicSummaryPreset('lastMonth')" class="px-2.5 py-1.5 hover:bg-slate-50 border-l border-slate-200">เดือนก่อน</button>
+                    </div>
+                    <input type="date" id="periodicSummaryStart" onchange="previewPeriodicSummary()" class="text-xs bg-white border rounded-lg px-2 py-1.5">
+                    <span class="text-xs text-slate-400">ถึง</span>
+                    <input type="date" id="periodicSummaryEnd" onchange="previewPeriodicSummary()" class="text-xs bg-white border rounded-lg px-2 py-1.5">
+                    <button onclick="previewPeriodicSummary()" class="btn-secondary text-xs px-3 py-1.5">👁️ แสดงตัวอย่าง (Preview)</button>
+                    <button onclick="exportPeriodicSummary()" class="btn-primary text-xs px-3 py-1.5">📥 Export สรุปรอบ (CSV)</button>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-2">สรุปจำนวนรายการที่แจ้งเข้ามา/เสร็จสมบูรณ์ Leadtime เฉลี่ย อัตราซ่อม/ตีกลับแยกตามประเภทและ Vendor และ Defect Code ยอดนิยม เฉพาะในช่วงวันที่เลือก <span class="opacity-70">(counts, avg leadtime, repair rate by type/vendor, and top defect codes — scoped to the selected date range)</span></p>
+                <!-- Renders the exact same rows the CSV export would write, so a period can be
+                     checked before downloading anything, per "ต้องการให้เมื่อเลือกแล้วสามารถ
+                     แสดงข้อมูลที่เลือกเพื่อให้ดูข้อมูลก่อนได้". -->
+                <div id="periodicSummaryPreview" class="hidden mt-3 max-h-96 overflow-y-auto bg-white border border-violet-200 rounded-xl p-3"></div>
             </div>
 
             <!-- Analytics Key Indicators (clickable) -->
@@ -1100,22 +1119,44 @@
                  ACC requisition lines — split by their current fulfillment decision. -->
             <div class="card p-6">
                 <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-4">สรุปรายการ ACC <span class="font-normal normal-case opacity-70">(ACC Summary — all lines requested)</span></h3>
+                <!-- Each block now breaks its count down into ใบขอ (distinct request docs) /
+                     รายการ (lines) / ชิ้น (pcs) with a divider between them, per "ต้องการให้แต่
+                     ละส่วนเพิ่มเส้นกั้นในบล็อคแยกเป็นจำนวนใบขอ จำนวนรายการ และจำนวนชิ้นด้วย" —
+                     one record can carry several ACC lines, and each line can be several
+                     pieces, so a single "lines" number understated both the doc count (lower)
+                     and the pcs count (higher). -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
                         <p class="text-[10px] font-bold uppercase text-slate-500">รายการทั้งหมด <span class="opacity-70">(Total)</span></p>
-                        <h4 id="anaAccTotalLines" class="text-3xl font-black text-slate-700 mt-1">0</h4>
+                        <div class="grid grid-cols-3 divide-x divide-slate-200 mt-2">
+                            <div class="px-1"><p id="anaAccTotalDocs" class="text-lg font-black text-slate-700">0</p><p class="text-[8px] text-slate-400 uppercase leading-tight">ใบขอ<span class="block opacity-70 normal-case">Docs</span></p></div>
+                            <div class="px-1"><p id="anaAccTotalLines" class="text-lg font-black text-slate-700">0</p><p class="text-[8px] text-slate-400 uppercase leading-tight">รายการ<span class="block opacity-70 normal-case">Lines</span></p></div>
+                            <div class="px-1"><p id="anaAccTotalPcs" class="text-lg font-black text-slate-700">0</p><p class="text-[8px] text-slate-400 uppercase leading-tight">ชิ้น<span class="block opacity-70 normal-case">Pcs</span></p></div>
+                        </div>
                     </div>
                     <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-center">
                         <p class="text-[10px] font-bold uppercase text-amber-600">ต้องจ่าย <span class="opacity-70">(Needs Payment)</span></p>
-                        <h4 id="anaAccNeedPayLines" class="text-3xl font-black text-amber-700 mt-1">0</h4>
+                        <div class="grid grid-cols-3 divide-x divide-amber-200 mt-2">
+                            <div class="px-1"><p id="anaAccNeedPayDocs" class="text-lg font-black text-amber-700">0</p><p class="text-[8px] text-amber-500 uppercase leading-tight">ใบขอ<span class="block opacity-70 normal-case">Docs</span></p></div>
+                            <div class="px-1"><p id="anaAccNeedPayLines" class="text-lg font-black text-amber-700">0</p><p class="text-[8px] text-amber-500 uppercase leading-tight">รายการ<span class="block opacity-70 normal-case">Lines</span></p></div>
+                            <div class="px-1"><p id="anaAccNeedPayPcs" class="text-lg font-black text-amber-700">0</p><p class="text-[8px] text-amber-500 uppercase leading-tight">ชิ้น<span class="block opacity-70 normal-case">Pcs</span></p></div>
+                        </div>
                     </div>
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
                         <p class="text-[10px] font-bold uppercase text-slate-400">ไม่ต้องจ่าย <span class="opacity-70">(No Need)</span></p>
-                        <h4 id="anaAccNoNeedLines" class="text-3xl font-black text-slate-500 mt-1">0</h4>
+                        <div class="grid grid-cols-3 divide-x divide-slate-200 mt-2">
+                            <div class="px-1"><p id="anaAccNoNeedDocs" class="text-lg font-black text-slate-500">0</p><p class="text-[8px] text-slate-400 uppercase leading-tight">ใบขอ<span class="block opacity-70 normal-case">Docs</span></p></div>
+                            <div class="px-1"><p id="anaAccNoNeedLines" class="text-lg font-black text-slate-500">0</p><p class="text-[8px] text-slate-400 uppercase leading-tight">รายการ<span class="block opacity-70 normal-case">Lines</span></p></div>
+                            <div class="px-1"><p id="anaAccNoNeedPcs" class="text-lg font-black text-slate-500">0</p><p class="text-[8px] text-slate-400 uppercase leading-tight">ชิ้น<span class="block opacity-70 normal-case">Pcs</span></p></div>
+                        </div>
                     </div>
                     <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
                         <p class="text-[10px] font-bold uppercase text-emerald-600">จ่ายครบแล้ว <span class="opacity-70">(Fully Paid)</span></p>
-                        <h4 id="anaAccPaidLines" class="text-3xl font-black text-emerald-700 mt-1">0</h4>
+                        <div class="grid grid-cols-3 divide-x divide-emerald-200 mt-2">
+                            <div class="px-1"><p id="anaAccPaidDocs" class="text-lg font-black text-emerald-700">0</p><p class="text-[8px] text-emerald-500 uppercase leading-tight">ใบขอ<span class="block opacity-70 normal-case">Docs</span></p></div>
+                            <div class="px-1"><p id="anaAccPaidLines" class="text-lg font-black text-emerald-700">0</p><p class="text-[8px] text-emerald-500 uppercase leading-tight">รายการ<span class="block opacity-70 normal-case">Lines</span></p></div>
+                            <div class="px-1"><p id="anaAccPaidPcs" class="text-lg font-black text-emerald-700">0</p><p class="text-[8px] text-emerald-500 uppercase leading-tight">ชิ้น<span class="block opacity-70 normal-case">Pcs</span></p></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1161,6 +1202,70 @@
                 <div class="p-4 pt-0" style="height:420px;">
                     <canvas id="stageDurationChart"></canvas>
                 </div>
+            </div>
+
+            <!-- Leadtime by Outsource Vendor: how long each vendor actually takes (dept
+                 received -> dept sent onward), separate from the by-type breakdown above since
+                 several vendors can share the same embellishment type. -->
+            <div class="card overflow-hidden">
+                <div class="p-4 border-b bg-slate-50">
+                    <h3 class="text-sm font-black text-slate-800">Leadtime แยกตาม Vendor (Outsource) <span class="font-normal normal-case text-slate-400 text-xs">(Leadtime by Vendor)</span></h3>
+                    <p class="text-[10px] text-slate-400">เวลาเฉลี่ยที่ Vendor แต่ละรายใช้ทำงาน (นับเฉพาะเวลาทำงานปกติ จ.-ส. 08:00-17:00) นับตั้งแต่แผนกนั้นรับงานจนกระทั่งส่งต่อ</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-left">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">Vendor</th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">ประเภทงาน<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Types</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">จำนวนรายการ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Count</span></th>
+                                <th class="px-4 py-3 text-[10px] font-extrabold text-indigo-600 uppercase whitespace-nowrap">เวลาเฉลี่ย<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Avg Leadtime</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="vendorLeadtimeBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Repair / Reject rate: what share of QC-decided qty comes back as Repair (or
+                 gets fully rejected — Repair + CutReplace + NotifyVendor), by embellishment
+                 type and by outsource vendor, per "อัตราซ่อม/ตีกลับ (Repair Rate)". -->
+            <div class="card overflow-hidden">
+                <div class="p-4 border-b bg-slate-50">
+                    <h3 class="text-sm font-black text-slate-800">อัตราซ่อม / ตีกลับ <span class="font-normal normal-case text-slate-400 text-xs">(Repair / Reject Rate)</span></h3>
+                    <p class="text-[10px] text-slate-400">สัดส่วนจำนวนที่ QC ตรวจแล้วต้องซ่อม เทียบกับจำนวนที่ QC ตรวจทั้งหมด (ตีกลับ = ซ่อม + ตัดเปลี่ยน + แจ้ง Vendor)</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+                    <div class="overflow-x-auto">
+                        <p class="px-4 pt-3 text-[10px] font-extrabold text-slate-500 uppercase">แยกตามประเภท <span class="font-normal normal-case opacity-70">(By Type)</span></p>
+                        <table class="min-w-full divide-y divide-slate-200 text-left">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">ประเภท</th>
+                                    <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">จำนวนตรวจ</th>
+                                    <th class="px-4 py-3 text-[10px] font-extrabold text-amber-600 uppercase whitespace-nowrap">% ซ่อม</th>
+                                    <th class="px-4 py-3 text-[10px] font-extrabold text-rose-600 uppercase whitespace-nowrap">% ตีกลับรวม</th>
+                                </tr>
+                            </thead>
+                            <tbody id="repairRateByTypeBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                        </table>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <p class="px-4 pt-3 text-[10px] font-extrabold text-slate-500 uppercase">แยกตาม Vendor <span class="font-normal normal-case opacity-70">(By Vendor)</span></p>
+                        <table class="min-w-full divide-y divide-slate-200 text-left">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">Vendor</th>
+                                    <th class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap">จำนวนตรวจ</th>
+                                    <th class="px-4 py-3 text-[10px] font-extrabold text-amber-600 uppercase whitespace-nowrap">% ซ่อม</th>
+                                    <th class="px-4 py-3 text-[10px] font-extrabold text-rose-600 uppercase whitespace-nowrap">% ตีกลับรวม</th>
+                                </tr>
+                            </thead>
+                            <tbody id="repairRateByVendorBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <p class="px-4 py-2 text-[9px] text-slate-400">Vendor เฉพาะกรณีที่ประเภทนั้นใช้ Vendor เดียวตลอดทั้งรายการ (กรณีมีหลาย Vendor ในรายการเดียวจะไม่ถูกนับในคอลัมน์นี้ เพื่อไม่ให้ระบุ Vendor ผิดตัว)</p>
             </div>
 
             <!-- Charts Grid -->
@@ -1779,8 +1884,8 @@
         <div class="bg-white rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-amber-500 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
-                    <h3 class="font-bold text-base">ตรวจสอบใบสั่งซ่อม (BU)</h3>
-                    <p class="text-[10px] text-amber-100 uppercase font-semibold">BU Review</p>
+                    <h3 id="approvalModalTitle" class="font-bold text-base">ตรวจสอบใบสั่งซ่อม (BU)</h3>
+                    <p id="approvalModalSubtitle" class="text-[10px] text-amber-100 uppercase font-semibold">BU Review</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <button onclick="printReviewModal('approvalItemInfo')" class="text-white hover:text-amber-100 text-sm" title="พิมพ์หน้านี้">🖨️</button>
@@ -1790,7 +1895,7 @@
             <div class="p-6 space-y-4 overflow-y-auto">
                 <div id="approvalItemInfo" class="p-3.5 bg-slate-50 rounded-xl text-xs border border-slate-100 space-y-1"></div>
                 <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 space-y-2">
-                    <p class="text-[10px] font-black text-sky-900 uppercase">ผู้ตรวจสอบ (BU) ต้องกรอก/ยืนยันข้อมูลนี้ให้ครบก่อนจึงจะผ่านการตรวจสอบได้ *</p>
+                    <p id="approvalReviewerLabel" class="text-[10px] font-black text-sky-900 uppercase">ผู้ตรวจสอบ (BU) ต้องกรอก/ยืนยันข้อมูลนี้ให้ครบก่อนจึงจะผ่านการตรวจสอบได้ *</p>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div>
                             <label class="text-[9px] font-bold text-slate-500 block mb-1">PO No. *</label>
@@ -1895,11 +2000,9 @@
                 </div>
 
                 <div id="mNextEmbStageField" class="hidden">
-                    <label class="text-[10px] font-black text-indigo-600 uppercase mb-1 block">ส่งต่อไปยังแผนก Embellishment ใดก่อน <span class="font-normal normal-case opacity-70">(Send to which Embellishment stage first)</span> *</label>
-                    <select id="mNextEmbStage" class="w-full text-xs border-indigo-200" required>
-                        <option value="">-- เลือกแผนก --</option>
-                    </select>
-                    <p class="text-[9px] text-slate-400 mt-1">รายการนี้มี Embellishment ที่ Line Leader ระบุไว้ — เลือกแผนกที่จะให้เริ่มทำงานก่อน</p>
+                    <label class="text-[10px] font-black text-indigo-600 uppercase mb-1 block">ส่งต่อไปยังแผนก Embellishment ใดก่อน <span class="font-normal normal-case opacity-70">(Send to Embellishment — tick as many as apply)</span> *</label>
+                    <div id="mNextEmbStageChecklist" class="space-y-1"></div>
+                    <p class="text-[9px] text-slate-400 mt-1">ชิ้นส่วนคนละชิ้นกันติ๊กส่งพร้อมกันได้เลย ไม่ต้องรอกัน — แต่ถ้าเป็นชิ้นเดียวกันต้องทำตามลำดับที่ระบุไว้ตอนอนุมัติก่อน ระบบจะซ่อนตัวเลือกที่ยังไม่ถึงลำดับให้อัตโนมัติ <span class="opacity-70">(Different pieces can go out together — same piece must follow its approved order)</span></p>
                 </div>
 
                 <div id="mEmbSourceField" class="hidden space-y-2">
@@ -2054,6 +2157,23 @@
                     <button type="button" onclick="closeModal('qcCutReplaceModal')" class="btn-ghost w-1/3 text-xs">ยกเลิก <span class="text-[9px] font-normal opacity-70">(Cancel)</span></button>
                     <button type="button" onclick="confirmQcCutReplaceAutoCreate()" class="btn-danger flex-1 text-xs py-2.5">สร้างใบแจ้งตัดเปลี่ยนใหม่ <span class="text-[9px] font-normal opacity-70">(Auto-create)</span></button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: MERGE SAME-JOB REQUESTS -->
+    <div id="mergeModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="bg-indigo-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
+                <div>
+                    <h3 class="font-bold text-base">รวมใบสั่งซ่อม (Job/Style เดียวกัน วันเดียวกัน)</h3>
+                    <p class="text-[10px] text-indigo-100 uppercase font-semibold">Merge Same-Job Requests</p>
+                </div>
+                <button onclick="closeModal('mergeModal')" class="text-white hover:text-indigo-100 text-lg">✕</button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto">
+                <p class="text-[10px] text-slate-400">รวมได้เฉพาะรายการที่ยังไม่มีแผนกไหนเริ่มทำงานจริง (ยังอยู่ระหว่างรอ BU/PM-FM อนุมัติ) — เลือกใบที่ต้องการรวม แล้วระบบจะรวมชิ้นส่วนทั้งหมดเข้าใบที่เก่าที่สุด และปิดใบอื่นที่เหลือพร้อมอ้างอิงกลับ <span class="opacity-70">(Only mergeable while no department has started real work yet — parts merge into the oldest doc; the rest get cancelled with a reference back)</span></p>
+                <div id="mergeGroupsContainer" class="space-y-4"></div>
             </div>
         </div>
     </div>
@@ -2505,6 +2625,59 @@
         // legacy/custom part names elsewhere, e.g. the "(เดิม)" fallback option).
         const PART_NAME_CODES = Object.fromEntries(PART_NAME_OPTIONS.map(p => [p.label, p.value]));
         document.getElementById('partNameDatalist').innerHTML = PART_NAME_OPTIONS.map(p => `<option value="${escapeHtml(p.label)}">`).join('');
+
+        // Same type-to-search treatment for the two long table filter dropdowns (status has
+        // 21 options, dept has 13) — per "ในรายการตัวเลือกในแต่ละ dropdown ที่มีจำนวนมากๆ...
+        // ให้สามารถพิมพ์ได้ด้วยในตัวเพื่อง่ายกับการค้นหา". "all"/empty both mean "ทุกสถานะ".
+        const FILTER_STATUS_OPTIONS = [
+            { value: 'PendingApproval', label: 'รอ BU ตรวจสอบ (Pending BU Review)' },
+            { value: 'Rejected', label: 'BU ไม่ผ่านตรวจสอบ (Rejected by BU)' },
+            { value: 'PendingFMApproval', label: 'รอ PM / FM อนุมัติ (Pending PM/FM Approval)' },
+            { value: 'FMRejected', label: 'PM / FM ไม่อนุมัติ (Rejected by PM/FM)' },
+            { value: 'Approved', label: 'รอมาร์คเกอร์รับงาน (Pending Marker)' },
+            { value: 'MarkerReceived', label: 'มาร์คเกอร์กำลังดำเนินการ (Marker In Progress)' },
+            { value: 'MarkerSent', label: 'รอใบปูตัดรับงาน (Pending Cutting Sheet)' },
+            { value: 'CuttingSheetReceived', label: 'ใบปูตัดกำลังดำเนินการ (Cutting Sheet In Progress)' },
+            { value: 'FabricCheckPending', label: 'รอเช็คผ้ารับงาน (Pending Fabric Check)' },
+            { value: 'FabricCheckReceived', label: 'กำลังเช็คผ้า (Fabric Check In Progress)' },
+            { value: 'PPCFabricPending', label: 'รอ PPC Fabric รับงาน (Pending PPC Fabric)' },
+            { value: 'PPCFabricReceived', label: 'PPC Fabric กำลังจองผ้า (PPC Fabric Booking)' },
+            { value: 'StockFabricPending', label: 'รอสต็อคผ้ารับงาน (Pending Stock Fabric)' },
+            { value: 'StockFabricReceived', label: 'สต็อคผ้ากำลังดำเนินการ (Stock Fabric In Progress)' },
+            { value: 'StockFabricSent', label: 'รอแผนกตัดรับงาน (Pending Cutting Dept)' },
+            { value: 'CuttingReceived', label: 'กำลังตัดซ่อม (Cutting In Progress)' },
+            { value: 'CuttingSent', label: 'ตัดเสร็จ รอเริ่มงานต่อ (Cut Complete)' },
+            { value: 'ACCReceived', label: 'ACC กำลังดำเนินการ (ACC In Progress)' },
+            { value: 'SupermarketPending', label: 'พร้อมส่งเข้าซุปเปอร์มาร์เก็ต (Ready for Supermarket)' },
+            { value: 'SupermarketReceived', label: 'ซุปเปอร์มาร์เก็ตรับแล้ว (Received by Supermarket)' },
+            { value: 'SupermarketSent', label: 'ส่งเข้าไลน์แล้ว รอต้นทางรับ (Sent to Line)' },
+        ];
+        const FILTER_STATUS_LABELS = Object.fromEntries(FILTER_STATUS_OPTIONS.map(o => [o.value, o.label]));
+        const FILTER_STATUS_CODES = Object.fromEntries(FILTER_STATUS_OPTIONS.map(o => [o.label, o.value]));
+        document.getElementById('filterStatusDatalist').innerHTML = FILTER_STATUS_OPTIONS.map(o => `<option value="${escapeHtml(o.label)}">`).join('');
+
+        const FILTER_DEPT_OPTIONS = [
+            { value: 'Sewing', label: 'แผนกเย็บ (Sewing)' },
+            { value: 'QC', label: 'แผนก QC/QA' },
+            { value: 'BU', label: 'แผนก BU' },
+            { value: 'ACC', label: 'แผนก ACC' },
+            { value: 'Emb', label: 'แผนกปัก (Embroidery)' },
+            { value: 'PadPrint', label: 'แผนกแพดปริ้น (Pad Print)' },
+            { value: 'ScreenPrint', label: 'แผนกพิมพ์สกรีน (Screen Print)' },
+            { value: 'Bonding', label: 'แผนกบอนด์ดิ้ง (Bonding)' },
+            { value: 'Laser', label: 'แผนกเลเซอร์ (Laser)' },
+            { value: 'HeatTransfer', label: 'แผนกฮีท (Heat Transfer)' },
+            { value: 'Cutting', label: 'แผนกตัด (Cutting)' },
+            { value: 'Supermarket', label: 'ซุปเปอร์มาร์เก็ต (Supermarket)' },
+        ];
+        const FILTER_DEPT_LABELS = Object.fromEntries(FILTER_DEPT_OPTIONS.map(o => [o.value, o.label]));
+        const FILTER_DEPT_CODES = Object.fromEntries(FILTER_DEPT_OPTIONS.map(o => [o.label, o.value]));
+        document.getElementById('filterDeptDatalist').innerHTML = FILTER_DEPT_OPTIONS.map(o => `<option value="${escapeHtml(o.label)}">`).join('');
+        // Resolves whatever text is currently typed/picked in the filter fields back to a
+        // status/dept code — "" (unmatched or empty) means "all", same as the old <select>'s
+        // "all" option, so a typo never silently produces a false zero-row filter.
+        function resolveFilterStatus() { return FILTER_STATUS_CODES[document.getElementById('filterStatus').value.trim()] || 'all'; }
+        function resolveFilterDept() { return FILTER_DEPT_CODES[document.getElementById('filterDept').value.trim()] || 'all'; }
         // ACC requisition checklist — items besides embellishment (care/size labels, hang
         // tag/pack fasteners, pack bags) that a line can request alongside a repair job.
         const ACC_REQUEST_OPTIONS = [
@@ -2812,7 +2985,7 @@
             try {
                 const rows = await apiGetAll('Repairs');
                 if (rows && rows.length) {
-                    repairs = rows;
+                    repairs = migrateRepairsData(rows);
                 } else {
                     repairs = JSON.parse(JSON.stringify(defaultRepairs));
                     await autoSave(null, true);
@@ -2974,6 +3147,13 @@
         function canApprove(user, item) {
             if (!user) return false;
             if (hasRole(user, 'Admin')) return true;
+            // Embellishment- and QC-originated requests skip BU entirely — that department's
+            // own supervisor (the same role already used for their embellishment-stage
+            // actions, or 'QC') reviews and sends straight to PM/FM instead, per "หัวหน้าแผนก
+            // Embellishment/QC เป็นผู้ตรวจสอบและส่งให้ PM/FM ไม่ต้องผ่าน BU".
+            if (EMB_STAGE_TYPES.includes(item.dept) || item.dept === 'QC') {
+                return hasRole(user, item.dept);
+            }
             // A user holding both Requester and Approver roles for the same scope (e.g. a BU
             // who submits their own requests) is allowed to approve their own submissions.
             return hasRole(user, 'Approver') && scopesOf(user).includes(scopeKeyOf(item));
@@ -3068,8 +3248,10 @@
                 case 'StockFabricSent':
                 case 'CuttingReceived': return canCuttingAct(user);
                 case 'CuttingSent':
-                    if (item.currentEmbStage && EMB_STAGE_TYPES.includes(item.currentEmbStage)) return canEmbStageAct(user, item.currentEmbStage);
-                    if (item.currentEmbStage === 'QC') return canQCAct(user);
+                    // Multiple types can be active/at-QC in parallel now — any one of them
+                    // being actionable by this user is enough.
+                    if ((item.activeDeptTypes || []).some(t => canEmbStageAct(user, t))) return true;
+                    if ((item.qcPendingTypes || []).length && canQCAct(user)) return true;
                     return false;
                 case 'SupermarketPending':
                 case 'SupermarketReceived': return canSupermarketAct(user);
@@ -3184,9 +3366,12 @@
             // The embellishment chain + QC don't move item.status either (they hinge on
             // currentEmbStage/embStages/qcInspection instead), so fold those in too.
             const embKey = EMB_STAGE_TYPES.map(t => embTypeDone(item, t) ? '1' : '0').join('');
+            const visits = (item.qcInspection && item.qcInspection.visits) || {};
+            // Multiple types can be active at their own dept or waiting at QC in parallel now
+            // — encode each pending type's own visit receive/send state, not just one shared flag.
+            const qcVisitKey = (item.qcPendingTypes || []).map(t => `${t}:${visits[t] && visits[t].receive ? '1' : '0'}${visits[t] && visits[t].send ? '1' : '0'}`).join(',');
             const parallel = ['accReceive', 'accSend'].map(f => (item[f] ? '1' : '0')).join('') +
-                (item.currentEmbStage || '-') + embKey +
-                (item.qcInspection && item.qcInspection.receive ? '1' : '0') + (item.qcInspection && item.qcInspection.send ? '1' : '0');
+                (item.activeDeptTypes || []).join(',') + '|' + qcVisitKey + '|' + embKey;
             return item.status + parallel + (item.cuttingIssue ? ':issue:' + (item.cuttingIssue.ts || '') : '') + (item.accIssue ? ':accIssue:' + (item.accIssue.ts || '') : '');
         }
 
@@ -3366,10 +3551,11 @@
             if (accActionable(item) && hasRole(currentUser, 'ACC')) {
                 return `รอ ACC รับงาน (Ready for ACC — waiting since FM approval): ${docLabel(item)}`;
             }
-            if (item.currentEmbStage && EMB_STAGE_TYPES.includes(item.currentEmbStage) && hasRole(currentUser, item.currentEmbStage)) {
-                return `รอ${EMB_LABELS[item.currentEmbStage] || item.currentEmbStage}รับงาน (Ready for ${EMB_LABELS[item.currentEmbStage] || item.currentEmbStage}): ${docLabel(item)}`;
+            const notifEmbType = (item.activeDeptTypes || []).find(t => hasRole(currentUser, t));
+            if (notifEmbType) {
+                return `รอ${EMB_LABELS[notifEmbType] || notifEmbType}รับงาน (Ready for ${EMB_LABELS[notifEmbType] || notifEmbType}): ${docLabel(item)}`;
             }
-            if (item.currentEmbStage === 'QC' && hasRole(currentUser, 'QC')) {
+            if ((item.qcPendingTypes || []).length && hasRole(currentUser, 'QC')) {
                 return `รอ QC รับงาน (Ready for QC): ${docLabel(item)}`;
             }
             if (item.status === 'SupermarketPending' && hasRole(currentUser, 'Supermarket')) {
@@ -3463,7 +3649,9 @@
         // logged-in devices' changes show up without a manual reload, and to
         // reduce the window where two people editing the same record overwrite
         // each other's work) ---
-        const AUTO_REFRESH_MS = 5000;
+        // Widened from 5s to 18s (per "ปรับรีเฟรชจากเดิม 5 วินาทีเป็น 15-20 วินาที") — refreshing
+        // this often was fighting with anyone actively typing a search or picking a filter.
+        const AUTO_REFRESH_MS = 18000;
         let autoRefreshTimer = null;
 
         function startAutoRefresh() {
@@ -3486,11 +3674,15 @@
                     apiGetAll('Repairs'), apiGetAll('Users'), apiGetAll('Log')
                 ]);
                 detectAndNotify(newRepairs || []);
-                repairs = newRepairs || [];
+                repairs = migrateRepairsData(newRepairs || []);
                 users = newUsers || [];
                 auditLog = (newLog || []).slice().reverse();
 
-                if (!document.getElementById('section-records').classList.contains('hidden')) renderTable();
+                // Re-apply whatever search/filter is currently active instead of a bare
+                // renderTable() (which defaults to the full unfiltered list) — otherwise every
+                // refresh cycle silently wiped out a search/filter the user was mid-typing,
+                // per "พบว่าไม่สามารถกดค้นหาข้อมูลและเช็คสถานะงานได้".
+                if (!document.getElementById('section-records').classList.contains('hidden')) filterData();
                 if (!document.getElementById('section-analytics').classList.contains('hidden')) {
                     renderCharts();
                     renderCompletedHistory();
@@ -4413,6 +4605,7 @@
 
             const active = repairs.filter(r => !r.archived);
             updateWipSummary(active);
+            renderMergeBanner();
             const byStatus = (status) => status ? active.filter(r => r.status === status) : active;
             // Every KPI card shows both its count and how many of those are overdue —
             // setKpi tolerates cards with no "...Overdue" element (e.g. terminal states
@@ -4472,9 +4665,11 @@
             // The embellishment chain + QC also don't move item.status — whichever stage is
             // "current" hasn't been picked up yet is what counts as "still waiting" here.
             const stageNotYetReceived = r => {
-                if (!r.currentEmbStage) return false;
-                if (r.currentEmbStage === 'QC') return !(r.qcInspection && r.qcInspection.receive);
-                return !embTypeDone(r, r.currentEmbStage) && !(r.embStages && r.embStages[r.currentEmbStage] && r.embStages[r.currentEmbStage].receive);
+                // Any type still sitting at its own dept, or at QC, not yet received counts —
+                // several types can be active/pending in parallel now.
+                const visits = (r.qcInspection && r.qcInspection.visits) || {};
+                if ((r.activeDeptTypes || []).some(t => !embTypeDone(r, t) && !(r.embStages && r.embStages[t] && r.embStages[t].receive))) return true;
+                return (r.qcPendingTypes || []).some(t => !(visits[t] && visits[t].receive));
             };
             setKpi('kpiCuttingSent', active.filter(r => r.status === 'CuttingSent' && stageNotYetReceived(r)));
             setKpi('kpiCuttingIssue', active.filter(r => r.cuttingIssue));
@@ -4483,8 +4678,8 @@
             setKpi('kpiAcc', active.filter(r => accActionable(r) && r.accReceive));
             setKpi('kpiAccPending', active.filter(r => r.accIssue));
             setKpi('kpiAccFulfillmentPending', active.filter(r => hasOutstandingAcc(r)));
-            setKpi('kpiQcWaiting', active.filter(r => r.currentEmbStage === 'QC' && !(r.qcInspection && r.qcInspection.receive)));
-            setKpi('kpiQc', active.filter(r => r.currentEmbStage === 'QC' && r.qcInspection && r.qcInspection.receive));
+            setKpi('kpiQcWaiting', active.filter(r => (r.qcPendingTypes || []).some(t => !((r.qcInspection && r.qcInspection.visits && r.qcInspection.visits[t]) || {}).receive)));
+            setKpi('kpiQc', active.filter(r => (r.qcPendingTypes || []).some(t => ((r.qcInspection && r.qcInspection.visits && r.qcInspection.visits[t]) || {}).receive)));
             // QC inspects outsourced AND in-house work, broken down by the same 3 decoration
             // categories the pipeline used to gate on (ปัก=Emb, พิมพ์=PadPrint/ScreenPrint,
             // ฮีท=Heat) — a record can count toward more than one bucket if it has more than
@@ -4505,10 +4700,13 @@
                 // records whose current visit's type matches this bucket, instead of any
                 // ticked type the item happens to have (which would double-count an item
                 // into every one of its types' buckets while only one is really at QC).
-                const atQc = active.filter(r => r.currentEmbStage === 'QC' && qcInspectTypes(r).some(t => types.includes(t)));
+                const atQc = active.filter(r => (r.qcPendingTypes || []).some(t => types.includes(t)));
                 const inhouse = atQc.filter(r => itemHasEmbTypeSource(r, types, 'inhouse'));
                 const outsource = atQc.filter(r => itemHasEmbTypeSource(r, types, 'outsource'));
-                const waiting = r => !(r.qcInspection && r.qcInspection.receive);
+                const waiting = r => {
+                    const visits = (r.qcInspection && r.qcInspection.visits) || {};
+                    return (r.qcPendingTypes || []).filter(t => types.includes(t)).some(t => !(visits[t] && visits[t].receive));
+                };
                 setKpi(inId + 'Waiting', inhouse.filter(waiting));
                 setKpi(inId + 'Working', inhouse.filter(r => !waiting(r)));
                 setKpi(outId + 'Waiting', outsource.filter(waiting));
@@ -4545,7 +4743,7 @@
                     </thead>
                     <tbody>
                         ${EMB_STAGE_TYPES.map(t => {
-                            const typeItems = active.filter(r => r.currentEmbStage === t);
+                            const typeItems = active.filter(r => (r.activeDeptTypes || []).includes(t));
                             const received = r => !!(r.embStages && r.embStages[t] && r.embStages[t].receive);
                             const inhouse = typeItems.filter(r => itemHasEmbTypeSource(r, [t], 'inhouse'));
                             const outsource = typeItems.filter(r => itemHasEmbTypeSource(r, [t], 'outsource'));
@@ -4575,9 +4773,12 @@
             // had — this previously showed one combined count regardless of receive status.
             const vendorWaitGroups = {}, vendorWorkGroups = {};
             active.forEach(r => {
-                const received = !!(r.embStages && r.embStages[r.currentEmbStage] && r.embStages[r.currentEmbStage].receive);
+                // A record with several active types (parallel now) can be waiting on one
+                // vendor while already working with another — count it as "working" for a
+                // vendor as soon as ANY of its active types tied to that vendor is received.
+                const receivedAny = (r.activeDeptTypes || []).some(t => r.embStages && r.embStages[t] && r.embStages[t].receive);
                 itemOutsourceVendors(r).forEach(vendor => {
-                    const bucket = received ? vendorWorkGroups : vendorWaitGroups;
+                    const bucket = receivedAny ? vendorWorkGroups : vendorWaitGroups;
                     (bucket[vendor] = bucket[vendor] || []).push(r);
                 });
             });
@@ -4632,7 +4833,11 @@
                 // Row 1: the single status-transition action, sized/styled like the status-pill
                 let statusRow = '';
                 if (item.status === 'PendingApproval' && canApprove(currentUser, item)) {
-                    statusRow = statusActionBtn('ตรวจสอบ (BU)', `openApprovalModal('${item.id}')`, 'bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200');
+                    // Label reflects who's actually reviewing — Embellishment/QC-originated
+                    // requests skip BU (see canApprove), so the button should say so instead
+                    // of always claiming "BU" reviewed it.
+                    const reviewerLabel = (EMB_STAGE_TYPES.includes(item.dept) || item.dept === 'QC') ? `ตรวจสอบ (${item.dept})` : 'ตรวจสอบ (BU)';
+                    statusRow = statusActionBtn(reviewerLabel, `openApprovalModal('${item.id}')`, 'bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200');
                 } else if (item.status === 'PendingFMApproval' && canFMApprove(currentUser)) {
                     statusRow = statusActionBtn('พิจารณา (PM/FM)', `openFMApprovalModal('${item.id}')`, 'bg-orange-100 text-orange-800 border border-orange-200 hover:bg-orange-200');
                 } else if (item.status === 'Approved' && canMarkerAct(currentUser)) {
@@ -4660,17 +4865,21 @@
                 } else if (item.status === 'CuttingReceived' && canCuttingAct(currentUser)) {
                     statusRow = statusActionBtn('ตัดเสร็จ', `openActionModal('${item.id}')`, 'bg-indigo-100 text-indigo-800 border border-indigo-200 hover:bg-indigo-200');
                 } else if (item.status === 'CuttingSent') {
-                    // The embellishment types + QC are chained sequentially now — only
-                    // whichever one is item.currentEmbStage is ever actionable. ACC is handled
-                    // separately below (it's decoupled from this status entirely — see accActionable).
-                    if (item.currentEmbStage && EMB_STAGE_TYPES.includes(item.currentEmbStage) && canEmbStageAct(currentUser, item.currentEmbStage)) {
-                        const t = item.currentEmbStage;
+                    // Each ticked embellishment type now progresses independently — types on
+                    // disjoint pieces run at their own dept and reach QC in parallel instead of
+                    // waiting on a single shared "currentEmbStage", per "เป็นคนละชิ้น...ส่งแยกไป
+                    // ดำเนินการได้โดยไม่ต้องรอ". One button per still-active type/QC-pending
+                    // type, all stacked in the same row (statusRow already supports this).
+                    const embBtns = (item.activeDeptTypes || []).filter(t => canEmbStageAct(currentUser, t)).map(t => {
                         const done = embTypeDone(item, t);
-                        statusRow = statusActionBtn(!done && !(item.embStages && item.embStages[t] && item.embStages[t].receive) ? `รับงาน (${EMB_LABELS[t]})` : `(${EMB_LABELS[t]}) ส่งต่อ`, `openStageModal('${item.id}','${t}')`, 'bg-pink-100 text-pink-800 border border-pink-200 hover:bg-pink-200');
-                    } else if (item.currentEmbStage === 'QC' && canQCAct(currentUser)) {
-                        const received = !!(item.qcInspection && item.qcInspection.receive);
-                        statusRow = statusActionBtn(!received ? 'รับงาน (QC)' : 'บันทึกผลตรวจ (QC)', `openStageModal('${item.id}','qc')`, 'bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-200 hover:bg-fuchsia-200');
-                    }
+                        return statusActionBtn(!done && !(item.embStages && item.embStages[t] && item.embStages[t].receive) ? `รับงาน (${EMB_LABELS[t]})` : `(${EMB_LABELS[t]}) ส่งต่อ`, `openStageModal('${item.id}','${t}')`, 'bg-pink-100 text-pink-800 border border-pink-200 hover:bg-pink-200');
+                    }).join('');
+                    const qcBtns = canQCAct(currentUser) ? (item.qcPendingTypes || []).map(t => {
+                        const visit = item.qcInspection && item.qcInspection.visits && item.qcInspection.visits[t];
+                        const received = !!(visit && visit.receive);
+                        return statusActionBtn(!received ? `รับงาน (QC — ${EMB_LABELS[t] || t})` : `บันทึกผลตรวจ (QC — ${EMB_LABELS[t] || t})`, `openStageModal('${item.id}','qc:${t}')`, 'bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-200 hover:bg-fuchsia-200');
+                    }).join('') : '';
+                    statusRow = embBtns + qcBtns;
                 } else if (item.status === 'SupermarketPending' && canSupermarketAct(currentUser)) {
                     statusRow = statusActionBtn('รับงานเข้า SM', `openMarketModal('${item.id}')`, 'bg-teal-100 text-teal-800 border border-teal-200 hover:bg-teal-200');
                 } else if (item.status === 'SupermarketReceived' && canSupermarketAct(currentUser)) {
@@ -4792,222 +5001,129 @@
             updateKpiTabBadges();
         }
 
+        // Fixed (non-parameterized) KPI-card predicates — ad hoc criteria the plain Request
+        // Type/Status/Dept dropdowns can't express on their own. Kept as one table (instead
+        // of one if-block per card, as before) so filterByKpi() has a single place that
+        // always routes through activeKpiPredicate + filterData(), which is what keeps a
+        // later search/dropdown tweak layered on top of the card's scope instead of
+        // silently dropping it.
+        const KPI_PREDICATES = {
+            overdue: { label: 'เกินกำหนด (Overdue)', test: r => alertInfo(r) },
+            anyRejected: { label: 'ถูกตีกลับ (Rejected)', test: r => r.status === 'Rejected' || r.status === 'FMRejected' },
+            cuttingIssue: { label: 'ปัญหาการตัด (Cutting Issue)', test: r => r.cuttingIssue },
+            cuttingPending: { label: 'รายการตัดคงค้าง', test: r => r.cuttingPending && !r.cuttingPending.resolved },
+            qcRepairPending: { label: 'QC ตีกลับให้ซ่อม (คงค้าง)', test: r => r.qcRepairRequests && (r.activeDeptTypes || []).some(t => r.qcRepairRequests[t]) },
+            qcRejectChain: { label: 'สร้างจาก QC Reject', test: r => r.sourceQcRejectId },
+            waitCuttingSheet: { label: 'รอใบปูตัดรับงาน', test: r => r.status === 'MarkerSent' },
+            waitFabricCheck: { label: 'รอเช็คผ้ารับงาน', test: r => r.status === 'FabricCheckPending' },
+            waitPPCFabric: { label: 'รอ PPC Fabric รับงาน', test: r => r.status === 'PPCFabricPending' },
+            waitStockFabric: { label: 'รอสต็อคผ้ารับงาน', test: r => r.status === 'StockFabricPending' },
+            crossJobFabric: { label: 'ใช้ผ้าข้ามจ๊อบ', test: r => r.fabricCheckSend && r.fabricCheckSend.fabricJobSource === 'other' && r.fabricCheckSend.sourceJobNo },
+            markerWorking: { label: 'Marker กำลังทำงาน', test: r => r.status === 'MarkerReceived' },
+            cuttingSheetWorking: { label: 'ใบปูตัดกำลังทำงาน', test: r => r.status === 'CuttingSheetReceived' },
+            fabricCheckWorking: { label: 'เช็คผ้ากำลังทำงาน', test: r => r.status === 'FabricCheckReceived' },
+            stockFabricWorking: { label: 'สต็อคผ้ากำลังทำงาน', test: r => r.status === 'StockFabricReceived' },
+            waitCuttingDept: { label: 'รอแผนกตัดรับงาน', test: r => r.status === 'StockFabricSent' },
+            SupermarketPending: { label: 'รอซุปเปอร์มาร์เก็ต', test: r => r.status === 'SupermarketPending' },
+            accWaitingReceive: { label: 'ACC รอรับงาน', test: r => accActionable(r) && !r.accReceive },
+            acc: { label: 'ACC กำลังทำงาน', test: r => accActionable(r) && r.accReceive },
+            qcWaiting: { label: 'QC รอรับงาน', test: r => (r.qcPendingTypes || []).some(t => !((r.qcInspection && r.qcInspection.visits && r.qcInspection.visits[t]) || {}).receive) },
+            qc: { label: 'QC กำลังทำงาน', test: r => (r.qcPendingTypes || []).some(t => ((r.qcInspection && r.qcInspection.visits && r.qcInspection.visits[t]) || {}).receive) },
+            qcCutReplacePending: { label: 'QC รอตัดเปลี่ยนใหม่', test: r => r.qcCutReplace && !r.qcCutReplace.resolved },
+            qcNotifyVendorPending: { label: 'QC รอแจ้ง Vendor', test: r => r.qcNotifyVendor && !r.qcNotifyVendor.resolved },
+            waitingAccOnly: { label: 'รอ ACC เท่านั้น', test: r => r.status === 'CuttingSent' && mainPipelineDone(r) && !r.accSend },
+            waitingMainPipelineOnly: { label: 'รอสายงานหลักเท่านั้น', test: r => r.status === 'CuttingSent' && !mainPipelineDone(r) && !!r.accSend },
+            waitingBoth: { label: 'รอทั้งสายงานหลักและ ACC', test: r => r.status === 'CuttingSent' && !mainPipelineDone(r) && !r.accSend },
+            accPending: { label: 'ACC แจ้งของคงค้างจ่าย', test: r => r.accIssue },
+            accFulfillmentPending: { label: 'ACC ค้างจ่าย', test: r => hasOutstandingAcc(r) },
+            waitingFabric: { label: 'รอผ้ามาถึง', test: r => r.status === 'PPCFabricReceived' && r.ppcFabric && !r.ppcFabric.actualArrivalDate },
+            cuttingSentFresh: {
+                label: 'งานใหม่ที่รอรับ (แผนกตัด/QC)',
+                test: r => {
+                    if (r.status !== 'CuttingSent') return false;
+                    const visits = (r.qcInspection && r.qcInspection.visits) || {};
+                    const qcFresh = (r.qcPendingTypes || []).some(t => !(visits[t] && visits[t].receive));
+                    const deptFresh = (r.activeDeptTypes || []).some(t => !(r.embStages && r.embStages[t] && r.embStages[t].receive));
+                    return qcFresh || deptFresh;
+                },
+            },
+        };
+        // Parameterized KPI predicates (status carries a "prefix:arg1:arg2" encoding) —
+        // returns null for anything not recognized as a KPI at all, which tells
+        // filterByKpi() to fall through to the plain status-code path instead.
+        function buildKpiPredicate(status) {
+            if (KPI_PREDICATES[status]) return KPI_PREDICATES[status];
+            if (status && status.startsWith('qcTypeSource:')) {
+                const QC_OUTSOURCE_TYPES = { Emb: ['Emb'], Print: ['PadPrint', 'ScreenPrint'], Heat: ['Heat'] };
+                const [, typeKey, source, state] = status.split(':');
+                const types = QC_OUTSOURCE_TYPES[typeKey] || [];
+                return {
+                    label: `QC ${typeKey} — ${source === 'inhouse' ? 'In-house' : 'Outsource'} (${state === 'waiting' ? 'รอรับ' : 'กำลังทำงาน'})`,
+                    test: r => {
+                        const pendingInBucket = (r.qcPendingTypes || []).filter(t => types.includes(t));
+                        if (!pendingInBucket.length) return false;
+                        if (!itemHasEmbTypeSource(r, types, source)) return false;
+                        const visits = (r.qcInspection && r.qcInspection.visits) || {};
+                        const waiting = pendingInBucket.some(t => !(visits[t] && visits[t].receive));
+                        if (state === 'waiting') return waiting;
+                        if (state === 'working') return !waiting;
+                        return true;
+                    },
+                };
+            }
+            if (status && status.startsWith('embWaiting:')) {
+                const type = status.slice('embWaiting:'.length);
+                return { label: `${EMB_LABELS[type] || type} — รอรับงาน`, test: r => (r.activeDeptTypes || []).includes(type) && !(r.embStages && r.embStages[type] && r.embStages[type].receive) };
+            }
+            if (status && status.startsWith('embWorking:')) {
+                const type = status.slice('embWorking:'.length);
+                return { label: `${EMB_LABELS[type] || type} — กำลังทำงาน`, test: r => (r.activeDeptTypes || []).includes(type) && r.embStages && r.embStages[type] && r.embStages[type].receive };
+            }
+            if (status && status.startsWith('emb:')) {
+                const type = status.slice(4);
+                return { label: `${EMB_LABELS[type] || type}`, test: r => (r.activeDeptTypes || []).includes(type) };
+            }
+            if (status && (status.startsWith('embSourceWaiting:') || status.startsWith('embSourceWorking:'))) {
+                const wantWorking = status.startsWith('embSourceWorking:');
+                const [, type, source] = status.split(':');
+                return {
+                    label: `${EMB_LABELS[type] || type} — ${source === 'inhouse' ? 'In-house' : 'Outsource'} (${wantWorking ? 'กำลังทำงาน' : 'รอรับงาน'})`,
+                    test: r => {
+                        if (!(r.activeDeptTypes || []).includes(type) || !itemHasEmbTypeSource(r, [type], source)) return false;
+                        const received = !!(r.embStages && r.embStages[type] && r.embStages[type].receive);
+                        return wantWorking ? received : !received;
+                    },
+                };
+            }
+            if (status && status.startsWith('outsourceVendorWaiting:')) {
+                const vendor = status.slice('outsourceVendorWaiting:'.length);
+                return { label: `Vendor: ${vendor} (รอรับงาน)`, test: r => itemOutsourceVendors(r).has(vendor) && !(r.activeDeptTypes || []).some(t => r.embStages && r.embStages[t] && r.embStages[t].receive) };
+            }
+            if (status && status.startsWith('outsourceVendor:')) {
+                const vendor = status.slice('outsourceVendor:'.length);
+                return { label: `Vendor: ${vendor} (กำลังทำงาน)`, test: r => itemOutsourceVendors(r).has(vendor) && (r.activeDeptTypes || []).some(t => r.embStages && r.embStages[t] && r.embStages[t].receive) };
+            }
+            return null;
+        }
         function filterByKpi(status) {
             markKpiSeen(status);
             switchTab('records');
             document.getElementById('searchInput').value = '';
             document.getElementById('filterRequestType').value = 'all';
-            document.getElementById('filterDept').value = 'all';
-            if (status === 'overdue') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => alertInfo(r)));
-                return;
+            document.getElementById('filterDept').value = '';
+            const predicate = buildKpiPredicate(status);
+            if (predicate) {
+                document.getElementById('filterStatus').value = '';
+                activeKpiPredicate = predicate.test;
+                activeKpiLabel = predicate.label;
+            } else {
+                // A plain status code — fully expressible via the Status dropdown alone, so
+                // no ad hoc predicate is needed (and any stale one from an earlier card click
+                // must be cleared here, or it would keep narrowing this selection too).
+                activeKpiPredicate = null;
+                activeKpiLabel = '';
+                document.getElementById('filterStatus').value = FILTER_STATUS_LABELS[status] || status;
             }
-            if (status === 'anyRejected') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'Rejected' || r.status === 'FMRejected'));
-                return;
-            }
-            if (status === 'cuttingIssue') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.cuttingIssue));
-                return;
-            }
-            if (status === 'cuttingPending') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.cuttingPending && !r.cuttingPending.resolved));
-                return;
-            }
-            if (status === 'qcRepairPending') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.qcRepairRequests && r.currentEmbStage && r.qcRepairRequests[r.currentEmbStage]));
-                return;
-            }
-            if (status === 'qcRejectChain') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.sourceQcRejectId));
-                return;
-            }
-            if (status === 'waitCuttingSheet') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'MarkerSent'));
-                return;
-            }
-            if (status === 'waitFabricCheck') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'FabricCheckPending'));
-                return;
-            }
-            if (status === 'waitPPCFabric') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'PPCFabricPending'));
-                return;
-            }
-            if (status === 'waitStockFabric') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'StockFabricPending'));
-                return;
-            }
-            if (status === 'crossJobFabric') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.fabricCheckSend && r.fabricCheckSend.fabricJobSource === 'other' && r.fabricCheckSend.sourceJobNo));
-                return;
-            }
-            if (status === 'markerWorking') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'MarkerReceived'));
-                return;
-            }
-            if (status === 'cuttingSheetWorking') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'CuttingSheetReceived'));
-                return;
-            }
-            if (status === 'fabricCheckWorking') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'FabricCheckReceived'));
-                return;
-            }
-            if (status === 'stockFabricWorking') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'StockFabricReceived'));
-                return;
-            }
-            if (status === 'waitCuttingDept') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'StockFabricSent'));
-                return;
-            }
-            if (status === 'SupermarketPending') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'SupermarketPending'));
-                return;
-            }
-            if (status === 'accWaitingReceive') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => accActionable(r) && !r.accReceive));
-                return;
-            }
-            if (status === 'acc') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => accActionable(r) && r.accReceive));
-                return;
-            }
-            if (status === 'qcWaiting') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.currentEmbStage === 'QC' && !(r.qcInspection && r.qcInspection.receive)));
-                return;
-            }
-            if (status === 'qc') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.currentEmbStage === 'QC' && r.qcInspection && r.qcInspection.receive));
-                return;
-            }
-            if (status && status.startsWith('qcTypeSource:')) {
-                const QC_OUTSOURCE_TYPES = { Emb: ['Emb'], Print: ['PadPrint', 'ScreenPrint'], Heat: ['Heat'] };
-                const [, typeKey, source, state] = status.split(':');
-                const types = QC_OUTSOURCE_TYPES[typeKey] || [];
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => {
-                    if (r.currentEmbStage !== 'QC' || !qcInspectTypes(r).some(t => types.includes(t))) return false;
-                    if (!itemHasEmbTypeSource(r, types, source)) return false;
-                    const waiting = !(r.qcInspection && r.qcInspection.receive);
-                    if (state === 'waiting') return waiting;
-                    if (state === 'working') return !waiting;
-                    return true;
-                }));
-                return;
-            }
-            if (status === 'qcCutReplacePending') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.qcCutReplace && !r.qcCutReplace.resolved));
-                return;
-            }
-            if (status === 'qcNotifyVendorPending') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.qcNotifyVendor && !r.qcNotifyVendor.resolved));
-                return;
-            }
-            if (status === 'waitingAccOnly') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'CuttingSent' && mainPipelineDone(r) && !r.accSend));
-                return;
-            }
-            if (status === 'waitingMainPipelineOnly') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'CuttingSent' && !mainPipelineDone(r) && !!r.accSend));
-                return;
-            }
-            if (status === 'waitingBoth') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'CuttingSent' && !mainPipelineDone(r) && !r.accSend));
-                return;
-            }
-            if (status === 'accPending') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.accIssue));
-                return;
-            }
-            if (status === 'accFulfillmentPending') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => hasOutstandingAcc(r)));
-                return;
-            }
-            if (status === 'waitingFabric') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'PPCFabricReceived' && r.ppcFabric && !r.ppcFabric.actualArrivalDate));
-                return;
-            }
-            if (status && status.startsWith('emb:')) {
-                const type = status.slice(4);
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.currentEmbStage === type));
-                return;
-            }
-            if (status && status.startsWith('embWaiting:')) {
-                const type = status.slice('embWaiting:'.length);
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.currentEmbStage === type && !(r.embStages && r.embStages[type] && r.embStages[type].receive)));
-                return;
-            }
-            if (status && status.startsWith('embWorking:')) {
-                const type = status.slice('embWorking:'.length);
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.currentEmbStage === type && r.embStages && r.embStages[type] && r.embStages[type].receive));
-                return;
-            }
-            if (status && (status.startsWith('embSourceWaiting:') || status.startsWith('embSourceWorking:'))) {
-                const wantWorking = status.startsWith('embSourceWorking:');
-                const [, type, source] = status.split(':');
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => {
-                    if (r.currentEmbStage !== type || !itemHasEmbTypeSource(r, [type], source)) return false;
-                    const received = !!(r.embStages && r.embStages[type] && r.embStages[type].receive);
-                    return wantWorking ? received : !received;
-                }));
-                return;
-            }
-            if (status && status.startsWith('outsourceVendorWaiting:')) {
-                const vendor = status.slice('outsourceVendorWaiting:'.length);
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => itemOutsourceVendors(r).has(vendor) && !(r.embStages && r.embStages[r.currentEmbStage] && r.embStages[r.currentEmbStage].receive)));
-                return;
-            }
-            if (status && status.startsWith('outsourceVendor:')) {
-                const vendor = status.slice('outsourceVendor:'.length);
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => itemOutsourceVendors(r).has(vendor) && r.embStages && r.embStages[r.currentEmbStage] && r.embStages[r.currentEmbStage].receive));
-                return;
-            }
-            if (status === 'cuttingSentFresh') {
-                document.getElementById('filterStatus').value = 'all';
-                renderTable(repairs.filter(r => !r.archived).filter(r => r.status === 'CuttingSent' &&
-                    r.currentEmbStage &&
-                    (r.currentEmbStage === 'QC' ? !(r.qcInspection && r.qcInspection.receive) : !(r.embStages && r.embStages[r.currentEmbStage] && r.embStages[r.currentEmbStage].receive))
-                ));
-                return;
-            }
-            document.getElementById('filterStatus').value = status;
             filterData();
         }
 
@@ -5029,8 +5145,8 @@
         function goToDept(deptValue) {
             switchTab('records');
             document.getElementById('searchInput').value = '';
-            document.getElementById('filterStatus').value = 'all';
-            document.getElementById('filterDept').value = deptValue;
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterDept').value = FILTER_DEPT_LABELS[deptValue] || deptValue;
             filterData();
         }
 
@@ -5054,7 +5170,7 @@
             if (info.to === 'acc') {
                 stillPending = !item.accReceive;
             } else if (EMB_STAGE_TYPES.includes(info.to)) {
-                stillPending = item.currentEmbStage === info.to && !(item.embStages && item.embStages[info.to] && item.embStages[info.to].receive);
+                stillPending = (item.activeDeptTypes || []).includes(info.to) && !(item.embStages && item.embStages[info.to] && item.embStages[info.to].receive);
             } else {
                 stillPending = info.to === item.status;
             }
@@ -5062,34 +5178,146 @@
             return `<div class="text-[9px] bg-orange-100 text-orange-700 border border-orange-200 px-1.5 py-0.5 rounded font-bold text-center mb-1" title="${escapeHtml('ตีกลับโดย ' + info.name + ' — เหตุผล: ' + (info.reason || '-'))}">🔄 ตีกลับ — รอแก้ไข <span class="font-normal opacity-70">(Kicked back)</span></div>`;
         }
 
+        // A KPI-card click applies an ad hoc predicate (e.g. "overdue", "QC waiting on this
+        // vendor") that the plain Request Type/Status/Dept dropdowns can't express on their
+        // own — see buildKpiPredicate(). filterData() folds it in as an extra AND-condition
+        // so every subsequent search/dropdown tweak stays layered on top of the card's
+        // selection instead of silently discarding it (the exact "กดเลือกที่ card...ไม่ align
+        // กัน" bug). onManualFilterChange() is what actually clears it, once the user starts
+        // expressing their own criteria through those controls instead.
+        let activeKpiPredicate = null;
+        let activeKpiLabel = '';
+        function renderActiveKpiBadge() {
+            const badge = document.getElementById('activeKpiBadge');
+            if (!badge) return;
+            badge.classList.toggle('hidden', !activeKpiPredicate);
+            if (activeKpiPredicate) document.getElementById('activeKpiBadgeLabel').innerText = activeKpiLabel;
+        }
         function filterData() {
             const search = document.getElementById('searchInput').value.toLowerCase().trim();
             const requestType = document.getElementById('filterRequestType').value;
-            const status = document.getElementById('filterStatus').value;
-            const dept = document.getElementById('filterDept').value;
+            const status = resolveFilterStatus();
+            const dept = resolveFilterDept();
 
-            const filtered = repairs.filter(r => !r.archived).filter(r => {
+            let base = repairs.filter(r => !r.archived);
+            if (activeKpiPredicate) base = base.filter(activeKpiPredicate);
+
+            const filtered = base.filter(r => {
+                // Scoped to identity fields only (Style/Job/ID/Color/PO) — per "ค้นหายังมี
+                // ข้อมูลอื่นปนอยู่": matching against defect-reason text and Vendor name too
+                // let a search for one job's number accidentally surface an unrelated job
+                // whose Vendor name or free-text defect reason happened to contain that same
+                // string. Vendor/reason lookups belong in their own dedicated filters, not
+                // folded into the general search box.
                 const matchSearch = r.style.toLowerCase().includes(search) ||
                                     r.job.toLowerCase().includes(search) ||
                                     r.id.toLowerCase().includes(search) ||
                                     r.color.toLowerCase().includes(search) ||
-                                    r.parts.some(p => p.reason && (p.reason.toLowerCase().includes(search) || (REASON_LABELS[p.reason] || '').toLowerCase().includes(search))) ||
-                                    r.parts.some(p => (p.embellishment || []).some(e => e.vendor && e.vendor.toLowerCase().includes(search)));
+                                    (r.po || '').toLowerCase().includes(search);
                 const matchRequestType = requestType === 'all' || (r.requestType || 'CutReplace') === requestType;
                 const matchStatus = status === 'all' || r.status === status;
                 const matchDept = dept === 'all' || r.dept === dept;
                 return matchSearch && matchRequestType && matchStatus && matchDept;
             });
             renderTable(filtered);
+            renderActiveKpiBadge();
+        }
+        // Bound to the search box's oninput and the 3 filter dropdowns' onchange (see the
+        // FILTERS & SEARCH TOOLBAR markup) instead of calling filterData() directly, so
+        // manually touching any of them always drops a stale KPI-card scope rather than
+        // silently combining with (or losing to) it.
+        function onManualFilterChange() {
+            activeKpiPredicate = null;
+            activeKpiLabel = '';
+            filterData();
         }
 
-        document.getElementById('searchInput').oninput = filterData;
+        document.getElementById('searchInput').oninput = onManualFilterChange;
 
         function resetFilters() {
             document.getElementById('searchInput').value = '';
             document.getElementById('filterRequestType').value = 'all';
-            document.getElementById('filterStatus').value = 'all';
-            document.getElementById('filterDept').value = 'all';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterDept').value = '';
+            activeKpiPredicate = null;
+            activeKpiLabel = '';
+            renderActiveKpiBadge();
+            filterData();
+        }
+
+        // --- MERGE SAME-JOB/STYLE REQUESTS (same day, still early enough to combine) ---
+        // Only while nothing downstream has actually started work — otherwise different
+        // records could be at different physical stages (some cut, some not) and merging
+        // their status/history would no longer make sense, per "ยังไม่มีแผนกไหนเริ่มทำงานจริง".
+        const MERGE_ELIGIBLE_STATUSES = ['PendingApproval', 'Rejected', 'PendingFMApproval', 'FMRejected', 'Approved'];
+        function findMergeableGroups() {
+            const eligible = repairs.filter(r => !r.archived && MERGE_ELIGIBLE_STATUSES.includes(r.status));
+            const groups = {};
+            eligible.forEach(r => {
+                const key = [r.style, r.job, r.dept, r.requestType, dateOnlyPart(r.date)].join('||');
+                (groups[key] = groups[key] || []).push(r);
+            });
+            return Object.values(groups).filter(g => g.length >= 2).map(g => g.slice().sort((a, b) => new Date(a.date) - new Date(b.date)));
+        }
+        function renderMergeBanner() {
+            const banner = document.getElementById('mergeSuggestBanner');
+            if (!banner) return;
+            const groups = findMergeableGroups();
+            banner.classList.toggle('hidden', groups.length === 0);
+            if (groups.length) {
+                const totalDocs = groups.reduce((s, g) => s + g.length, 0);
+                document.getElementById('mergeSuggestText').innerText = `พบ ${groups.length} กลุ่มงาน (รวม ${totalDocs} ใบ) ที่ Job/Style/แผนกเดียวกัน สั่งวันเดียวกัน — อาจรวมเป็นใบเดียวได้`;
+            }
+        }
+        function openMergeModal() {
+            const groups = findMergeableGroups();
+            document.getElementById('mergeGroupsContainer').innerHTML = groups.map((g, gIdx) => `
+                <div class="border rounded-xl p-3 bg-slate-50" data-group-idx="${gIdx}">
+                    <div class="text-xs font-bold text-slate-700 mb-2">${escapeHtml(g[0].style)} / ${escapeHtml(g[0].job)} — ${escapeHtml(g[0].dept)} <span class="text-slate-400 font-normal">(${escapeHtml(dateOnlyPart(g[0].date))})</span></div>
+                    <div class="space-y-1 mb-2">
+                        ${g.map((r, i) => `
+                            <label class="flex items-center gap-2 text-[11px] bg-white border rounded-lg px-2 py-1.5">
+                                <input type="checkbox" class="mergeItemCheck" data-id="${escapeHtml(r.id)}" checked>
+                                <span class="font-bold ${i === 0 ? 'text-indigo-600' : 'text-slate-600'}">${escapeHtml(docLabel(r))}</span>
+                                ${i === 0 ? '<span class="text-[9px] text-indigo-500 font-bold">(ใบหลัก — เก่าสุด)</span>' : ''}
+                                <span class="text-slate-400">${r.parts.length} รายการชิ้นส่วน, ${(r.accRequestList||[]).length} รายการ ACC เพิ่มเติม</span>
+                                <span class="text-slate-400 ml-auto">${escapeHtml(fmtDT(r.date))}</span>
+                            </label>`).join('')}
+                    </div>
+                    <button type="button" onclick="mergeSelectedGroup(${gIdx})" class="btn-primary text-xs w-full py-2">รวมรายการที่เลือกเข้าใบหลัก <span class="text-[9px] font-normal opacity-70">(Merge checked into the oldest)</span></button>
+                </div>`).join('');
+            // Stash the groups on the container so mergeSelectedGroup can find the right one
+            // by index without recomputing (avoids drift if the underlying data changes mid-modal).
+            document.getElementById('mergeGroupsContainer')._mergeGroups = groups;
+            document.getElementById('mergeModal').classList.replace('hidden', 'flex');
+        }
+        function mergeSelectedGroup(groupIdx) {
+            const groups = document.getElementById('mergeGroupsContainer')._mergeGroups;
+            const group = groups[groupIdx];
+            if (!group) return;
+            const groupEl = document.querySelector(`#mergeGroupsContainer [data-group-idx="${groupIdx}"]`);
+            const selectedIds = Array.from(groupEl.querySelectorAll('.mergeItemCheck:checked')).map(cb => cb.dataset.id);
+            if (selectedIds.length < 2) { showToast('เลือกอย่างน้อย 2 ใบเพื่อรวม (Select at least 2 to merge)', 'warning'); return; }
+            const selected = group.filter(r => selectedIds.includes(r.id));
+            const primary = selected[0]; // already sorted oldest-first
+            const others = selected.slice(1);
+            const primaryIdx = repairs.findIndex(r => r.id === primary.id);
+            if (primaryIdx === -1) return;
+            others.forEach(other => {
+                const otherIdx = repairs.findIndex(r => r.id === other.id);
+                if (otherIdx === -1) return;
+                repairs[primaryIdx].parts = [...repairs[primaryIdx].parts, ...other.parts];
+                repairs[primaryIdx].accRequestList = [...(repairs[primaryIdx].accRequestList || []), ...(other.accRequestList || [])];
+                repairs[primaryIdx].mergedFrom = [...(repairs[primaryIdx].mergedFrom || []), { id: other.id, docNo: other.docNo }];
+                repairs[otherIdx].archived = true;
+                repairs[otherIdx].status = 'Cancelled';
+                repairs[otherIdx].cancelReason = `รวมเข้ากับใบ ${docLabel(repairs[primaryIdx])}`;
+                repairs[otherIdx].mergedInto = repairs[primaryIdx].id;
+            });
+            logAction('MergeRequests', repairs[primaryIdx].id, `${currentUser.name} รวม ${others.length} ใบ (${others.map(o => docLabel(o)).join(', ')}) เข้ากับใบหลัก ${docLabel(repairs[primaryIdx])}`);
+            showToast(`รวมเรียบร้อยแล้ว — ${docLabel(repairs[primaryIdx])} มีทั้งหมด ${repairs[primaryIdx].parts.length} รายการชิ้นส่วน (Merged)`, 'success');
+            autoSave([primary.id, ...others.map(o => o.id)]);
+            closeModal('mergeModal');
             renderTable();
         }
 
@@ -5474,7 +5702,7 @@
             document.querySelectorAll('#mCuttingChecklist .cuttingPartCheck').forEach(cb => { cb.checked = master.checked; });
         }
 
-        function buildPartsRatioTable(parts) {
+        function buildPartsRatioTable(parts, color) {
             const groups = [];
             const groupMap = {};
             parts.forEach(p => {
@@ -5511,9 +5739,10 @@
                             <th class="border-2 border-slate-300 px-1.5 py-1 text-left whitespace-nowrap">Item <span class="font-normal text-slate-400">(ผ้า)</span></th>
                             <th class="border-2 border-slate-300 px-1.5 py-1 text-left whitespace-nowrap">ชื่อชิ้นส่วน <span class="font-normal text-slate-400">(Part Name)</span></th>
                             <th class="border-2 border-slate-300 px-1.5 py-1 text-left whitespace-nowrap">พาร์ท <span class="font-normal text-slate-400">(Part)</span></th>
+                            <th class="border-2 border-slate-300 px-1.5 py-1 text-left whitespace-nowrap">สีผ้า <span class="font-normal text-slate-400">(Color)</span></th>
                             <th class="border-2 border-slate-300 px-1.5 py-1 text-left whitespace-nowrap">Embellishment</th>
-                            <th class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap">จำนวนตำแหน่ง <span class="font-normal text-slate-400">(Positions)</span></th>
                             <th class="border-2 border-slate-300 px-1.5 py-1 text-left">Item <span class="font-normal text-slate-400">(Embellishment)</span></th>
+                            <th class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap">จำนวนตำแหน่ง <span class="font-normal text-slate-400">(Positions)</span></th>
                             ${usedSizes.map(s => `<th class="border-2 border-slate-300 px-1.5 py-1">${s}</th>`).join('')}
                             <th class="border-2 border-slate-300 px-1.5 py-1 bg-slate-200">Total</th>
                             <th class="border-2 border-slate-300 px-1.5 py-1 text-left">หมายเหตุ <span class="font-normal text-slate-400">(Remark)</span></th>
@@ -5552,31 +5781,32 @@
                                     const partCols = partFirstRow ? `
                                     <td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap" rowspan="${partRowSpan}">${g.fabricItem ? escapeHtml(g.fabricItem) : '<span class="text-slate-300">-</span>'}</td>
                                     <td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap" rowspan="${partRowSpan}">${escapeHtml(PART_NAME_LABELS[g.name] || g.name)}</td>
-                                    <td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap" rowspan="${partRowSpan}">${escapeHtml(g.part) || '-'}</td>` : '';
+                                    <td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap" rowspan="${partRowSpan}">${escapeHtml(g.part) || '-'}</td>
+                                    <td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap" rowspan="${partRowSpan}">${color ? escapeHtml(color) : '<span class="text-slate-300">-</span>'}</td>` : '';
                                     const sizeCols = partFirstRow ? usedSizes.map(s => `<td class="border-2 border-slate-300 px-1.5 py-1 text-center" rowspan="${partRowSpan}">${g.sizes[s] || '-'}</td>`).join('') : '';
                                     const totalCol = partFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1 text-center font-bold bg-slate-50" rowspan="${partRowSpan}">${total}</td>` : '';
                                     const remarkCol = partFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1" rowspan="${partRowSpan}">${badges}</td>` : '';
-                                    let typeCols, itemCol;
+                                    // Item (Embellishment) now comes before จำนวนตำแหน่ง (Positions)
+                                    // — per "ต้องการให้ Item (Embellishment) อยู่ก่อนจำนวนตำแหน่ง".
+                                    let typeCol, itemCol, positionsCol;
                                     if (!e) {
-                                        typeCols = `
-                                        <td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap">${g.embNone ? '<span class="text-slate-400">ไม่มี (None)</span>' : '<span class="text-slate-300">-</span>'}</td>
-                                        <td class="border-2 border-slate-300 px-1.5 py-1 text-center">-</td>`;
+                                        typeCol = `<td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap">${g.embNone ? '<span class="text-slate-400">ไม่มี (None)</span>' : '<span class="text-slate-300">-</span>'}</td>`;
                                         itemCol = `<td class="border-2 border-slate-300 px-1.5 py-1"><span class="text-slate-300">-</span></td>`;
+                                        positionsCol = `<td class="border-2 border-slate-300 px-1.5 py-1 text-center">-</td>`;
                                     } else {
                                         const sourceLabel = e.source ? (e.source === 'inhouse' ? 'In-house' : ('Outsource' + (e.vendor ? ' (' + escapeHtml(e.vendor) + ')' : ''))) : '';
-                                        typeCols = typeFirstRow ? `
-                                        <td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap" rowspan="${typeRowSpan}">${escapeHtml(EMB_LABELS[e.type] || e.type)}${sourceLabel ? `<span class="block text-[9px] text-slate-400 font-normal">${sourceLabel}</span>` : ''}</td>
-                                        <td class="border-2 border-slate-300 px-1.5 py-1 text-center font-bold" rowspan="${typeRowSpan}">${(e.items && e.items.length) ? e.items.length : (e.count || 0)}</td>` : '';
+                                        typeCol = typeFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap" rowspan="${typeRowSpan}">${escapeHtml(EMB_LABELS[e.type] || e.type)}${sourceLabel ? `<span class="block text-[9px] text-slate-400 font-normal">${sourceLabel}</span>` : ''}</td>` : '';
                                         itemCol = `<td class="border-2 border-slate-300 px-1.5 py-1">${posItem ? escapeHtml(posItem) : '<span class="text-slate-300">-</span>'}</td>`;
+                                        positionsCol = typeFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1 text-center font-bold" rowspan="${typeRowSpan}">${(e.items && e.items.length) ? e.items.length : (e.count || 0)}</td>` : '';
                                     }
                                     partFirstRow = false;
                                     typeFirstRow = false;
-                                    return `<tr class="${rowCls}">${partCols}${typeCols}${itemCol}${sizeCols}${totalCol}${remarkCol}</tr>`;
+                                    return `<tr class="${rowCls}">${partCols}${typeCol}${itemCol}${positionsCol}${sizeCols}${totalCol}${remarkCol}</tr>`;
                                 });
                             }).join('');
                         }).join('')}
                         <tr class="bg-slate-100 font-bold">
-                            <td class="border-2 border-slate-300 px-1.5 py-1" colspan="${6 + usedSizes.length}">รวมทั้งหมด (Grand Total)</td>
+                            <td class="border-2 border-slate-300 px-1.5 py-1" colspan="${7 + usedSizes.length}">รวมทั้งหมด (Grand Total)</td>
                             <td class="border-2 border-slate-300 px-1.5 py-1 text-center">${grandTotal}</td>
                             <td class="border-2 border-slate-300 px-1.5 py-1"></td>
                         </tr>
@@ -5738,6 +5968,21 @@
             if (item.requestType === 'SupplierCutReplace') return `<span class="text-[9px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold${extraCls}">แจ้งตัดงานซ่อม (ซัพพลายเออร์)</span>`;
             return '';
         }
+        // Every document's title should say outright which of the 3 request types it is,
+        // per "ต้องการให้แสดงชื่อหัวข้อใบเอกสารเป็นประเภทที่เลือก" — unlike
+        // requestTypeBadgeHtml above (which stays blank for the default CutReplace case,
+        // since that badge was only ever meant to flag the two LESS common types), this is
+        // shown on every document regardless of type. Used consistently across the review
+        // modals (buildInfoBlock), the magnifying-glass detail view, and the print ticket —
+        // all three now share the exact same title text.
+        const REQUEST_TYPE_DOC_TITLES = {
+            CutReplace: { th: 'ใบขอตัดเปลี่ยน', en: 'Cut-Replace Request', docPrefix: 'รหัสใบขอตัดเปลี่ยน' },
+            SupplierCutReplace: { th: 'ใบแจ้งตัดงานซ่อม (ซัพพลายเออร์)', en: 'Supplier Cut-Replace Request', docPrefix: 'รหัสใบแจ้งตัดงานซ่อม (ซัพพลายเออร์)' },
+            ACCOnly: { th: 'ใบขอเบิกอุปกรณ์ ACC', en: 'ACC Requisition Request', docPrefix: 'รหัสใบเบิก ACC' },
+        };
+        function requestTypeDocTitle(item) {
+            return REQUEST_TYPE_DOC_TITLES[item.requestType] || REQUEST_TYPE_DOC_TITLES.CutReplace;
+        }
         function buildInfoBlock(item) {
             const totalQty = item.parts.reduce((sum, p) => sum + parseInt(p.qty || 0), 0);
             const totalAccQty = (item.accRequestList || []).reduce((sum, a) => sum + parseInt(a.qty || 0), 0);
@@ -5746,7 +5991,7 @@
             const requester = escapeHtml(item.requesterUser) + (userDisplayName(item.requesterUser) ? ' - ' + escapeHtml(userDisplayName(item.requesterUser)) : '');
             return `
                 ${cuttingIssueBadge(item)}
-                <div class="font-bold text-slate-800 mb-1.5">${item.requestType === 'ACCOnly' ? 'รหัสใบเบิก ACC' : 'รหัสใบสั่งซ่อม'}: ${escapeHtml(docLabel(item))} ${requestTypeBadgeHtml(item, ' align-middle')}${urgencyBadgeHtml(item)}</div>
+                <div class="font-bold text-slate-800 mb-1.5">${requestTypeDocTitle(item).docPrefix}: ${escapeHtml(docLabel(item))} ${requestTypeBadgeHtml(item, ' align-middle')}${urgencyBadgeHtml(item)}</div>
                 ${item.sourceQcRejectId ? `<div class="text-[10px] text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1 mb-1.5">✂️ สร้างอัตโนมัติจาก QC Reject ของ <b>${escapeHtml(docNoOf(item.sourceQcRejectId))}</b>${buildQcRejectChainHtml(item.sourceQcRejectId)}</div>` : ''}
                 ${item.qcCutReplace && item.qcCutReplace.resolved && item.qcCutReplace.createdRequestId ? `<div class="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-2 py-1 mb-1.5">✅ สร้างใบแจ้งตัดเปลี่ยนใหม่แล้ว: <b>${escapeHtml(docNoOf(item.qcCutReplace.createdRequestId))}</b></div>` : ''}
                 <!-- Prominent total-work summary, per "ยอดงานที่ต้องทำ ต้องการให้มีสรุป total
@@ -5795,7 +6040,7 @@
                 </div>` : ''}
                 <div class="border-t border-slate-200 pt-1.5 mt-1.5">
                     <div class="font-bold text-slate-600 mb-1">รายการชิ้นส่วนที่ต้องตรวจสอบ <span class="font-normal opacity-70">(Parts to Review)</span>:</div>
-                    <div class="overflow-x-auto">${buildPartsRatioTable(item.parts)}</div>
+                    <div class="overflow-x-auto">${buildPartsRatioTable(item.parts, item.color)}</div>
                 </div>
                 ${(item.accRequestList && item.accRequestList.length) ? `
                 <div class="border-t border-slate-200 pt-1.5 mt-1.5">
@@ -5922,6 +6167,15 @@
             if (!item) return;
             if (!canApprove(currentUser, item)) { showToast('คุณไม่มีสิทธิ์ตรวจสอบรายการนี้ (No permission to review)', 'warning'); return; }
             activeActionId = id;
+            // Embellishment/QC-originated requests are reviewed by that department's own
+            // supervisor instead of BU (see canApprove) — reflect that here so whoever's
+            // actually doing the review isn't shown a modal that always claims "BU".
+            const isDeptReview = EMB_STAGE_TYPES.includes(item.dept) || item.dept === 'QC';
+            document.getElementById('approvalModalTitle').innerText = isDeptReview ? `ตรวจสอบใบสั่งซ่อม (${item.dept})` : 'ตรวจสอบใบสั่งซ่อม (BU)';
+            document.getElementById('approvalModalSubtitle').innerText = isDeptReview ? `${item.dept} Review` : 'BU Review';
+            document.getElementById('approvalReviewerLabel').innerText = isDeptReview
+                ? `ผู้ตรวจสอบ (${item.dept}) ต้องกรอก/ยืนยันข้อมูลนี้ให้ครบก่อนจึงจะผ่านการตรวจสอบได้ *`
+                : 'ผู้ตรวจสอบ (BU) ต้องกรอก/ยืนยันข้อมูลนี้ให้ครบก่อนจึงจะผ่านการตรวจสอบได้ *';
             document.getElementById('approvalItemInfo').innerHTML = buildInfoBlock(item) + deptRemarksBlockHtml(item, 'approvalItemInfo');
             document.getElementById('approvalPO').value = item.po || '';
             document.getElementById('approvalItemField').value = item.item || '';
@@ -6132,37 +6386,24 @@
                 const alreadyCut = new Set(item.cuttingCutParts || []);
                 checklistField.classList.remove('hidden');
                 document.getElementById('mCuttingChecklist').innerHTML = buildCuttingCheckableTable(item, alreadyCut);
-                // Cutting dept chooses which ticked Embellishment stage the item goes to
-                // first — locked to only the types the Line Leader actually ticked.
-                const embTypes = applicableEmbTypes(item);
+                // Cutting dept ticks which ticked Embellishment type(s) go out NOW — types on
+                // completely different pieces can go together with nothing to wait on, per
+                // "เป็นคนละชิ้นกับปักหรือกระบวนการอื่น...สามารถส่งแยกไปดำเนินการได้โดยไม่ต้องรอ".
+                // sendableEmbTypesNow() already excludes any type still blocked behind an
+                // earlier-ordered type on the SAME piece (per "ชิ้นเดียวกันอาจจะต้องเลือกลำดับ
+                // การส่งงานก่อนหลัง" — that order is whatever was ticked first at approval).
+                const embTypes = sendableEmbTypesNow(item);
                 if (embTypes.length) {
-                    document.getElementById('mNextEmbStage').innerHTML = '<option value="">-- เลือกแผนก --</option>' +
-                        embTypes.map(t => `<option value="${t}">${EMB_LABELS[t] || t}</option>`).join('');
+                    document.getElementById('mNextEmbStageChecklist').innerHTML = embTypes.map(t => `
+                        <label class="flex items-center gap-2 text-xs bg-white border rounded-lg px-2 py-1.5">
+                            <input type="checkbox" class="mNextEmbStageCheck sq-radio" value="${t}" checked>
+                            <span class="font-bold">${EMB_LABELS[t] || t}</span>
+                        </label>`).join('');
+                    renderEmbSourceRowsForChecked();
                     nextEmbField.classList.remove('hidden');
                 } else {
                     nextEmbField.classList.add('hidden');
-                }
-                // In-house/Outsource must be confirmed for every ticked type before every
-                // send — pre-filled from whatever was set earlier (request creation or a
-                // previous confirmation), per "ต้องระบุก่อนส่งงานต่อให้แผนกถัดไปทุกครั้ง".
-                const embSourceField = document.getElementById('mEmbSourceField');
-                if (embTypes.length) {
-                    document.getElementById('mEmbSourceRows').innerHTML = embTypes.map(t => {
-                        const entry = item.parts.map(p => (p.embellishment || []).find(e => e.type === t)).find(Boolean) || {};
-                        return `
-                            <div class="flex items-center gap-2 text-xs" data-emb-source-type="${t}">
-                                <span class="w-20 font-bold shrink-0 text-[10px]">${EMB_LABELS[t] || t}</span>
-                                <select class="mEmbSourceSelect flex-1 text-xs">
-                                    <option value="">-- เลือก --</option>
-                                    <option value="inhouse" ${entry.source === 'inhouse' ? 'selected' : ''}>In-house</option>
-                                    <option value="outsource" ${entry.source === 'outsource' ? 'selected' : ''}>Outsource</option>
-                                </select>
-                                <div class="mEmbVendorWrap flex-1 flex gap-1.5 ${entry.source === 'outsource' ? '' : 'hidden'}">${vendorSelectHtml(t, entry.vendor || '', 'mEmbVendor')}</div>
-                            </div>`;
-                    }).join('');
-                    embSourceField.classList.remove('hidden');
-                } else {
-                    embSourceField.classList.add('hidden');
+                    document.getElementById('mEmbSourceField').classList.add('hidden');
                 }
             }
 
@@ -6176,6 +6417,33 @@
             document.getElementById('actionModal').classList.replace('hidden', 'flex');
         }
 
+        // In-house/Outsource must be confirmed for every type actually being sent NOW (not
+        // every applicable type) — regenerated whenever the checklist above changes, per
+        // "ต้องระบุก่อนส่งงานต่อให้แผนกถัดไปทุกครั้ง".
+        function renderEmbSourceRowsForChecked() {
+            const item = repairs.find(r => r.id === activeActionId);
+            if (!item) return;
+            const checked = Array.from(document.querySelectorAll('.mNextEmbStageCheck:checked')).map(cb => cb.value);
+            const embSourceField = document.getElementById('mEmbSourceField');
+            if (!checked.length) { embSourceField.classList.add('hidden'); return; }
+            document.getElementById('mEmbSourceRows').innerHTML = checked.map(t => {
+                const entry = item.parts.map(p => (p.embellishment || []).find(e => e.type === t)).find(Boolean) || {};
+                return `
+                    <div class="flex items-center gap-2 text-xs" data-emb-source-type="${t}">
+                        <span class="w-20 font-bold shrink-0 text-[10px]">${EMB_LABELS[t] || t}</span>
+                        <select class="mEmbSourceSelect flex-1 text-xs">
+                            <option value="">-- เลือก --</option>
+                            <option value="inhouse" ${entry.source === 'inhouse' ? 'selected' : ''}>In-house</option>
+                            <option value="outsource" ${entry.source === 'outsource' ? 'selected' : ''}>Outsource</option>
+                        </select>
+                        <div class="mEmbVendorWrap flex-1 flex gap-1.5 ${entry.source === 'outsource' ? '' : 'hidden'}">${vendorSelectHtml(t, entry.vendor || '', 'mEmbVendor')}</div>
+                    </div>`;
+            }).join('');
+            embSourceField.classList.remove('hidden');
+        }
+        document.getElementById('mNextEmbStageChecklist').addEventListener('change', (e) => {
+            if (e.target.classList.contains('mNextEmbStageCheck')) renderEmbSourceRowsForChecked();
+        });
         document.getElementById('mEmbSourceRows').addEventListener('change', (e) => {
             if (e.target.classList.contains('mEmbSourceSelect')) {
                 const row = e.target.closest('[data-emb-source-type]');
@@ -6440,13 +6708,17 @@
             } else {
                 const finishDate = document.getElementById('mFinishDate').value;
                 if (!finishDate) { showToast('กรุณาระบุวันที่ตัดงานเสร็จ (Please specify the cutting-done date)', 'warning'); return; }
-                const embTypes = applicableEmbTypes(repairs[idx]);
-                let nextEmbStage = null;
-                if (embTypes.length) {
-                    nextEmbStage = document.getElementById('mNextEmbStage').value;
-                    if (!nextEmbStage) { showToast('กรุณาเลือกแผนก Embellishment ที่จะส่งต่อก่อน (Please choose the first Embellishment stage)', 'warning'); return; }
+                // Cutting ticks as many sendable types at once as it wants — types on
+                // disjoint pieces go out together, per "เป็นคนละชิ้น...สามารถส่งแยกไปดำเนินการ
+                // ได้โดยไม่ต้องรอ". sendableEmbTypesNow() already excludes anything still
+                // blocked behind an earlier-ordered type sharing a piece.
+                const sendableTypes = sendableEmbTypesNow(repairs[idx]);
+                let nextEmbStages = [];
+                if (sendableTypes.length) {
+                    nextEmbStages = Array.from(document.querySelectorAll('.mNextEmbStageCheck:checked')).map(cb => cb.value);
+                    if (!nextEmbStages.length) { showToast('กรุณาเลือกแผนก Embellishment ที่จะส่งต่อก่อน (Please choose at least one Embellishment stage to send)', 'warning'); return; }
                     // In-house/Outsource must be confirmed (with vendor name if outsource) for
-                    // every ticked type before every send — checked fresh each time, not just once.
+                    // every type being sent now — checked fresh each time, not just once.
                     const sourceByType = {};
                     for (const row of document.querySelectorAll('#mEmbSourceRows [data-emb-source-type]')) {
                         const t = row.dataset.embSourceType;
@@ -6477,12 +6749,16 @@
                 repairs[idx].cuttingSend = { by: currentUser.username, name: currentUser.name, attachment, ts, finishDate };
                 pushStatusHistory(repairs[idx]);
                 repairs[idx].status = 'CuttingSent';
-                repairs[idx].currentEmbStage = nextEmbStage;
+                // activeDeptTypes replaces the old single currentEmbStage — every type ticked
+                // here starts working AT ONCE (see the per-type gating helpers below), instead
+                // of the whole record being locked to just one type at a time.
+                repairs[idx].activeDeptTypes = nextEmbStages;
+                repairs[idx].currentEmbStage = nextEmbStages[0] || null; // kept for legacy display/CSV compat only
                 // ACC may have already finished earlier (it runs independently from FM
                 // approval) — if so, and no embellishment/QC applies either, skip straight
                 // to Supermarket instead of sitting at 'CuttingSent' with nothing left to do.
                 checkAdvanceToSupermarket(repairs[idx]);
-                logAction('CuttingSend', repairs[idx].id, `${currentUser.name} ตัดเสร็จ${nextEmbStage ? ' → ส่งต่อ ' + (EMB_LABELS[nextEmbStage] || nextEmbStage) : ''}${pendingPartKeys.length ? ` — คงค้างตัด ${pendingPartKeys.length} รายการ` : ''}`);
+                logAction('CuttingSend', repairs[idx].id, `${currentUser.name} ตัดเสร็จ${nextEmbStages.length ? ' → ส่งต่อ ' + nextEmbStages.map(t => EMB_LABELS[t] || t).join(', ') : ''}${pendingPartKeys.length ? ` — คงค้างตัด ${pendingPartKeys.length} รายการ` : ''}`);
                 showToast(pendingPartKeys.length ? `บันทึกตัดเสร็จเรียบร้อย — คงค้างอีก ${pendingPartKeys.length} รายการ (Some items still pending)` : 'บันทึกตัดเสร็จเรียบร้อย (Cutting done saved)', pendingPartKeys.length ? 'warning' : 'success');
             }
 
@@ -6538,10 +6814,10 @@
         // job only counts against a vendor while that vendor's work is actually the live stage.
         function itemOutsourceVendors(item) {
             const vendors = new Set();
-            const t = item.currentEmbStage;
-            if (!t || !EMB_STAGE_TYPES.includes(t)) return vendors;
+            const activeTypes = item.activeDeptTypes || [];
+            if (!activeTypes.length) return vendors;
             (item.parts || []).forEach(p => (p.embellishment || []).forEach(e => {
-                if (e.type === t && e.source === 'outsource') vendors.add(e.vendor && e.vendor.trim() ? e.vendor.trim() : 'ไม่ระบุ Vendor');
+                if (activeTypes.includes(e.type) && e.source === 'outsource') vendors.add(e.vendor && e.vendor.trim() ? e.vendor.trim() : 'ไม่ระบุ Vendor');
             }));
             return vendors;
         }
@@ -6559,13 +6835,59 @@
         function remainingEmbTypes(item) {
             return applicableEmbTypes(item).filter(t => !embTypeDone(item, t));
         }
+        // Backfills activeDeptTypes/qcPendingTypes (added for parallel split-shipping
+        // dispatch) onto any record saved BEFORE that change shipped. The main table's
+        // "next department" action buttons at CuttingSent now read ONLY these two arrays —
+        // a record with neither ever set (undefined, not even an empty array) would show no
+        // buttons for ANY user, silently stranding it despite its own status pill still
+        // reading "ตัดเสร็จ รอเริ่มงานต่อ" (cut complete, next dept still expected to act).
+        // Runs once per record right after it's loaded from the sheet — cheap, and safe to
+        // call repeatedly since it's a no-op once both arrays already exist.
+        function migrateLegacyEmbFields(r) {
+            if (Array.isArray(r.activeDeptTypes) && Array.isArray(r.qcPendingTypes)) return;
+            r.activeDeptTypes = Array.isArray(r.activeDeptTypes) ? r.activeDeptTypes : [];
+            r.qcPendingTypes = Array.isArray(r.qcPendingTypes) ? r.qcPendingTypes : [];
+            if (!r.currentEmbStage) return;
+            if (r.currentEmbStage === 'QC') {
+                // The legacy single-shared qcInspection object only ever tracked ONE visit at
+                // a time — currentType is that visit's type; if even that's missing (a record
+                // that reached QC before per-type tracking existed at all), fall back to
+                // whichever ticked type hasn't been sent yet.
+                const t = (r.qcInspection && r.qcInspection.currentType) || remainingEmbTypes(r)[0];
+                if (t && !r.qcPendingTypes.includes(t)) r.qcPendingTypes.push(t);
+            } else if (EMB_STAGE_TYPES.includes(r.currentEmbStage) && !embTypeDone(r, r.currentEmbStage)) {
+                if (!r.activeDeptTypes.includes(r.currentEmbStage)) r.activeDeptTypes.push(r.currentEmbStage);
+            }
+        }
+        function migrateRepairsData(list) {
+            (list || []).forEach(migrateLegacyEmbFields);
+            return list;
+        }
+        // Which of the still-remaining types can actually be SENT OUT right now — a type is
+        // blocked if any part it's ticked on ALSO has an earlier-ordered (per that part's own
+        // embellishment[] tick order, set at BU approval) type that's still remaining, since a
+        // single physical piece can't be worked by two departments out of order. Types on
+        // completely disjoint pieces are never blocked by each other, per "เป็นคนละชิ้น...
+        // สามารถส่งแยกไปดำเนินการได้โดยไม่ต้องรอ ยกเว้นกรณีชิ้นเดียวกัน...เลือกลำดับการส่งงาน".
+        function sendableEmbTypesNow(item) {
+            const remaining = remainingEmbTypes(item);
+            return remaining.filter(t => {
+                const partsForT = item.parts.filter(p => (p.embellishment || []).some(e => e.type === t));
+                return partsForT.every(p => {
+                    const order = (p.embellishment || []).map(e => e.type);
+                    const idxT = order.indexOf(t);
+                    return !order.slice(0, idxT).some(earlier => remaining.includes(earlier));
+                });
+            });
+        }
         // Which type(s) THIS QC visit actually concerns — normally just the one type whose
         // own department just sent it here. Falls back to every applicable type only for a
         // legacy record that reached 'QC' before this per-type rework and so never got a
         // currentType recorded — without this fallback such a record would silently vanish
         // from every per-type QC bucket (still counted in the aggregate one) instead of
         // showing up somewhere sensible.
-        function qcInspectTypes(item) {
+        function qcInspectTypes(item, qcType) {
+            if (qcType) return [qcType];
             const t = item.qcInspection && item.qcInspection.currentType;
             return t ? [t] : applicableEmbTypes(item);
         }
@@ -6609,7 +6931,13 @@
             return !!item.cuttingSend && embellishmentChainDone(item);
         }
         function checkAdvanceToSupermarket(item) {
-            const accDone = !!item.accSend;
+            // BUG FIX: a record with no ACC requisition and no embellishment at all
+            // (hasAccContent false) never gets an accSend — ACC's own receive/send buttons
+            // never even appear for it — so this was requiring a field that could never be
+            // set, leaving every such plain cut-replace record stuck at CuttingSent forever
+            // with no further action possible anywhere in the UI. ACC's track now also
+            // counts as done when it was never applicable in the first place.
+            const accDone = !!item.accSend || !hasAccContent(item);
             if (mainPipelineDone(item) && accDone) {
                 pushStatusHistory(item);
                 if (item.requestType === 'ACCOnly') {
@@ -6741,10 +7069,11 @@
                 // post-cutting department (ACC or any other ticked Embellishment type) instead,
                 // resetting that department's own progress so it has to redo its part.
                 if (mode !== 'send') return '';
+                const returnQcType = forcedStage.startsWith('qc:') ? forcedStage.split(':')[1] : null;
                 const label = forcedStage === 'acc' ? (PARALLEL_STAGE_TITLE.acc || 'ACC')
-                    : forcedStage === 'qc' ? 'QC'
+                    : (forcedStage === 'qc' || returnQcType) ? `QC${returnQcType ? ' (' + (EMB_LABELS[returnQcType] || returnQcType) + ')' : ''}`
                     : (EMB_LABELS[forcedStage] || forcedStage);
-                const kickbackTargets = ['acc', ...applicableEmbTypes(item)].filter(s => s !== forcedStage);
+                const kickbackTargets = ['acc', ...applicableEmbTypes(item)].filter(s => s !== forcedStage && s !== returnQcType);
                 const targetLabel = (s) => s === 'acc' ? (PARALLEL_STAGE_TITLE.acc || 'ACC') : (EMB_LABELS[s] || s);
                 return `
                     <div class="border-t pt-3 mt-1">
@@ -6794,12 +7123,15 @@
             if (forcedStage) {
                 if (mode !== 'send') return;
                 let label;
+                const returnQcType = stageActionInfo.qcType;
                 if (forcedStage === 'acc') {
                     label = PARALLEL_STAGE_TITLE.acc || 'ACC';
                     item.accReceive = null;
-                } else if (forcedStage === 'qc') {
-                    label = 'QC';
-                    item.qcInspection = { ...(item.qcInspection || {}), receive: null };
+                } else if (forcedStage === 'qc' || forcedStage.startsWith('qc:')) {
+                    label = `QC${returnQcType ? ' (' + (EMB_LABELS[returnQcType] || returnQcType) + ')' : ''}`;
+                    if (returnQcType && item.qcInspection && item.qcInspection.visits && item.qcInspection.visits[returnQcType]) {
+                        item.qcInspection.visits[returnQcType] = { ...item.qcInspection.visits[returnQcType], receive: null };
+                    }
                 } else {
                     label = EMB_LABELS[forcedStage] || forcedStage;
                     if (item.embStages && item.embStages[forcedStage]) item.embStages[forcedStage].receive = null;
@@ -6817,7 +7149,9 @@
                     } else {
                         item.embStages = item.embStages || {};
                         item.embStages[target] = { ...(item.embStages[target] || {}), receive: null, send: null };
-                        item.currentEmbStage = target;
+                        item.qcPendingTypes = (item.qcPendingTypes || []).filter(t => t !== target);
+                        item.activeDeptTypes = [...new Set([...(item.activeDeptTypes || []), target])];
+                        item.currentEmbStage = item.activeDeptTypes[0] || (item.qcPendingTypes.length ? 'QC' : null);
                     }
                     // This track doesn't change item.status (ACC/embellishment run in parallel
                     // to it) — kickbackPendingBadgeHtml() handles this "to" shape by checking
@@ -6864,20 +7198,21 @@
             if (item.accSend && !item.supermarketReceive) {
                 tracks.push({ key: 'acc', label: 'ACC — ยกเลิกการส่งต่อล่าสุด' });
             }
-            if (item.currentEmbStage === 'QC') {
-                const lastType = item.qcInspection && item.qcInspection.currentType;
-                if (lastType && !(item.qcInspection && item.qcInspection.receive)) {
-                    tracks.push({ key: 'emb:' + lastType, label: `${EMB_LABELS[lastType] || lastType} — ยกเลิกการส่งต่อล่าสุด` });
+            // Several types can be active at their own dept or waiting at QC in parallel now —
+            // offer an independent undo track per type instead of assuming a single "current" one.
+            const undoVisits = (item.qcInspection && item.qcInspection.visits) || {};
+            (item.qcPendingTypes || []).forEach(t => {
+                const visit = undoVisits[t];
+                if (!(visit && visit.receive)) {
+                    tracks.push({ key: 'emb:' + t, label: `${EMB_LABELS[t] || t} — ยกเลิกการส่งต่อล่าสุด` });
                 }
-            } else if (item.currentEmbStage && EMB_STAGE_TYPES.includes(item.currentEmbStage)) {
-                const lastType = [...EMB_STAGE_TYPES].reverse().find(t => t !== item.currentEmbStage && item.embStages && item.embStages[t] && item.embStages[t].send);
-                const nextSt = item.embStages && item.embStages[item.currentEmbStage];
-                if (lastType && !(nextSt && nextSt.receive)) {
-                    tracks.push({ key: 'emb:' + lastType, label: `${EMB_LABELS[lastType] || lastType} — ยกเลิกการส่งต่อล่าสุด` });
-                }
-            }
-            if (item.qcInspection && item.qcInspection.send && !item.supermarketReceive) {
-                tracks.push({ key: 'qc', label: 'QC — ยกเลิกการบันทึกผลตรวจล่าสุด' });
+            });
+            if (!item.supermarketReceive) {
+                Object.entries(undoVisits).forEach(([t, visit]) => {
+                    if (visit && visit.send) {
+                        tracks.push({ key: 'qc:' + t, label: `QC (${EMB_LABELS[t] || t}) — ยกเลิกการบันทึกผลตรวจล่าสุด` });
+                    }
+                });
             }
             return tracks;
         }
@@ -6908,27 +7243,34 @@
             } else if (key === 'acc') {
                 logAction('AdminUndo', item.id, `${currentUser.name} (Admin) ยกเลิกการส่งต่อล่าสุดของ ACC`);
                 item.accSend = null;
-            } else if (key === 'qc') {
-                // The type QC just decided is whatever qcInspection.currentType still says —
-                // it isn't touched again until the NEXT type's own department sends and opens
-                // a fresh visit, so it still points at the one being undone here.
-                const lastType = item.qcInspection && item.qcInspection.currentType;
-                logAction('AdminUndo', item.id, `${currentUser.name} (Admin) ยกเลิกการบันทึกผลตรวจล่าสุดของ QC${lastType ? ' (' + (EMB_LABELS[lastType] || lastType) + ')' : ''}`);
+            } else if (key && key.startsWith('qc:')) {
+                const type = key.slice('qc:'.length);
+                logAction('AdminUndo', item.id, `${currentUser.name} (Admin) ยกเลิกการบันทึกผลตรวจล่าสุดของ QC (${EMB_LABELS[type] || type})`);
                 const perType = { ...((item.qcInspection && item.qcInspection.perType) || {}) };
-                if (lastType) delete perType[lastType];
-                item.qcInspection = { ...(item.qcInspection || {}), perType, send: null };
-                item.currentEmbStage = 'QC';
+                delete perType[type];
+                const visits = { ...((item.qcInspection && item.qcInspection.visits) || {}) };
+                if (visits[type]) visits[type] = { ...visits[type], send: null };
+                item.qcInspection = { ...(item.qcInspection || {}), perType, visits };
+                // Decided types drop out of qcPendingTypes once done — put this one back so
+                // QC's own action buttons for it reappear.
+                item.qcPendingTypes = [...new Set([...(item.qcPendingTypes || []), type])];
+                item.currentEmbStage = (item.activeDeptTypes || [])[0] || (item.qcPendingTypes.length ? 'QC' : null);
             } else if (key && key.startsWith('emb:')) {
                 const type = key.slice('emb:'.length);
                 logAction('AdminUndo', item.id, `${currentUser.name} (Admin) ยกเลิกการส่งต่อล่าสุดของ ${EMB_LABELS[type] || type}`);
                 item.embStages[type] = { ...(item.embStages[type] || {}), send: null };
-                item.currentEmbStage = type;
-                // Clear any QC decision already recorded for this type too, since undoing
-                // the send means it hasn't actually passed QC anymore.
-                if (item.qcInspection && item.qcInspection.perType && item.qcInspection.perType[type]) {
-                    const perType = { ...item.qcInspection.perType };
+                // Hand it back from QC's queue to its own department's queue.
+                item.qcPendingTypes = (item.qcPendingTypes || []).filter(t => t !== type);
+                item.activeDeptTypes = [...new Set([...(item.activeDeptTypes || []), type])];
+                item.currentEmbStage = item.activeDeptTypes[0] || (item.qcPendingTypes.length ? 'QC' : null);
+                // Clear any QC visit/decision already recorded for this type too, since undoing
+                // the send means it hasn't actually reached (let alone passed) QC anymore.
+                if (item.qcInspection) {
+                    const visits = { ...(item.qcInspection.visits || {}) };
+                    delete visits[type];
+                    const perType = { ...(item.qcInspection.perType || {}) };
                     delete perType[type];
-                    item.qcInspection = { ...item.qcInspection, perType };
+                    item.qcInspection = { ...item.qcInspection, visits, perType };
                 }
             } else {
                 return;
@@ -6942,7 +7284,13 @@
         // Groups this item's parts by (name, part-letter) for whichever embellishment
         // type(s) are passed in, showing the department exactly what to work on — quantity
         // and the specific Items the Line Leader listed — instead of just a bare count.
-        function embWorkSummaryHtml(item, types) {
+        // repairQty (optional): when this is a QC repair-kickback round, QC only ever records
+        // ONE total qty for the whole type (see the QC decision split), never a per-part
+        // breakdown — so the exact qty is only safely attributable back to a single part
+        // group. With more than one part group ticked for this type, showing the repair qty
+        // against any one of them would be a guess, so the full original qty is kept instead
+        // (the repair-kickback banner above this table already states the true total).
+        function embWorkSummaryHtml(item, types, repairQty) {
             const relevant = item.parts.filter(p => (p.embellishment || []).some(e => types.includes(e.type)));
             if (!relevant.length) return '';
             const groups = {};
@@ -6954,6 +7302,8 @@
                     if (!groups[key].entries.some(x => x.type === e.type)) groups[key].entries.push(e);
                 });
             });
+            const scopedToRepair = (repairQty != null) && Object.keys(groups).length === 1;
+            if (scopedToRepair) Object.values(groups)[0].qty = repairQty;
             // One row per embellishment POSITION, not one combined row per part — a part with
             // 3 positions of the same type gets 3 separate lines, per "ให้แตกรายการมาคนละ
             // บรรทัด". ชิ้นส่วน spans every row of that part, and ประเภท/จำนวนตำแหน่ง span every
@@ -6987,9 +7337,12 @@
                     });
                 });
             }).join('');
+            const summaryTitle = scopedToRepair
+                ? `ยอดที่ต้องซ่อม <span class="font-normal normal-case opacity-70">(Repair Qty Only — scoped to this kickback)</span>`
+                : `ยอดงานที่ต้องทำ <span class="font-normal normal-case opacity-70">(Work Summary)</span>`;
             return `
                 <div class="border-t pt-3">
-                    <p class="text-[10px] font-black text-slate-500 uppercase mb-1">ยอดงานที่ต้องทำ <span class="font-normal normal-case opacity-70">(Work Summary)</span></p>
+                    <p class="text-[10px] font-black ${scopedToRepair ? 'text-amber-600' : 'text-slate-500'} uppercase mb-1">${summaryTitle}</p>
                     <table class="w-full text-[10px] border-collapse">
                         <thead><tr class="bg-slate-100"><th class="border-2 border-slate-300 px-1.5 py-1 text-left">ชิ้นส่วน <span class="font-normal opacity-70">(Part)</span></th><th class="border-2 border-slate-300 px-1.5 py-1">จำนวน <span class="font-normal opacity-70">(Qty)</span></th><th class="border-2 border-slate-300 px-1.5 py-1 text-left">ประเภท <span class="font-normal opacity-70">(Type)</span></th><th class="border-2 border-slate-300 px-1.5 py-1 w-12">จำนวนตำแหน่ง <span class="font-normal opacity-70">(Pos.)</span></th><th class="border-2 border-slate-300 px-1.5 py-1 text-left">Item</th></tr></thead>
                         <tbody>${rows}</tbody>
@@ -7575,17 +7928,19 @@
             qcCutReplaceActiveId = id;
             document.getElementById('qcCutReplaceInfo').innerHTML = buildInfoBlock(item);
             const qi = item.qcInspection || {};
+            const qiVisits = qi.visits || {};
             const types = item.qcCutReplace.types || [];
-            const defectCodes = qi.defectCodes || [];
             document.getElementById('qcCutReplaceRows').innerHTML = types.map(t => {
                 const matchingParts = item.parts.filter(p => (p.embellishment || []).some(e => e.type === t));
                 const totalQty = matchingParts.reduce((s, p) => s + parseInt(p.qty || 0), 0);
-                // Defect qty only reliably matches THIS type when it's the one QC most
-                // recently inspected — qcInspection only keeps the latest visit's raw defect
-                // detail (see the per-type QC rework's known limitation), so for any other
-                // (earlier) rejected type here, fall back to that type's own part quantity.
-                const defectQtyForType = (t === qi.currentType) ? defectCodes.reduce((s, d) => s + (parseInt(d.qty) || 0), 0) : 0;
-                const suggestedQty = defectQtyForType || qi.defectQty || totalQty || 1;
+                // Each type now has its own independent visit, so its own defect detail is
+                // always available here regardless of which type QC inspected most recently.
+                // Legacy records without a per-type visit fall back to the single shared
+                // object (only correct for whichever type was current at the time).
+                const visitForType = qiVisits[t] || ((t === qi.currentType) ? qi : null);
+                const defectCodesForType = (visitForType && visitForType.defectCodes) || [];
+                const defectQtyForType = defectCodesForType.reduce((s, d) => s + (parseInt(d.qty) || 0), 0);
+                const suggestedQty = defectQtyForType || (visitForType && visitForType.defectQty) || totalQty || 1;
                 const partNames = [...new Set(matchingParts.map(p => PART_NAME_LABELS[p.name] || p.name))].join(', ') || '-';
                 // Shown so QC can see up front which request type this will become, per
                 // "ต้องการให้ใช้เป็นแจ้งตัดงานซ่อม (ซัพพลายเออร์)" for outsource-caused defects.
@@ -7600,7 +7955,7 @@
                         <div class="text-[10px] font-bold text-slate-700">${escapeHtml(EMB_LABELS[t] || t)} <span class="font-normal text-slate-400">— ชิ้นส่วนที่เกี่ยวข้อง: ${escapeHtml(partNames)}</span></div>
                         ${sourceBadge}
                     </div>
-                    ${defectCodes.length && t === qi.currentType ? `<div class="text-[9px] text-slate-500 mb-1">Defect ที่พบ: ${defectCodes.map(d => `${escapeHtml(d.code)} (${d.qty || 1})`).join(', ')}</div>` : ''}
+                    ${defectCodesForType.length ? `<div class="text-[9px] text-slate-500 mb-1">Defect ที่พบ: ${defectCodesForType.map(d => `${escapeHtml(d.code)} (${d.qty || 1})`).join(', ')}</div>` : ''}
                     <label class="text-[9px] font-bold text-red-600 block mb-1">จำนวนที่จะตัดเปลี่ยนใหม่ <span class="opacity-70">(Qty to cut-replace)</span> *</label>
                     <input type="number" min="1" class="cutReplaceQty w-full text-xs" value="${suggestedQty}">
                 </div>`;
@@ -7675,7 +8030,7 @@
             showToast('บันทึกว่าแจ้ง Vendor เรียบร้อยแล้ว (Vendor notice resolved)', 'success');
         }
 
-        function stageExtraFieldsHtml(stage, mode, item) {
+        function stageExtraFieldsHtml(stage, mode, item, qcType) {
             if (EMB_STAGE_TYPES.includes(stage)) {
                 const repairReq = item.qcRepairRequests && item.qcRepairRequests[stage];
                 const repairBanner = repairReq ? `
@@ -7683,15 +8038,15 @@
                         ⚠️ QC ตีกลับให้ซ่อม <b>${repairReq.qty} ชิ้น</b> ${repairReq.roundNo > 1 ? `(รอบที่ ${repairReq.roundNo})` : ''}${repairReq.reason ? ' — ' + escapeHtml(repairReq.reason) : ''}
                         <span class="block text-[10px] opacity-70">Sent back by QC for repair — ${repairReq.qty} pcs${repairReq.roundNo > 1 ? ` (round ${repairReq.roundNo})` : ''}</span>
                     </div>` : '';
-                const summary = repairBanner + embWorkSummaryHtml(item, [stage]);
+                const summary = repairBanner + embWorkSummaryHtml(item, [stage], repairReq ? repairReq.qty : null);
                 if (mode === 'receive') return summary + buildReceiveCheckTable(item, (item.embReceiveChecks || {})[stage], `ตรวจสอบรายการที่ได้รับจากแผนกตัด (${EMB_LABELS[stage] || stage})`, p => (p.embellishment || []).some(e => e.type === stage));
                 return summary + stageEmbSendFieldsHtml(stage, item);
             }
             if (stage === 'qc') {
                 // Only the one type QC is actually inspecting this visit — see qcInspectTypes.
-                const summary = embWorkSummaryHtml(item, qcInspectTypes(item));
+                const summary = embWorkSummaryHtml(item, qcInspectTypes(item, qcType));
                 if (mode === 'receive') return summary;
-                return summary + stageQcSendFieldsHtml(item);
+                return summary + stageQcSendFieldsHtml(item, qcType);
             }
             return stageExtraFieldsHtmlRest(stage, mode, item);
         }
@@ -7707,16 +8062,20 @@
             </p>`;
         }
 
-        function stageQcSendFieldsHtml(item) {
+        function stageQcSendFieldsHtml(item, qcType) {
             {
-                const qi = item.qcInspection || {};
                 // Each QC visit now inspects exactly ONE type — the one whose own department
                 // just finished and sent it here — per "ในทุกรายการ Embellishment...กำหนดให้มี
                 // QC ตรวจงานด้วยหลังจากที่มีการทำงานจบ...ในแต่ละกระบวนการ Embellishment ให้ส่ง
                 // ต่อให้ QC ส่วนนั้นดำเนินการตรวจ". Falls back to every applicable type only if
                 // an older record somehow has no currentType recorded (shouldn't happen going
                 // forward, but keeps this from rendering blank for such a record).
-                const inspectTypes = qcInspectTypes(item);
+                const inspectTypes = qcInspectTypes(item, qcType);
+                // Each type now has its own independent visit record (receivedQty/defectQty/
+                // defectCodes/notes) so two types at QC in parallel never overwrite each other —
+                // only the split decision itself (perType) stays on the shared qcInspection object.
+                const visits = (item.qcInspection && item.qcInspection.visits) || {};
+                const qi = (qcType && visits[qcType]) || item.qcInspection || {};
                 // Safety net: Cutting dept is supposed to confirm in-house/outsource for every
                 // ticked type before it ever reaches QC — but if a record still arrives here
                 // with none recorded, QC is the one who has to write it in.
@@ -7784,7 +8143,8 @@
                                 // Admin Undo always clears perType[t] before this can reopen for
                                 // the same type, so no legacy single-string decision ever needs
                                 // rendering back into this form (only into read-only history views).
-                                const savedSplit = (qi.perType && qi.perType[t] && typeof qi.perType[t] === 'object') ? qi.perType[t] : {};
+                                const perTypeAll = (item.qcInspection && item.qcInspection.perType) || {};
+                                const savedSplit = (perTypeAll[t] && typeof perTypeAll[t] === 'object') ? perTypeAll[t] : {};
                                 // A brand-new visit defaults every received unit to Pass — the
                                 // common case (nothing wrong) needs no extra typing; QC just
                                 // moves qty down into Repair/CutReplace/NotifyVendor as needed.
@@ -7965,7 +8325,7 @@
         function openStageModal(id, forcedStage) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
-            let stage, mode, perm, title;
+            let stage, mode, perm, title, qcType = null;
             if (forcedStage === 'acc') {
                 // ACC — independent parallel track; mode is derived from its own field
                 // presence rather than from a single shared status value.
@@ -7981,13 +8341,19 @@
                 mode = (st && st.receive) ? 'send' : 'receive';
                 perm = (user) => canEmbStageAct(user, stage);
                 title = mode === 'send' ? `(${EMB_LABELS[stage] || stage}) ส่งต่อ` : `รับงาน (${EMB_LABELS[stage] || stage})`;
-            } else if (forcedStage === 'qc') {
+            } else if (forcedStage === 'qc' || (forcedStage && forcedStage.startsWith('qc:'))) {
                 // QC is the mandatory final inspection gate before Supermarket, once every
-                // ticked embellishment type has been sent onward.
+                // ticked embellishment type has been sent onward. Each type sent to QC gets
+                // its OWN visit (item.qcInspection.visits[type]) — encoded as 'qc:<type>' so
+                // several types pending at QC at once (parallel dispatch from Cutting) never
+                // share/clobber one another's receive/decision data.
                 stage = 'qc';
-                mode = (item.qcInspection && item.qcInspection.receive) ? 'send' : 'receive';
+                qcType = forcedStage.includes(':') ? forcedStage.split(':')[1] : ((item.qcPendingTypes || [])[0] || null);
+                const visit = item.qcInspection && item.qcInspection.visits && item.qcInspection.visits[qcType];
+                mode = (visit && visit.receive) ? 'send' : 'receive';
                 perm = canQCAct;
-                title = mode === 'send' ? 'บันทึกผลตรวจ (QC)' : 'รับงาน (QC)';
+                const qcTypeLabel = EMB_LABELS[qcType] || qcType || '';
+                title = mode === 'send' ? `บันทึกผลตรวจ (QC — ${qcTypeLabel})` : `รับงาน (QC — ${qcTypeLabel})`;
             } else {
                 const action = STAGE_ACTIONS[item.status];
                 if (!action) { showToast('รายการนี้ไม่อยู่ในสถานะที่ดำเนินการได้ (Not in an actionable status)', 'warning'); return; }
@@ -7996,17 +8362,18 @@
             if (!perm(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
 
             activeActionId = id;
-            stageActionInfo = { stage, mode, forcedStage };
+            stageActionInfo = { stage, mode, forcedStage, qcType };
 
             document.getElementById('stageItemInfo').innerHTML = buildInfoBlock(item) + deptRemarksBlockHtml(item, 'stageItemInfo');
             document.getElementById('stageActionName').innerText = `${currentUser.name} (${currentUser.username})`;
             document.getElementById('stageModalTitle').innerText = title;
-            document.getElementById('stageExtraFields').innerHTML = stageExtraFieldsHtml(stage, mode, item) + returnStepPanelHtml(item, forcedStage, mode);
+            document.getElementById('stageExtraFields').innerHTML = stageExtraFieldsHtml(stage, mode, item, qcType) + returnStepPanelHtml(item, forcedStage, mode);
             document.getElementById('btnStageSave').innerText = mode === 'send' ? 'ส่งต่อ' : 'รับงาน';
             // QC's categorized defect picker needs its own draft list + dependent code
             // dropdown set up once the fields above actually exist in the DOM.
             if (stage === 'qc' && mode === 'send') {
-                qcDefectDraft = JSON.parse(JSON.stringify((item.qcInspection && item.qcInspection.defectCodes) || []));
+                const visitForDraft = item.qcInspection && item.qcInspection.visits && item.qcInspection.visits[qcType];
+                qcDefectDraft = JSON.parse(JSON.stringify((visitForDraft && visitForDraft.defectCodes) || []));
                 renderQcDefectCodeOptions();
                 renderQcDefectList();
                 updateAllQcSplitHints();
@@ -8036,7 +8403,7 @@
             if (idx === -1 || !stageActionInfo) return;
             if (stageActionInfo.stage === 'accFulfillmentOnly') { saveAccFulfillmentOnly(); return; }
             const item = repairs[idx];
-            const { stage, mode } = stageActionInfo;
+            const { stage, mode, qcType } = stageActionInfo;
             const ts = getLocalTime();
             const attachment = null; // attachment upload removed
 
@@ -8060,8 +8427,12 @@
                 logAction('EmbReceive', item.id, `${currentUser.name} รับงาน (${EMB_LABELS[stage] || stage})${embShort ? ` — ${embShort} รายการไม่ครบ/ไม่ได้รับ` : ' — ครบทุกรายการ'}`);
                 showToast('บันทึกการรับงานเรียบร้อย (Receipt saved)', 'success');
             } else if (mode === 'receive' && stage === 'qc') {
-                item.qcInspection = { ...(item.qcInspection || {}), receive: { by: currentUser.username, name: currentUser.name, attachment, ts } };
-                logAction('QCReceive', item.id, `${currentUser.name} รับงาน (QC)`);
+                const rcvVisits = (item.qcInspection && item.qcInspection.visits) || {};
+                item.qcInspection = {
+                    ...(item.qcInspection || {}),
+                    visits: { ...rcvVisits, [qcType]: { ...(rcvVisits[qcType] || {}), receive: { by: currentUser.username, name: currentUser.name, attachment, ts } } },
+                };
+                logAction('QCReceive', item.id, `${currentUser.name} รับงาน (QC — ${EMB_LABELS[qcType] || qcType})`);
                 showToast('บันทึกการรับงานเรียบร้อย (Receipt saved)', 'success');
             } else if (mode === 'send' && EMB_STAGE_TYPES.includes(stage)) {
                 // Every embellishment type now goes straight to QC the moment its own work
@@ -8070,18 +8441,19 @@
                 // ถัดไป" — QC decides afterward whether the NEXT ticked type (if any) or
                 // Supermarket is next, instead of this department picking ahead of QC's say.
                 item.embStages[stage] = { ...(item.embStages[stage] || {}), send: { by: currentUser.username, name: currentUser.name, attachment, ts } };
-                item.currentEmbStage = 'QC';
-                // Fresh QC visit for THIS type — carry the perType decision history forward,
-                // but reset the per-visit raw fields (receive/receivedQty/defects/notes) so
-                // they don't leak in from whichever type QC inspected previously.
+                // This type moves from "at its own dept" to "at QC" — tracked per-type in
+                // qcInspection.visits so a second type finishing (possibly in parallel, on a
+                // different piece) never clobbers this one's still-pending visit data, per the
+                // exact bug that a single shared qcInspection object used to cause.
+                item.activeDeptTypes = (item.activeDeptTypes || []).filter(t => t !== stage);
+                item.qcPendingTypes = [...new Set([...(item.qcPendingTypes || []), stage])];
+                item.currentEmbStage = item.activeDeptTypes[0] || (item.qcPendingTypes.length ? 'QC' : null); // legacy display/CSV compat only
                 item.qcInspection = {
                     ...(item.qcInspection || {}),
-                    currentType: stage,
-                    receive: null,
-                    receivedQty: null,
-                    defectQty: 0,
-                    defectCodes: [],
-                    defectNotes: '',
+                    visits: {
+                        ...((item.qcInspection && item.qcInspection.visits) || {}),
+                        [stage]: { receive: null, receivedQty: null, defectQty: 0, defectCodes: [], defectNotes: '' },
+                    },
                 };
                 logAction('EmbSend', item.id, `${currentUser.name} ส่งต่อ (${EMB_LABELS[stage] || stage}) → QC ตรวจ${EMB_LABELS[stage] || stage}`);
                 showToast('บันทึกการส่งต่อเรียบร้อย — ส่งไปให้ QC ตรวจก่อนไปขั้นตอนถัดไป (Sent to QC for inspection)', 'success');
@@ -8140,17 +8512,30 @@
                 const defectNotesVal = document.getElementById('stageQcDefectNotes').value.trim();
                 // Decisions accumulate across visits (one type inspected per visit) instead
                 // of being overwritten wholesale — each type keeps its own decision even
-                // after QC moves on to inspect the next one.
+                // after QC moves on to inspect the next one. The receive/send timestamps and
+                // received/defect qty are now kept per-type in visits[qcType] so two types at
+                // QC in parallel (different pieces) never overwrite each other's still-pending
+                // visit data.
                 const priorPerType = (item.qcInspection && item.qcInspection.perType) || {};
+                const priorVisits = (item.qcInspection && item.qcInspection.visits) || {};
+                const priorVisit = priorVisits[qcType] || {};
                 item.qcInspection = {
                     ...(item.qcInspection || {}),
-                    send: { by: currentUser.username, name: currentUser.name, attachment, ts },
-                    receivedQty: parseInt(receivedQty) || 0,
-                    defectQty: parseInt(document.getElementById('stageQcDefectQty').value) || 0,
-                    defectCodes: qcDefectDraft,
-                    defectNotes: defectNotesVal,
                     perType: { ...priorPerType, ...perTypeDecisions },
+                    visits: {
+                        ...priorVisits,
+                        [qcType]: {
+                            ...priorVisit,
+                            send: { by: currentUser.username, name: currentUser.name, attachment, ts },
+                            receivedQty: parseInt(receivedQty) || 0,
+                            defectQty: parseInt(document.getElementById('stageQcDefectQty').value) || 0,
+                            defectCodes: qcDefectDraft,
+                            defectNotes: defectNotesVal,
+                        },
+                    },
                 };
+                item.qcPendingTypes = (item.qcPendingTypes || []).filter(t => t !== qcType);
+                const visitForLog = item.qcInspection.visits[qcType];
                 // Neither "แจ้งตัดเปลี่ยน" nor "แจ้ง Vendor" ends here — QC still needs to
                 // actually go file the cut-replace request / notify the vendor, PER TYPE now.
                 // Flag each affected type as its own pending item (same design as before —
@@ -8176,26 +8561,29 @@
                 const repairTypes = Object.keys(repairQtyByType);
                 const decisionSummary = Object.entries(perTypeDecisions).map(([t, d]) => `${EMB_LABELS[t] || t}: ${qcDecisionSummaryLabel(d)}`).join(', ');
                 if (repairTypes.length) {
-                    // Kicked back to redo — reset that type's own receive/send so its
-                    // department has to work on it again, and DON'T advance to the next
-                    // ticked type yet (this one isn't actually done).
+                    // Kicked back to redo — reset that type's own receive/send and hand it
+                    // back to its own department's queue (activeDeptTypes), and DON'T advance
+                    // to any other type yet (this one isn't actually done).
                     repairTypes.forEach(t => {
                         item.embStages[t] = { receive: null, send: null };
+                        item.activeDeptTypes = [...new Set([...(item.activeDeptTypes || []), t])];
                         const priorReq = (item.qcRepairRequests && item.qcRepairRequests[t]) || null;
                         item.qcRepairRequests = { ...(item.qcRepairRequests || {}), [t]: { qty: repairQtyByType[t], reason: repairReasonByType[t], by: currentUser.username, name: currentUser.name, ts, roundNo: (priorReq ? priorReq.roundNo : 0) + 1 } };
                     });
-                    item.currentEmbStage = repairTypes[0];
-                    logAction('QCSend', item.id, `${currentUser.name} บันทึกผลตรวจ QC — ${decisionSummary} (รับ ${item.qcInspection.receivedQty} / defect ${item.qcInspection.defectQty}) → ตีกลับให้ ${repairTypes.map(t => EMB_LABELS[t] || t).join(', ')} ซ่อม`);
+                    item.currentEmbStage = item.activeDeptTypes[0] || (item.qcPendingTypes.length ? 'QC' : null); // legacy display/CSV compat only
+                    logAction('QCSend', item.id, `${currentUser.name} บันทึกผลตรวจ QC (${EMB_LABELS[qcType] || qcType}) — ${decisionSummary} (รับ ${visitForLog.receivedQty} / defect ${visitForLog.defectQty}) → ตีกลับให้ ${repairTypes.map(t => EMB_LABELS[t] || t).join(', ')} ซ่อม`);
                     showToast(`ตีกลับให้ซ่อมเรียบร้อย — ${repairTypes.map(t => `${EMB_LABELS[t] || t} (${repairQtyByType[t]} ชิ้น)`).join(', ')} (Sent back for repair)`, 'warning');
                 } else {
-                    // What's next: the next ticked type that still hasn't been sent (in fixed
-                    // EMB_STAGE_TYPES order — deterministic, no extra "pick next dept" step
-                    // needed now that QC decides), or nothing left → chain is fully done, let
-                    // the normal Cutting/ACC-parallel advancement to Supermarket take over.
-                    const nextType = remainingEmbTypes(item)[0];
-                    item.currentEmbStage = nextType || null;
+                    // This type is now fully done at QC. Any other type still waiting behind
+                    // it because it shared a piece with this one (same-piece sequencing, see
+                    // sendableEmbTypesNow) may now be unblocked — hand those straight to their
+                    // own department's queue without another trip through Cutting.
+                    const newlySendable = sendableEmbTypesNow(item).filter(t =>
+                        !(item.activeDeptTypes || []).includes(t) && !(item.qcPendingTypes || []).includes(t) && !embTypeDone(item, t));
+                    if (newlySendable.length) item.activeDeptTypes = [...new Set([...(item.activeDeptTypes || []), ...newlySendable])];
+                    item.currentEmbStage = item.activeDeptTypes[0] || (item.qcPendingTypes.length ? 'QC' : null); // legacy display/CSV compat only
                     checkAdvanceToSupermarket(item);
-                    logAction('QCSend', item.id, `${currentUser.name} บันทึกผลตรวจ QC — ${decisionSummary} (รับ ${item.qcInspection.receivedQty} / defect ${item.qcInspection.defectQty}) → ${nextType ? 'ส่งต่อ ' + (EMB_LABELS[nextType] || nextType) : 'ครบทุกประเภท ส่งต่อซุปเปอร์มาร์เก็ต'}`);
+                    logAction('QCSend', item.id, `${currentUser.name} บันทึกผลตรวจ QC (${EMB_LABELS[qcType] || qcType}) — ${decisionSummary} (รับ ${visitForLog.receivedQty} / defect ${visitForLog.defectQty}) → ${newlySendable.length ? 'ส่งต่อ ' + newlySendable.map(t => EMB_LABELS[t] || t).join(', ') : 'ไม่มีประเภทอื่นรอส่งต่อ'}`);
                     const anyRejected = cutReplaceTypes.length || notifyVendorTypes.length;
                     showToast(anyRejected ? `บันทึกผลตรวจ QC เรียบร้อย — ค้างดำเนินการ: ${[cutReplaceTypes.length ? 'ตัดเปลี่ยนใหม่' : '', notifyVendorTypes.length ? 'แจ้ง Vendor' : ''].filter(Boolean).join(', ')} (QC saved — follow-up still pending)`
                         : 'บันทึกผลตรวจ QC เรียบร้อย (QC result saved)', anyRejected ? 'warning' : 'success');
@@ -8475,8 +8863,8 @@
                 <div class="border-2 border-slate-800 p-4 rounded-xl space-y-4">
                     <div class="flex justify-between items-start border-b border-slate-200 pb-3">
                         <div>
-                            <h2 class="font-black text-base text-slate-900">Garment Repair Hub Ticket</h2>
-                            <p class="text-[10px] text-slate-500">ใบสั่งตัดซ่อมชิ้นส่วนสินค้า</p>
+                            <h2 class="font-black text-base text-slate-900">${requestTypeDocTitle(item).th} <span class="font-normal text-[10px] text-slate-400">(${requestTypeDocTitle(item).en})</span></h2>
+                            <p class="text-[10px] text-slate-500">Garment Repair Hub — ใบสั่งตัดซ่อมชิ้นส่วนสินค้า</p>
                         </div>
                         <div class="text-right">
                             <span class="font-black text-sm text-indigo-600">${escapeHtml(docLabel(item))}</span> ${requestTypeBadgeHtml(item)}${urgencyBadgeHtml(item)}
@@ -8502,56 +8890,18 @@
                     </div>
 
                     <div class="border-t pt-2">
-                        <p class="font-bold text-[11px] mb-1">รายการชิ้นส่วนที่ขอตัด:</p>
-                        <table class="w-full text-left text-[10px] border border-slate-200">
-                            <thead class="bg-slate-100">
-                                <tr>
-                                    <th class="p-1 border">ชิ้นส่วน</th>
-                                    <th class="p-1 border">ไซส์</th>
-                                    <th class="p-1 border text-center">จำนวน</th>
-                                    <th class="p-1 border text-center">มีชิ้นงานเสียแนบ</th>
-                                    <th class="p-1 border">สาเหตุ</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${item.parts.map(p => `
-                                    <tr>
-                                        <td class="p-1 border font-medium">${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}</td>
-                                        <td class="p-1 border">${escapeHtml(p.size)}</td>
-                                        <td class="p-1 border text-center font-bold">${p.qty}</td>
-                                        <td class="p-1 border text-center">${p.sample ? 'มี' : 'ไม่มี'}</td>
-                                        <td class="p-1 border">${p.reason ? escapeHtml(REASON_LABELS[p.reason] || p.reason) : '-'}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+                        <p class="font-bold text-[11px] mb-1">รายการชิ้นส่วนที่ต้องตรวจสอบ <span class="font-normal opacity-70">(Parts to Review)</span>:</p>
+                        <!-- Same table as the magnifying-glass detail view (buildPartsRatioTable)
+                             — per "ต้องการให้ทุกหน้าแสดงเหมือนกันทั้งปริ้นและรีวิวที่แว่นขยาย" —
+                             instead of this ticket's own simplified table, which was missing the
+                             fabric Item/color/Embellishment columns shown there. -->
+                        <div class="overflow-x-auto">${buildPartsRatioTable(item.parts, item.color)}</div>
                     </div>
 
                     ${(item.accRequestList && item.accRequestList.length) ? `
                     <div class="border-t pt-2">
-                        <p class="font-bold text-[11px] mb-1">รายการขอเบิก ACC เพิ่มเติม:</p>
-                        <table class="w-full text-left text-[10px] border border-slate-200">
-                            <thead class="bg-slate-100">
-                                <tr>
-                                    <th class="p-1 border">รายการ</th>
-                                    <th class="p-1 border">Item</th>
-                                    <th class="p-1 border">สี</th>
-                                    <th class="p-1 border">ไซส์</th>
-                                    <th class="p-1 border text-center">จำนวน</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${item.accRequestList.map(a => `
-                                    <tr>
-                                        <td class="p-1 border font-medium">${escapeHtml(a.label || a.key)}</td>
-                                        <td class="p-1 border">${escapeHtml(a.itemName || '-')}</td>
-                                        <td class="p-1 border">${escapeHtml(a.color || '-')}</td>
-                                        <td class="p-1 border">${escapeHtml(a.size || '-')}</td>
-                                        <td class="p-1 border text-center font-bold">${a.qty || 0}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+                        <p class="font-bold text-[11px] mb-1">รายการขอเบิก ACC เพิ่มเติม <span class="font-normal opacity-70">(Additional ACC Requisition)</span>:</p>
+                        <div class="overflow-x-auto">${buildAccRequestTable(item)}</div>
                     </div>` : ''}
 
                     ${item.remark ? `<div class="border-t pt-2 text-[11px]"><b>Remark:</b> ${escapeHtml(item.remark)}</div>` : ''}
@@ -8672,13 +9022,23 @@
                     .filter(t => item.embStages && item.embStages[t] && item.embStages[t].receive)
                     .sort((a, b) => new Date(item.embStages[a].receive.ts) - new Date(item.embStages[b].receive.ts));
                 const qi = item.qcInspection || {};
+                const qiVisits = qi.visits || {};
                 embSteps.forEach(t => {
                     steps.push(
                         { label: `${EMB_LABELS[t] || t} รับงาน`, step: item.embStages[t].receive },
                         { label: `${EMB_LABELS[t] || t} ส่งต่อ`, step: item.embStages[t].send },
                     );
-                    if (t === qi.currentType) {
-                        // The live/most-recent QC visit — real receive/send timestamps.
+                    const visit = qiVisits[t];
+                    if (visit) {
+                        // Each type now has its own independent visit — real receive/send
+                        // timestamps for exactly that type, never overwritten by another type
+                        // visiting QC in parallel on a different piece.
+                        steps.push(
+                            { label: `QC รับงาน (${EMB_LABELS[t] || t})`, step: visit.receive },
+                            { label: `QC บันทึกผลตรวจ (${EMB_LABELS[t] || t})`, step: visit.send },
+                        );
+                    } else if (t === qi.currentType) {
+                        // Legacy record from before per-type visits existed.
                         steps.push(
                             { label: `QC รับงาน (${EMB_LABELS[t] || t})`, step: qi.receive },
                             { label: `QC บันทึกผลตรวจ (${EMB_LABELS[t] || t})`, step: qi.send },
@@ -8732,6 +9092,7 @@
             document.getElementById('detailModalBody').innerHTML = `
                 <div class="flex flex-wrap justify-between items-start gap-2 border-b pb-3">
                     <div>
+                        <div class="text-[10px] font-black text-indigo-500 uppercase tracking-wide">${requestTypeDocTitle(item).th} <span class="font-normal normal-case text-slate-400">(${requestTypeDocTitle(item).en})</span></div>
                         <div class="font-black text-lg text-slate-800">${escapeHtml(docLabel(item))} <span class="status-pill ${STATUS_STYLES[item.status]} ml-1">${displayStatusLabel(item)}</span> ${requestTypeBadgeHtml(item, ' align-middle ml-1')}${urgencyBadgeHtml(item)}</div>
                         <div class="text-xs text-slate-500 mt-1">${escapeHtml(item.style)} / ${escapeHtml(item.job)} — ${escapeHtml(item.item)} (${escapeHtml(item.color)})</div>
                         <div class="text-xs text-slate-500">แผนก: ${escapeHtml(item.dept)} ${item.line !== '-' ? '| ไลน์: ' + escapeHtml(item.line) : ''} | ผู้ขอ: ${escapeHtml(item.requesterUser)}${userDisplayName(item.requesterUser) ? ' - ' + escapeHtml(userDisplayName(item.requesterUser)) : ''}</div>
@@ -8773,7 +9134,7 @@
 
                 <div>
                     <h4 class="text-xs font-black text-slate-700 uppercase mb-2">รายการชิ้นส่วน</h4>
-                    <div class="overflow-x-auto">${buildPartsRatioTable(item.parts)}</div>
+                    <div class="overflow-x-auto">${buildPartsRatioTable(item.parts, item.color)}</div>
                 </div>
 
                 ${(item.accRequestList && item.accRequestList.length) ? `
@@ -8887,15 +9248,19 @@
                 return candidates.length ? new Date(Math.max(...candidates.map(d => d.getTime()))) : cutTs;
             };
             const embStageTs = (type, field) => r => (r.embStages && r.embStages[type] && r.embStages[type][field] && r.embStages[type][field].ts) ? new Date(r.embStages[type][field].ts) : null;
-            const beforeQC = r => {
-                const cutTs = r.cuttingSend && r.cuttingSend.ts ? new Date(r.cuttingSend.ts) : null;
-                const sends = EMB_STAGE_TYPES.map(t => r.embStages && r.embStages[t] && r.embStages[t].send && r.embStages[t].send.ts).filter(Boolean).map(v => new Date(v));
-                const all = [cutTs, ...sends].filter(Boolean);
-                return all.length ? new Date(Math.max(...all.map(d => d.getTime()))) : null;
+            // Each type now has its own independent QC visit (receive/send), since several
+            // types can be at QC in parallel — so "waiting for QC" per type starts from that
+            // type's OWN department send, not a single shared "before QC" timestamp.
+            const qcVisitTs = (type, field) => r => {
+                const v = r.qcInspection && r.qcInspection.visits && r.qcInspection.visits[type];
+                return (v && v[field] && v[field].ts) ? new Date(v[field].ts) : null;
             };
             const beforeSupermarket = r => {
-                const t = (r.qcInspection && r.qcInspection.send && r.qcInspection.send.ts) || (r.accSend && r.accSend.ts);
-                return t ? new Date(t) : null;
+                const visits = (r.qcInspection && r.qcInspection.visits) || {};
+                const sendTimes = Object.values(visits).map(v => v.send && v.send.ts).filter(Boolean).map(v => new Date(v).getTime());
+                const accTs = r.accSend && r.accSend.ts ? new Date(r.accSend.ts).getTime() : null;
+                const all = [...sendTimes, accTs].filter(v => v !== null && v !== undefined);
+                return all.length ? new Date(Math.max(...all)) : null;
             };
             // type: 'downtime' = queue-wait before that dept even picked the job up (nobody
             // working on it yet); 'active' = time actually spent once received; 'mixed' = a
@@ -8921,8 +9286,10 @@
                     { label: `รอ${EMB_LABELS[t]}รับงาน`, labelEn: `Waiting for ${EMB_LABELS_EN[t]} to receive`, type: 'downtime', from: embStageFrom(t), to: embStageTs(t, 'receive') },
                     { label: `${EMB_LABELS[t]}ทำงาน → ส่งต่อ`, labelEn: `${EMB_LABELS_EN[t]} working → Forwarded`, type: 'active', from: embStageTs(t, 'receive'), to: embStageTs(t, 'send') },
                 ]),
-                { label: 'รอ QC รับงาน', labelEn: 'Waiting for QC to receive', type: 'downtime', from: beforeQC, to: r => (r.qcInspection && r.qcInspection.receive && r.qcInspection.receive.ts) ? new Date(r.qcInspection.receive.ts) : null },
-                { label: 'QC ทำงาน → บันทึกผลตรวจ', labelEn: 'QC working → Record inspection result', type: 'active', from: r => (r.qcInspection && r.qcInspection.receive && r.qcInspection.receive.ts) ? new Date(r.qcInspection.receive.ts) : null, to: r => (r.qcInspection && r.qcInspection.send && r.qcInspection.send.ts) ? new Date(r.qcInspection.send.ts) : null },
+                ...EMB_STAGE_TYPES.flatMap(t => [
+                    { label: `รอ QC รับงาน (${EMB_LABELS[t]})`, labelEn: `Waiting for QC to receive (${EMB_LABELS_EN[t]})`, type: 'downtime', from: embStageTs(t, 'send'), to: qcVisitTs(t, 'receive') },
+                    { label: `QC ทำงาน → บันทึกผลตรวจ (${EMB_LABELS[t]})`, labelEn: `QC working → Record inspection result (${EMB_LABELS_EN[t]})`, type: 'active', from: qcVisitTs(t, 'receive'), to: qcVisitTs(t, 'send') },
+                ]),
                 { label: 'รอซุปเปอร์มาร์เก็ตรับงาน', labelEn: 'Waiting for Supermarket to receive', type: 'downtime', from: beforeSupermarket, to: ts('supermarketReceive.ts') },
                 { label: 'ซุปเปอร์มาร์เก็ตทำงาน → ส่งเข้าไลน์', labelEn: 'Supermarket working → Sent to line', type: 'active', from: ts('supermarketReceive.ts'), to: ts('supermarketSend.ts') },
                 { label: 'รอต้นทางรับงาน', labelEn: 'Waiting for origin dept to receive', type: 'downtime', from: ts('supermarketSend.ts'), to: ts('originReceive.ts') },
@@ -9054,6 +9421,97 @@
             }
         }
 
+        // Vendor(s) an embellishment entry actually used, keyed by type — separate from
+        // itemOutsourceVendors() (which only looks at the currently-active type) since this
+        // needs every type/vendor pairing on the item regardless of pipeline stage, for
+        // historical reporting across all records.
+        function embVendorsByType(item, type) {
+            return [...new Set(item.parts.flatMap(p => (p.embellishment || [])
+                .filter(e => e.type === type && e.source === 'outsource' && e.vendor && e.vendor.trim())
+                .map(e => e.vendor.trim())))];
+        }
+        // How long each outsource vendor actually takes — from that embellishment type's own
+        // department receiving the batch (i.e. sending it out to the vendor) to it sending
+        // the finished work onward, averaged in business hours. A vendor doing more than one
+        // type on the same record counts once per type it actually touched.
+        function renderVendorLeadtime() {
+            const tbody = document.getElementById('vendorLeadtimeBody');
+            if (!tbody) return;
+            const vendorStats = {};
+            repairs.forEach(r => {
+                EMB_STAGE_TYPES.forEach(t => {
+                    const stage = r.embStages && r.embStages[t];
+                    const receiveTs = stage && stage.receive && stage.receive.ts;
+                    const sendTs = stage && stage.send && stage.send.ts;
+                    if (!receiveTs || !sendTs) return;
+                    const hours = businessHoursBetween(new Date(receiveTs), new Date(sendTs));
+                    if (hours < 0) return;
+                    embVendorsByType(r, t).forEach(vendor => {
+                        const s = vendorStats[vendor] = vendorStats[vendor] || { count: 0, totalHours: 0, types: new Set() };
+                        s.count++; s.totalHours += hours; s.types.add(t);
+                    });
+                });
+            });
+            const rowsArr = Object.entries(vendorStats).map(([vendor, s]) => ({
+                vendor, count: s.count, avgHours: s.totalHours / s.count,
+                types: [...s.types].map(t => EMB_LABELS[t] || t).join(', '),
+            })).sort((a, b) => b.avgHours - a.avgHours);
+            tbody.innerHTML = rowsArr.length ? rowsArr.map(r => `
+                <tr class="border-b border-slate-100">
+                    <td class="py-2 px-3 font-bold text-slate-700">${escapeHtml(r.vendor)}</td>
+                    <td class="py-2 px-3 text-slate-500 text-[10px]">${escapeHtml(r.types)}</td>
+                    <td class="py-2 px-3 text-center text-slate-600">${r.count}</td>
+                    <td class="py-2 px-3 text-center font-semibold text-indigo-700">${formatBusinessDuration(r.avgHours)}</td>
+                </tr>`).join('') : `<tr><td colspan="4" class="py-4 text-center text-slate-400">ยังไม่มีข้อมูล Outsource</td></tr>`;
+        }
+        // Aggregates every QC per-type decision split across all records into repair/reject
+        // rates, grouped by embellishment type and (separately) by outsource vendor.
+        function repairRateStats() {
+            const typeStats = {}, vendorStats = {};
+            repairs.forEach(r => {
+                const perType = r.qcInspection && r.qcInspection.perType;
+                if (!perType) return;
+                Object.entries(perType).forEach(([t, d]) => {
+                    if (!d || typeof d !== 'object') return; // legacy plain-string decisions carry no qty to aggregate
+                    const total = (d.Pass || 0) + (d.Repair || 0) + (d.CutReplace || 0) + (d.NotifyVendor || 0);
+                    if (!total) return;
+                    const reject = (d.Repair || 0) + (d.CutReplace || 0) + (d.NotifyVendor || 0);
+                    const bump = (bucket, key) => {
+                        const s = bucket[key] = bucket[key] || { total: 0, repair: 0, reject: 0 };
+                        s.total += total; s.repair += (d.Repair || 0); s.reject += reject;
+                    };
+                    bump(typeStats, t);
+                    // Vendor attribution only when this type used exactly one vendor on this
+                    // item — same limitation as the repair-qty display fix (#21): the QC
+                    // decision qty is recorded per TYPE, not per part/vendor, so splitting it
+                    // across more than one vendor would be a guess.
+                    const vendors = embVendorsByType(r, t);
+                    if (vendors.length === 1) bump(vendorStats, vendors[0]);
+                });
+            });
+            return { typeStats, vendorStats };
+        }
+        function renderRepairRate() {
+            const typeBody = document.getElementById('repairRateByTypeBody');
+            const vendorBody = document.getElementById('repairRateByVendorBody');
+            if (!typeBody || !vendorBody) return;
+            const { typeStats, vendorStats } = repairRateStats();
+            const toRows = (stats, labelOf) => Object.entries(stats).map(([key, s]) => ({
+                label: labelOf(key), total: s.total,
+                repairPct: s.total ? (s.repair / s.total * 100) : 0,
+                rejectPct: s.total ? (s.reject / s.total * 100) : 0,
+            })).sort((a, b) => b.rejectPct - a.rejectPct);
+            const renderRows = rows => rows.length ? rows.map(r => `
+                <tr class="border-b border-slate-100">
+                    <td class="py-2 px-3 font-bold text-slate-700">${escapeHtml(r.label)}</td>
+                    <td class="py-2 px-3 text-center text-slate-600">${r.total}</td>
+                    <td class="py-2 px-3 text-center font-semibold text-amber-600">${r.repairPct.toFixed(1)}%</td>
+                    <td class="py-2 px-3 text-center font-semibold text-rose-600">${r.rejectPct.toFixed(1)}%</td>
+                </tr>`).join('') : `<tr><td colspan="4" class="py-4 text-center text-slate-400">ยังไม่มีข้อมูล</td></tr>`;
+            typeBody.innerHTML = renderRows(toRows(typeStats, t => EMB_LABELS[t] || t));
+            vendorBody.innerHTML = renderRows(toRows(vendorStats, v => v));
+        }
+
         function renderCharts() {
             let totalPcs = 0;
             let deptMap = {}, reasonMap = {}, lineMap = {};
@@ -9083,7 +9541,7 @@
             document.getElementById('anaAlertCount').innerText = repairs.filter(r => !r.archived && alertInfo(r)).length;
             document.getElementById('anaCompletedCount').innerText = repairs.filter(r => r.status === 'Received').length;
             const activeForHealth = repairs.filter(r => !r.archived);
-            document.getElementById('anaQcRepairCount').innerText = activeForHealth.filter(r => r.qcRepairRequests && Object.keys(r.qcRepairRequests).some(t => r.currentEmbStage === t)).length;
+            document.getElementById('anaQcRepairCount').innerText = activeForHealth.filter(r => r.qcRepairRequests && (r.activeDeptTypes || []).some(t => r.qcRepairRequests[t])).length;
             document.getElementById('anaCuttingPendingCount').innerText = activeForHealth.filter(r => r.cuttingPending && !r.cuttingPending.resolved).length;
             document.getElementById('anaAccIssueCount').innerText = activeForHealth.filter(r => r.accIssue).length;
             const markerLaidCount = repairs.filter(r => r.markerSend && r.markerSend.markerLaid === true).length;
@@ -9096,29 +9554,43 @@
             // จ่ายกี่รายการ ไม่ต้องจ่ายกี่รายการ". Anything not explicitly marked "ไม่ต้องจ่าย"
             // counts as needing payment (matches the checklist's own "pay" default), with fully
             // paid broken out separately since that's a meaningfully different state.
-            let accTotalLines = 0, accNeedPayLines = 0, accNoNeedLines = 0, accPaidLines = 0;
+            // Each bucket now tracks 3 counts — distinct request docs, lines, and pcs — since
+            // one doc can carry several ACC lines and each line can be several pieces, so a
+            // single "lines" number understated the doc count and overstated per-doc detail,
+            // per "ต้องการให้แต่ละส่วนเพิ่มเส้นกั้นในบล็อคแยกเป็นจำนวนใบขอ จำนวนรายการ และ
+            // จำนวนชิ้นด้วย".
+            const makeAccBucket = () => ({ docs: new Set(), lines: 0, pcs: 0 });
+            const accBuckets = { total: makeAccBucket(), needPay: makeAccBucket(), noNeed: makeAccBucket(), paid: makeAccBucket() };
+            const bumpAcc = (bucket, docId, qty) => { bucket.docs.add(docId); bucket.lines++; bucket.pcs += qty; };
             activeForHealth.forEach(r => {
                 const f = r.accFulfillment || { parts: [], accRequest: [] };
                 const partMap = Object.fromEntries((f.parts || []).map(l => [l.idx, l]));
                 const accMap = Object.fromEntries((f.accRequest || []).map(l => [l.idx, l]));
                 r.parts.forEach((p, idx) => {
                     if (!(p.embellishment || []).length) return;
-                    accTotalLines++;
+                    const qty = parseInt(p.qty) || 0;
+                    bumpAcc(accBuckets.total, r.id, qty);
                     const line = partMap[idx];
-                    if (line && line.noNeed) accNoNeedLines++;
-                    else { accNeedPayLines++; if (line && line.decision === 'full') accPaidLines++; }
+                    if (line && line.noNeed) bumpAcc(accBuckets.noNeed, r.id, qty);
+                    else { bumpAcc(accBuckets.needPay, r.id, qty); if (line && line.decision === 'full') bumpAcc(accBuckets.paid, r.id, qty); }
                 });
                 (r.accRequestList || []).forEach((a, idx) => {
-                    accTotalLines++;
+                    const qty = parseInt(a.qty) || 0;
+                    bumpAcc(accBuckets.total, r.id, qty);
                     const line = accMap[idx];
-                    if (line && line.noNeed) accNoNeedLines++;
-                    else { accNeedPayLines++; if (line && line.decision === 'full') accPaidLines++; }
+                    if (line && line.noNeed) bumpAcc(accBuckets.noNeed, r.id, qty);
+                    else { bumpAcc(accBuckets.needPay, r.id, qty); if (line && line.decision === 'full') bumpAcc(accBuckets.paid, r.id, qty); }
                 });
             });
-            document.getElementById('anaAccTotalLines').innerText = accTotalLines;
-            document.getElementById('anaAccNeedPayLines').innerText = accNeedPayLines;
-            document.getElementById('anaAccNoNeedLines').innerText = accNoNeedLines;
-            document.getElementById('anaAccPaidLines').innerText = accPaidLines;
+            const setAccBucket = (prefix, bucket) => {
+                document.getElementById(`anaAcc${prefix}Docs`).innerText = bucket.docs.size;
+                document.getElementById(`anaAcc${prefix}Lines`).innerText = bucket.lines;
+                document.getElementById(`anaAcc${prefix}Pcs`).innerText = bucket.pcs;
+            };
+            setAccBucket('Total', accBuckets.total);
+            setAccBucket('NeedPay', accBuckets.needPay);
+            setAccBucket('NoNeed', accBuckets.noNeed);
+            setAccBucket('Paid', accBuckets.paid);
             renderOntimeDelay();
 
             Object.keys(myCharts).forEach(key => { if (myCharts[key]) myCharts[key].destroy(); });
@@ -9126,6 +9598,8 @@
             // Runs after the destroy loop above (it creates its own myCharts.stageDurationChart
             // entry) so that chart isn't wiped out immediately after being built.
             renderProcessDurations();
+            renderVendorLeadtime();
+            renderRepairRate();
 
             const deptLabels = Object.keys(deptMap).length ? Object.keys(deptMap) : ['Sewing', 'QC', 'Finishing'];
             const deptData = Object.keys(deptMap).length ? Object.values(deptMap) : [0, 0, 0];
@@ -9210,7 +9684,12 @@
             // adds up correctly instead of only counting the latest visit.
             const defectCodeMap = {};
             repairs.forEach(r => {
-                (r.qcInspection && r.qcInspection.defectCodes || []).forEach(d => {
+                const qi = r.qcInspection;
+                if (!qi) return;
+                // Each type now keeps its own visit — sum every type's defect codes, not just
+                // the legacy shared field (which only ever held the latest visit).
+                const visitLists = qi.visits ? Object.values(qi.visits).map(v => v.defectCodes || []) : [qi.defectCodes || []];
+                visitLists.flat().forEach(d => {
                     const key = `${d.code} — ${d.th || ''}`;
                     defectCodeMap[key] = (defectCodeMap[key] || 0) + (parseInt(d.qty, 10) || 1);
                 });
@@ -9716,9 +10195,27 @@
                             vendorNames.join(' / '),
                         ];
                     }),
-                    (r.qcInspection && r.qcInspection.receive && r.qcInspection.receive.name) || '',
-                    (r.qcInspection && r.qcInspection.receivedQty) ?? '',
-                    (r.qcInspection && r.qcInspection.defectQty) ?? '',
+                    (() => {
+                        // Each type now has its own independent QC visit — combine across all
+                        // of them for these single summary columns instead of only the legacy
+                        // shared field (which a parallel-dispatched record never populates).
+                        const visits = (r.qcInspection && r.qcInspection.visits) || {};
+                        const visitList = Object.values(visits);
+                        if (!visitList.length) return (r.qcInspection && r.qcInspection.receive && r.qcInspection.receive.name) || '';
+                        return [...new Set(visitList.map(v => v.receive && v.receive.name).filter(Boolean))].join(' / ');
+                    })(),
+                    (() => {
+                        const visits = (r.qcInspection && r.qcInspection.visits) || {};
+                        const visitList = Object.values(visits);
+                        if (!visitList.length) return (r.qcInspection && r.qcInspection.receivedQty) ?? '';
+                        return visitList.reduce((s, v) => s + (parseInt(v.receivedQty) || 0), 0);
+                    })(),
+                    (() => {
+                        const visits = (r.qcInspection && r.qcInspection.visits) || {};
+                        const visitList = Object.values(visits);
+                        if (!visitList.length) return (r.qcInspection && r.qcInspection.defectQty) ?? '';
+                        return visitList.reduce((s, v) => s + (parseInt(v.defectQty) || 0), 0);
+                    })(),
                     (r.qcInspection && r.qcInspection.perType ? Object.entries(r.qcInspection.perType).map(([t, d]) => `${EMB_LABELS[t] || t}: ${qcDecisionSummaryLabel(d)}`).join(' / ') : ''),
                     (r.qcRepairRequests ? Object.entries(r.qcRepairRequests).map(([t, q]) => `${EMB_LABELS[t] || t}: รอบ ${q.roundNo} (${q.qty} ชิ้น)`).join(' / ') : ''),
                     (r.supermarketReceive && r.supermarketReceive.name) || '',
@@ -9776,6 +10273,195 @@
             if (format === 'csv') exportCSV();
             else if (format === 'excel') exportExcel();
             else if (format === 'pdf') exportPDF();
+        }
+
+        // Fills the Periodic Summary date-range inputs with a quick preset — the user can
+        // still hand-edit either date afterward before exporting.
+        function setPeriodicSummaryPreset(preset) {
+            const nowParts = getBangkokParts();
+            const today = new Date(`${nowParts.year}-${nowParts.month}-${nowParts.day}T00:00:00+07:00`);
+            let start, end;
+            if (preset === 'week') {
+                // A calendar date's weekday doesn't depend on timezone — Date.UTC with the
+                // same y/m/d avoids the off-by-one that today.getUTCDay() would have (today
+                // is midnight Bangkok, i.e. 17:00 UTC the PREVIOUS day).
+                const dow = new Date(Date.UTC(+nowParts.year, +nowParts.month - 1, +nowParts.day)).getUTCDay();
+                const diffToMonday = (dow === 0) ? 6 : dow - 1;
+                start = new Date(today.getTime() - diffToMonday * 86400000);
+                end = today;
+            } else if (preset === 'month') {
+                start = new Date(`${nowParts.year}-${nowParts.month}-01T00:00:00+07:00`);
+                end = today;
+            } else if (preset === 'lastMonth') {
+                const firstThisMonth = new Date(`${nowParts.year}-${nowParts.month}-01T00:00:00+07:00`);
+                end = new Date(firstThisMonth.getTime() - 86400000);
+                const endParts = getBangkokParts(end);
+                start = new Date(`${endParts.year}-${endParts.month}-01T00:00:00+07:00`);
+            } else {
+                return;
+            }
+            document.getElementById('periodicSummaryStart').value = toLocalDateInputValue(start);
+            document.getElementById('periodicSummaryEnd').value = toLocalDateInputValue(end);
+            previewPeriodicSummary();
+        }
+        // Aggregates QC decisions the same way as repairRateStats(), but only counting a
+        // decision if its own visit's send timestamp falls inside [start, end] — legacy
+        // records with no per-type visit (send ts only on the shared qcInspection object)
+        // can't be attributed to a specific period this way and are excluded here, unlike
+        // the all-time repairRateStats() table.
+        function repairRateStatsInRange(start, end) {
+            const typeStats = {}, vendorStats = {};
+            repairs.forEach(r => {
+                const perType = r.qcInspection && r.qcInspection.perType;
+                const visits = (r.qcInspection && r.qcInspection.visits) || {};
+                if (!perType) return;
+                Object.entries(perType).forEach(([t, d]) => {
+                    if (!d || typeof d !== 'object') return;
+                    const sendTs = visits[t] && visits[t].send && visits[t].send.ts;
+                    if (!sendTs) return;
+                    const dt = new Date(sendTs);
+                    if (dt < start || dt > end) return;
+                    const total = (d.Pass || 0) + (d.Repair || 0) + (d.CutReplace || 0) + (d.NotifyVendor || 0);
+                    if (!total) return;
+                    const reject = (d.Repair || 0) + (d.CutReplace || 0) + (d.NotifyVendor || 0);
+                    const bump = (bucket, key) => {
+                        const s = bucket[key] = bucket[key] || { total: 0, repair: 0, reject: 0 };
+                        s.total += total; s.repair += (d.Repair || 0); s.reject += reject;
+                    };
+                    bump(typeStats, t);
+                    const vendors = embVendorsByType(r, t);
+                    if (vendors.length === 1) bump(vendorStats, vendors[0]);
+                });
+            });
+            return { typeStats, vendorStats };
+        }
+        // Same idea as the all-time defect-code chart, but only counting a visit's defect
+        // codes if that visit's own send timestamp falls inside [start, end].
+        function periodicDefectCodeMap(start, end) {
+            const map = {};
+            repairs.forEach(r => {
+                const qi = r.qcInspection;
+                if (!qi) return;
+                const visitList = qi.visits ? Object.values(qi.visits) : [qi];
+                visitList.forEach(v => {
+                    const sendTs = v.send && v.send.ts;
+                    if (!sendTs) return;
+                    const dt = new Date(sendTs);
+                    if (dt < start || dt > end) return;
+                    (v.defectCodes || []).forEach(d => {
+                        const key = `${d.code} — ${d.th || ''}`;
+                        map[key] = (map[key] || 0) + (parseInt(d.qty, 10) || 1);
+                    });
+                });
+            });
+            return map;
+        }
+        // Rolled-up report for a chosen date range — counts, avg leadtime, on-time rate,
+        // repair/reject rate by type and vendor, and top defect codes — separate from the
+        // full raw-data export (exportCSV/Excel/PDF), which dumps one row per record instead.
+        // Reads + validates the chosen date range, returning null (after showing the
+        // relevant toast) if it isn't usable yet — shared by both the preview and the
+        // actual export so they can never compute two different things for the same range.
+        function readPeriodicSummaryRange() {
+            const startVal = document.getElementById('periodicSummaryStart').value;
+            const endVal = document.getElementById('periodicSummaryEnd').value;
+            if (!startVal || !endVal) { showToast('กรุณาเลือกช่วงวันที่ก่อน (Please choose a date range first)', 'warning'); return null; }
+            const start = new Date(`${startVal}T00:00:00+07:00`);
+            const end = new Date(`${endVal}T23:59:59+07:00`);
+            if (end < start) { showToast('วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม (End date must not be before start date)', 'warning'); return null; }
+            return { startVal, endVal, start, end };
+        }
+        // The actual rollup — counts, avg leadtime, on-time rate, repair rate by type/vendor,
+        // top defect codes — as an array of [label, value] rows. Both the on-screen preview
+        // and the CSV export render straight off this same array, per "ต้องการให้เมื่อเลือกแล้ว
+        // สามารถแสดงข้อมูลที่เลือกเพื่อให้ดูข้อมูลก่อนได้" — what you preview is exactly what
+        // gets exported, nothing recomputed differently in between.
+        function computePeriodicSummaryRows(startVal, endVal, start, end) {
+            const created = repairs.filter(r => {
+                const d = r.date ? parseLocalDateTime(r.date) : null;
+                return d && d >= start && d <= end;
+            });
+            const completed = repairs.filter(r => {
+                if (r.status !== 'Received' || !r.originReceive || !r.originReceive.ts) return false;
+                const d = new Date(r.originReceive.ts);
+                return d >= start && d <= end;
+            });
+            let totalLeadHours = 0, leadCount = 0, ontime = 0, delay = 0;
+            completed.forEach(r => {
+                const from = r.date ? parseLocalDateTime(r.date) : null;
+                const to = new Date(r.originReceive.ts);
+                if (from && to >= from) { totalLeadHours += businessHoursBetween(from, to); leadCount++; }
+                if (r.needDate) {
+                    const need = parseLocalDateEndOfDay(r.needDate);
+                    if (to <= need) ontime++; else delay++;
+                }
+            });
+            const avgLeadHours = leadCount ? totalLeadHours / leadCount : 0;
+            const ontimeTotal = ontime + delay;
+            const ontimePct = ontimeTotal ? Math.round((ontime / ontimeTotal) * 100) : null;
+
+            const { typeStats, vendorStats } = repairRateStatsInRange(start, end);
+            const defectMap = periodicDefectCodeMap(start, end);
+            const topDefects = Object.entries(defectMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+            const rows = [];
+            rows.push(['ช่วงเวลา (Period)', `${startVal} ถึง ${endVal}`]);
+            rows.push(['จำนวนรายการที่แจ้งเข้ามา (Created)', created.length]);
+            rows.push(['จำนวนรายการที่เสร็จสมบูรณ์ (Completed)', completed.length]);
+            rows.push(['Leadtime เฉลี่ย (Avg Leadtime)', leadCount ? formatBusinessDuration(avgLeadHours) : '-']);
+            rows.push(['% ตรงเวลา (On-time %)', ontimePct !== null ? `${ontimePct}%` : '-']);
+            rows.push(['จำนวนตรงเวลา / เกินกำหนด (On-time / Delay count)', `${ontime} / ${delay}`]);
+            rows.push(['', '']);
+            rows.push(['อัตราซ่อม/ตีกลับ แยกตามประเภท (Repair Rate by Type)', '']);
+            Object.entries(typeStats).forEach(([t, s]) => {
+                rows.push([`  ${EMB_LABELS[t] || t}`, `ซ่อม ${(s.repair / s.total * 100).toFixed(1)}% / ตีกลับรวม ${(s.reject / s.total * 100).toFixed(1)}% (จาก ${s.total} ชิ้น)`]);
+            });
+            rows.push(['', '']);
+            rows.push(['อัตราซ่อม/ตีกลับ แยกตาม Vendor (Repair Rate by Vendor)', '']);
+            Object.entries(vendorStats).forEach(([v, s]) => {
+                rows.push([`  ${v}`, `ซ่อม ${(s.repair / s.total * 100).toFixed(1)}% / ตีกลับรวม ${(s.reject / s.total * 100).toFixed(1)}% (จาก ${s.total} ชิ้น)`]);
+            });
+            rows.push(['', '']);
+            rows.push(['Defect Code ยอดนิยม (Top Defect Codes)', '']);
+            topDefects.forEach(([code, qty]) => rows.push([`  ${code}`, `${qty} ชิ้น`]));
+            return rows;
+        }
+        function previewPeriodicSummary() {
+            const range = readPeriodicSummaryRange();
+            const panel = document.getElementById('periodicSummaryPreview');
+            if (!range) { panel.classList.add('hidden'); return; }
+            const rows = computePeriodicSummaryRows(range.startVal, range.endVal, range.start, range.end);
+            panel.innerHTML = `
+                <table class="w-full text-xs border-collapse">
+                    <tbody>
+                        ${rows.map(([label, value]) => (!label && !value) ? `<tr><td colspan="2" class="py-1"><div class="border-t border-violet-200"></div></td></tr>` : `
+                            <tr class="border-b border-violet-100">
+                                <td class="py-1.5 pr-3 ${label.startsWith('  ') ? 'pl-4 text-slate-500' : 'font-bold text-slate-700'}">${escapeHtml(label.trim())}</td>
+                                <td class="py-1.5 text-right font-semibold text-violet-700">${escapeHtml(String(value))}</td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>`;
+            panel.classList.remove('hidden');
+        }
+        function exportPeriodicSummary() {
+            const range = readPeriodicSummaryRange();
+            if (!range) return;
+            const { startVal, endVal, start, end } = range;
+            const rows = computePeriodicSummaryRows(startVal, endVal, start, end);
+
+            const escCsv = v => `"${String(v ?? '').replace(/"/g, "'")}"`;
+            let csvContent = "data:text/csv;charset=utf-8,﻿";
+            csvContent += ['หัวข้อ (Metric)', 'ค่า (Value)'].map(escCsv).join(',') + "\n";
+            rows.forEach(row => { csvContent += row.map(escCsv).join(',') + "\n"; });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `periodic_summary_${startVal}_to_${endVal}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            logAction('ExportPeriodicSummary', '-', `${currentUser.name} ส่งออกรายงานสรุปตามรอบ (${startVal} ถึง ${endVal})`);
+            showToast('ส่งออกรายงานสรุปตามรอบเรียบร้อยแล้ว (Periodic summary exported)', 'success');
         }
         function toggleExportMenu() {
             document.getElementById('exportMenu').classList.toggle('hidden');
