@@ -197,7 +197,7 @@
         </div>
     </nav>
 
-    <main class="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+    <main class="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-6 flex-grow w-full">
 
         <!-- SECTION: RECORDS & QUEUE -->
         <div id="section-records" class="tab-content space-y-3">
@@ -697,6 +697,24 @@
                                 </tbody>
                             </table>
                         </div>
+                        <!-- Outsource-by-vendor breakdown, merged into this same card/table
+                             style instead of living as a separate standalone card below, per
+                             "รายการข้อมูลที่รองาน outsource ในตารางล่างสามารถนำไปรวมกับตารางบนได้
+                             หรือไม่...ช่วยจัดตารางเลเอ้าท์ให้เป็นในลักษณะเดียวกัน". Hidden entirely
+                             when no vendor currently has outsource work outstanding. -->
+                        <div id="kpiOutsourceSection" class="px-3 py-1.5 border-l-2 border-l-amber-400 hidden">
+                            <p class="text-[9px] font-bold uppercase text-amber-600 tracking-widest pb-1">🏭 รองาน Outsource แยกตาม Vendor <span class="font-normal normal-case text-slate-400">(by Vendor)</span></p>
+                            <table class="w-full text-[9px] border-collapse">
+                                <thead>
+                                    <tr class="text-slate-400 font-bold">
+                                        <th class="text-left font-normal">Vendor</th>
+                                        <th class="font-normal">ส่งงาน</th><th class="font-normal">เกิน</th>
+                                        <th class="font-normal border-l border-slate-300">รับงานกลับ</th><th class="font-normal">เกิน</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="kpiOutsourceSegments"></tbody>
+                            </table>
+                        </div>
                         <div onclick="filterByKpi('qcCutReplacePending')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">✂️</span>
@@ -803,14 +821,6 @@
                     </div>
                 </div>
             </div><!-- /#kpiTabPanels -->
-
-            <!-- Same Embellishment work, sliced the other way: by Outsource Vendor instead of
-                 by type — per "ต้องการเพิ่มส่วนที่รองานจาก outsource...แยกเป็น Vendor ได้". Only
-                 shows up once at least one vendor has active outsource work. -->
-            <div id="kpiOutsourceCard" class="card p-0 overflow-hidden border-l-2 border-l-amber-500 hidden">
-                <p class="text-[9px] font-bold uppercase text-amber-600 tracking-widest px-3 pt-1.5 pb-1">🏭 รองาน Outsource แยกตาม Vendor <span class="font-normal normal-case text-slate-400">(Waiting on Outsource, by Vendor — click a segment to filter)</span></p>
-                <div id="kpiOutsourceSegments" class="flex flex-wrap divide-x divide-slate-100 border-t border-slate-100"></div>
-            </div>
 
             <div class="flex flex-wrap lg:flex-nowrap justify-between items-center gap-2">
                 <div>
@@ -1082,6 +1092,32 @@
                     <div id="anaOntimeBar" class="h-full bg-emerald-500" style="width:0%"></div>
                 </div>
                 <p id="anaOntimeNote" class="text-[10px] text-slate-400 mt-2"></p>
+            </div>
+
+            <!-- ACC Summary — per "ต้องการให้มีรายการสรุปของ ACC เพื่อให้รู้ว่ารายการทั้งหมดที่ขอมี
+                 เท่าไหร่ กี่รายการ และมีที่ต้องจ่ายกี่รายการ ไม่ต้องจ่ายกี่รายการ". Counts every ACC
+                 line across all active records — both embellishment-driven parts and additional
+                 ACC requisition lines — split by their current fulfillment decision. -->
+            <div class="card p-6">
+                <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-4">สรุปรายการ ACC <span class="font-normal normal-case opacity-70">(ACC Summary — all lines requested)</span></h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+                        <p class="text-[10px] font-bold uppercase text-slate-500">รายการทั้งหมด <span class="opacity-70">(Total)</span></p>
+                        <h4 id="anaAccTotalLines" class="text-3xl font-black text-slate-700 mt-1">0</h4>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-center">
+                        <p class="text-[10px] font-bold uppercase text-amber-600">ต้องจ่าย <span class="opacity-70">(Needs Payment)</span></p>
+                        <h4 id="anaAccNeedPayLines" class="text-3xl font-black text-amber-700 mt-1">0</h4>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+                        <p class="text-[10px] font-bold uppercase text-slate-400">ไม่ต้องจ่าย <span class="opacity-70">(No Need)</span></p>
+                        <h4 id="anaAccNoNeedLines" class="text-3xl font-black text-slate-500 mt-1">0</h4>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
+                        <p class="text-[10px] font-bold uppercase text-emerald-600">จ่ายครบแล้ว <span class="opacity-70">(Fully Paid)</span></p>
+                        <h4 id="anaAccPaidLines" class="text-3xl font-black text-emerald-700 mt-1">0</h4>
+                    </div>
+                </div>
             </div>
 
             <!-- Process Duration Summary: average time spent per workflow stage -->
@@ -1644,7 +1680,11 @@
                             <label class="flex items-center gap-1"><input type="radio" name="fFabricType" value="" checked> ไม่ระบุ <span class="opacity-70">(Unspecified)</span></label>
                         </div>
                     </div>
-                    <div id="lineSelectContainer">
+                    <!-- Sits alone in the grid's last row (no row-mates), so its own -mt-2
+                         safely halves just ITS gap to the row above without disturbing the
+                         gap-4 spacing between any other fields, per "ลดช่องว่างระหว่างด้านบนและ
+                         ด้านล่างของ ไลน์ ลดลงด้านละ 50% โดยขยับขึ้นบนอีก". -->
+                    <div id="lineSelectContainer" class="-mt-2">
                         <label class="text-[10px] font-black text-indigo-600 uppercase mb-1 block">ไลน์ผลิต <span class="font-normal normal-case opacity-70">(Line)</span></label>
                         <select id="fLine" class="w-full text-xs border-indigo-200 bg-indigo-50/30">
                             <!-- Populated dynamically -->
@@ -1653,7 +1693,10 @@
                 </div>
 
                 <!-- Product Detail Fields (block 2) -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <!-- Inline !important beats the form's own space-y-6 (a more specific
+                     :not()-combinator selector that would otherwise win over a plain -mt-3
+                     utility class) — same fix pattern as the Urgency field's !mt-0 earlier. -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100" style="margin-top:0.75rem !important">
                     <div>
                         <label class="text-[10px] font-extrabold text-slate-600 block mb-1">Style No. *</label>
                         <input type="text" id="fStyle" list="styleList" placeholder="เช่น TSH-2026" class="w-full text-xs bg-white" required>
@@ -1799,6 +1842,10 @@
                     ผู้อนุมัติ <span class="opacity-70">(Approver)</span>: <b id="fmApprovalName">-</b><br>
                     <span class="text-[10px] text-orange-700">ระบบจะบันทึกชื่อผู้ใช้และเวลาปัจจุบันโดยอัตโนมัติเมื่อกดยืนยัน</span>
                 </div>
+                <!-- PM/FM now decides วางมาร์ค/ไม่วางมาร์ค per part-item, instead of Marker
+                     re-deciding it themselves at receive time, per "ปรับใหม่ให้ pm/FM เป็นคน
+                     ตัดสินใจในการวางมาร์คหรือไม่วางมาร์คแทนมาร์คเกอร์". -->
+                <div id="fmMarkerContainer" class="space-y-2"></div>
                 <div>
                     <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">Remark <span class="font-normal normal-case text-slate-400">(บังคับถ้าไม่อนุมัติ / required if rejecting)</span></label>
                     <textarea id="fmApprovalRemark" rows="2" class="w-full text-xs" placeholder="เหตุผลกรณีไม่อนุมัติ"></textarea>
@@ -3693,7 +3740,8 @@
         // keep the free-text vendor field, since no fixed vendor list was given for them.
         const EMB_VENDOR_OPTIONS = {
             Emb: ['99 การปัก', '107 การปัก'],
-            Heat: ['ซินเซียรี่', 'โรงพิมพ์ 70'],
+            Heat: ['ซินเซียรี่'],
+            ScreenPrint: ['โรงพิมพ์ 70'],
         };
         // Every Outsource vendor name anyone has ever typed in, across all records — used to
         // build the vendor dropdown below (in addition to each type's own preset list).
@@ -3738,6 +3786,17 @@
             { value: 'NotifyVendor', label: 'แจ้ง Vendor (Notify Vendor)' },
         ];
         const QC_DECISION_LABELS = Object.fromEntries(QC_DECISION_OPTIONS.map(o => [o.value, o.label]));
+        // Reads one saved per-type decision entry for display — supports both the current
+        // exact-quantity split ({Pass:n, Repair:n, ...}) and a pre-existing legacy single-
+        // string decision from before this rework, so old records' history still renders.
+        function qcDecisionSummaryLabel(entry) {
+            if (!entry) return '-';
+            if (typeof entry === 'string') return QC_DECISION_LABELS[entry] || entry;
+            return QC_DECISION_OPTIONS
+                .filter(o => (entry[o.value] || 0) > 0)
+                .map(o => `${o.label} ${entry[o.value]}`)
+                .join(', ') || '-';
+        }
         // Defect codes from Code QA.xlsx (8 categories, 244 codes) — used to build the
         // categorized QC defect picker, per "ให้ใช้รายการ defect ตามไฟล์ excel...ช่วยดีไซน์
         // ให้ง่ายกับการใช้งานของ QC" — embedded as JSON.parse for compactness.
@@ -3749,23 +3808,37 @@
         // — reset each time the QC send screen opens (see openStageModal), read back out into
         // item.qcInspection.defectCodes on save.
         let qcDefectDraft = [];
+        // Type-to-search instead of a plain <select> — with 244 defect codes across 8
+        // categories, some categories alone (e.g. CONSTRUCTION) still have 100+ codes, per
+        // "รายการในแต่ละ dropdown ที่มีจำนวนมากๆ อาจจะต้องให้สามารถพิมพ์ได้ด้วย". The datalist
+        // option value is the full "code — description (severity)" label so typing either the
+        // code or the Thai description narrows it down.
+        function qcDefectCodeLabel(d) { return `${d.code} — ${d.th} (${d.severity})`; }
         function renderQcDefectCodeOptions() {
             const catSel = document.getElementById('stageQcDefectCat');
-            const codeSel = document.getElementById('stageQcDefectCode');
-            if (!catSel || !codeSel) return;
+            const codeInput = document.getElementById('stageQcDefectCode');
+            const datalist = document.getElementById('qcDefectCodeDatalist');
+            if (!catSel || !codeInput || !datalist) return;
+            codeInput.value = '';
             const codes = DEFECT_CODES.filter(d => d.cat === catSel.value);
-            codeSel.innerHTML = codes.map(d => `<option value="${escapeHtml(d.code)}">${escapeHtml(d.code)} — ${escapeHtml(d.th)} (${d.severity})</option>`).join('');
+            datalist.innerHTML = codes.map(d => `<option value="${escapeHtml(qcDefectCodeLabel(d))}">`).join('');
         }
         function addQcDefectCode() {
             const catSel = document.getElementById('stageQcDefectCat');
-            const codeSel = document.getElementById('stageQcDefectCode');
-            if (!catSel || !codeSel || !codeSel.value) return;
-            const entry = DEFECT_CODES.find(d => d.cat === catSel.value && d.code === codeSel.value);
-            if (!entry) return;
+            const codeInput = document.getElementById('stageQcDefectCode');
+            if (!catSel || !codeInput || !codeInput.value.trim()) return;
+            const typed = codeInput.value.trim();
+            // Matches the picked datalist label first (exact); falls back to treating the
+            // typed text as a bare code, in case someone types the code directly without
+            // picking from the suggestion list.
+            const entry = DEFECT_CODES.find(d => d.cat === catSel.value && qcDefectCodeLabel(d) === typed)
+                || DEFECT_CODES.find(d => d.cat === catSel.value && d.code === typed);
+            if (!entry) { showToast('ไม่พบรหัส Defect นี้ในหมวดที่เลือก (Defect code not found in this category)', 'warning'); return; }
             if (qcDefectDraft.some(d => d.code === entry.code)) { showToast('เพิ่มรายการนี้ไปแล้ว (Already added)', 'warning'); return; }
             // Per-entry qty found — per "เพิ่มส่วนของ จำนวนที่พบ defect ในแต่ละรายการ" —
             // instead of only one aggregate "Defect Qty" field for the whole item.
             qcDefectDraft.push({ ...entry, qty: 1 });
+            codeInput.value = '';
             renderQcDefectList();
         }
         function removeQcDefectCode(code) {
@@ -4509,28 +4582,25 @@
                 });
             });
             const vendorNames = [...new Set([...Object.keys(vendorWaitGroups), ...Object.keys(vendorWorkGroups)])].sort();
-            const outsourceCard = document.getElementById('kpiOutsourceCard');
+            const outsourceSection = document.getElementById('kpiOutsourceSection');
             const outsourceSegEl = document.getElementById('kpiOutsourceSegments');
-            if (outsourceCard && outsourceSegEl) {
-                outsourceCard.classList.toggle('hidden', vendorNames.length === 0);
+            if (outsourceSection && outsourceSegEl) {
+                outsourceSection.classList.toggle('hidden', vendorNames.length === 0);
+                // Same table layout as the per-type In-house/Outsource breakdown right above —
+                // one row per vendor instead of the old horizontal segment cards, per
+                // "ช่วยจัดตารางเลเอ้าท์ให้เป็นในลักษณะเดียวกัน".
                 outsourceSegEl.innerHTML = vendorNames.map(vendor => {
                     const waitGroup = vendorWaitGroups[vendor] || [];
                     const workGroup = vendorWorkGroups[vendor] || [];
                     const waitOverdue = waitGroup.filter(r => alertInfo(r)).length;
                     const workOverdue = workGroup.filter(r => alertInfo(r)).length;
-                    return `<div class="flex-1 min-w-[160px] flex items-center justify-between px-2 py-1.5 border-l border-slate-100">
-                        <p class="text-[8px] font-bold text-slate-400 uppercase leading-none truncate flex-1" title="${escapeHtml(vendor)}">${escapeHtml(vendor)}</p>
-                        <div onclick="filterByKpi('outsourceVendorWaiting:${escapeHtml(vendor)}')" class="text-center shrink-0 px-2 cursor-pointer hover:bg-amber-50 rounded transition-colors">
-                            <p class="text-[8px] font-bold uppercase text-slate-400 leading-none">ส่งงาน</p>
-                            <h4 class="text-sm font-black text-amber-400 leading-none mt-0.5">${waitGroup.length}</h4>
-                            <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน ${waitOverdue}</span>
-                        </div>
-                        <div onclick="filterByKpi('outsourceVendor:${escapeHtml(vendor)}')" class="text-center shrink-0 px-2 cursor-pointer hover:bg-amber-100 rounded transition-colors">
-                            <p class="text-[8px] font-bold uppercase text-slate-400 leading-none">รับงานกลับ</p>
-                            <h4 class="text-sm font-black text-amber-600 leading-none mt-0.5">${workGroup.length}</h4>
-                            <span class="text-[8px] font-bold text-rose-500 leading-none whitespace-nowrap">เกิน ${workOverdue}</span>
-                        </div>
-                    </div>`;
+                    return `<tr>
+                        <td class="text-amber-700 font-bold whitespace-nowrap truncate max-w-[140px]" title="${escapeHtml(vendor)}">${escapeHtml(vendor)}</td>
+                        <td onclick="filterByKpi('outsourceVendorWaiting:${escapeHtml(vendor)}')" class="text-center cursor-pointer hover:bg-amber-50"><h4 class="text-xs font-black text-amber-500 leading-none">${waitGroup.length}</h4></td>
+                        <td class="text-center text-rose-500 font-bold">${waitOverdue}</td>
+                        <td onclick="filterByKpi('outsourceVendor:${escapeHtml(vendor)}')" class="text-center cursor-pointer hover:bg-amber-100 border-l border-slate-300"><h4 class="text-xs font-black text-amber-600 leading-none">${workGroup.length}</h4></td>
+                        <td class="text-center text-rose-500 font-bold">${workOverdue}</td>
+                    </tr>`;
                 }).join('');
             }
             setKpi('kpiSupermarketReceived', byStatus('SupermarketReceived'));
@@ -5153,6 +5223,7 @@
             const partRows = document.querySelectorAll('#partsContainer > div');
             let zeroRatioRow = false;
             let missingReasonRow = false;
+            let missingMandatoryRow = false;
             // Each row is one part with a full size-ratio grid (same shape shown to Marker) —
             // expand it into one flat parts[] entry per non-empty size, so every other part
             // of the app (review table, queue summary, CSV, totals) keeps working on the
@@ -5170,10 +5241,21 @@
                 const fabricItem = row.querySelector('.pFabricItem').value.trim();
                 const cw = row.querySelector('.pCW').value.trim();
                 const bundleNo = row.querySelector('.pBundleNo').value.trim();
-                // Embellishment is no longer entered here — BU fills it in during approval
-                // review (see the approvalModal embellishment section), so a freshly
-                // created/edited part always starts with none and BU (re-)confirms it.
-                const embellishment = [];
+                // มัดที่/CW/พาร์ท must be filled in before this can go on to PM/FM approval,
+                // per "ต้องการบังคับกรอก...ก่อนส่งต่อให้ PM/FM อนุมัติ" — checked here at
+                // creation/edit so nothing without them ever gets that far in the first place.
+                if (!bundleNo || !cw || !part) missingMandatoryRow = true;
+                // Embellishment is entered separately by BU during approval review (see the
+                // approvalModal embellishment section), not on this form — so a brand-new part
+                // always starts with none. But when EDITING an existing record, a part the BU
+                // already ticked embellishment for must keep it — matching by (name, part) key,
+                // same grouping editOrder() used to build this row in the first place — instead
+                // of always resetting to [], which was silently wiping out already-approved
+                // embellishment data on every edit+save, even for unrelated field changes.
+                const existingPart = editIndex >= 0 && repairs[editIndex]
+                    ? repairs[editIndex].parts.find(pp => (pp.name || '') + '||' + (pp.part || '') === name + '||' + part)
+                    : null;
+                const embellishment = existingPart ? (existingPart.embellishment || []) : [];
                 const sizeEntries = Array.from(row.querySelectorAll('.pSizeQty'))
                     .map(inp => ({ size: inp.dataset.size, qty: parseInt(inp.value) || 0 }))
                     .filter(s => s.qty > 0);
@@ -5187,6 +5269,10 @@
             }
             if (missingReasonRow) {
                 showToast('กรุณาระบุสาเหตุการสั่งซ่อมเมื่อเลือก "อื่นๆ" (Please specify the reason when choosing "Other")', 'warning');
+                return;
+            }
+            if (missingMandatoryRow && !isAccOnlyRequest) {
+                showToast('กรุณาระบุ มัดที่, CW., และ พาร์ท ให้ครบทุกรายการชิ้นส่วน (Please fill in Bundle No., CW., and Part for every part)', 'warning');
                 return;
             }
 
@@ -5259,6 +5345,7 @@
                     archived: false,
                     requesterUser: currentUser.username,
                     approval: null,
+                    fmMarkerDecision: null,
                     markerReceive: null,
                     markerAction: null,
                     markerSend: null,
@@ -5766,6 +5853,41 @@
             }).join('');
         }
 
+        // PM/FM decides วางมาร์ค/ไม่วางมาร์ค per part-item now, instead of Marker re-deciding
+        // it themselves at receive time — per "ปรับใหม่ให้ pm/FM เป็นคนตัดสินใจในการวางมาร์คหรือ
+        // ไม่วางมาร์คแทนมาร์คเกอร์...ติ๊กเลือกวางมาร์คหรือไม่วางมาร์คในแต่ละรายการไอเทม". Defaults
+        // each group to whatever the requester originally declared (originFabricType) as a
+        // starting suggestion — PM/FM can change any of them before approving.
+        function renderFmMarkerGroups(item) {
+            const groups = groupPartsForEmb(item.parts || []);
+            const container = document.getElementById('fmMarkerContainer');
+            if (!container) return;
+            const saved = item.fmMarkerDecision || {};
+            const defaultLaid = item.originFabricType === 'matched' ? 'no' : 'yes';
+            container.innerHTML = `
+                <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วางมาร์คหรือไม่ (รายชิ้นส่วน) <span class="font-normal normal-case opacity-70">(Lay marker? — per part) *</span></label>
+                ${groups.map(g => {
+                    const val = saved[g.key] === true ? 'yes' : saved[g.key] === false ? 'no' : defaultLaid;
+                    return `
+                    <div class="fmMarkerGroup flex items-center justify-between gap-2 border rounded-lg p-2 bg-white flex-wrap" data-key="${escapeHtml(g.key)}">
+                        <span class="text-[10px] font-bold text-slate-700">${escapeHtml(PART_NAME_LABELS[g.name] || g.name)}${g.part ? ' (' + escapeHtml(g.part) + ')' : ''}</span>
+                        <div class="flex gap-3 text-xs">
+                            <label class="flex items-center gap-1"><input type="radio" name="fmMarkerLaid_${escapeHtml(g.key)}" class="fmMarkerLaidRadio" value="yes" ${val === 'yes' ? 'checked' : ''}> วางมาร์ค <span class="opacity-70">(Lay marker)</span></label>
+                            <label class="flex items-center gap-1"><input type="radio" name="fmMarkerLaid_${escapeHtml(g.key)}" class="fmMarkerLaidRadio" value="no" ${val === 'no' ? 'checked' : ''}> ไม่วางมาร์ค <span class="opacity-70">(Skip)</span></label>
+                        </div>
+                    </div>`;
+                }).join('')}`;
+        }
+        // Reads the FM approval modal's per-part marker-lay ticks into {[partKey]: boolean}.
+        function collectFmMarkerDecision() {
+            const decision = {};
+            document.querySelectorAll('#fmMarkerContainer .fmMarkerGroup').forEach(el => {
+                const checked = el.querySelector('.fmMarkerLaidRadio:checked');
+                decision[el.dataset.key] = checked ? checked.value === 'yes' : null;
+            });
+            return decision;
+        }
+
         // Delegated listeners for the approval modal's Embellishment section — mirrors the
         // partsContainer listeners (dynamic per-position item fields, Outsource vendor field,
         // and the "ไม่มี" checkbox that hides/shows this part's type rows).
@@ -5815,23 +5937,32 @@
         function collectApprovalEmb(requireComplete) {
             const groupEls = Array.from(document.querySelectorAll('#approvalEmbContainer .pEmbGroup'));
             const byKey = {};
+            let missingCount = false;
             for (const el of groupEls) {
                 const key = el.dataset.key;
                 const part = el.querySelector('.pApprovalPart').value.trim();
                 const embNone = el.querySelector('.pEmbNone').checked;
                 const embellishment = embNone ? [] : Array.from(el.querySelectorAll('.pEmbTypeRow'))
                     .filter(tr => tr.querySelector('.pEmbType').checked)
-                    .map(tr => ({
-                        type: tr.querySelector('.pEmbType').value,
-                        count: parseInt(tr.querySelector('.pEmbCount').value) || 0,
-                        items: Array.from(tr.querySelectorAll('.pEmbItemDetail')).map(i => i.value),
-                        source: tr.querySelector('.pEmbSource').value,
-                        vendor: tr.querySelector('.pEmbVendor').value.trim(),
-                    }));
+                    .map(tr => {
+                        const count = parseInt(tr.querySelector('.pEmbCount').value) || 0;
+                        // Every ticked embellishment type must have a position count — BU is the
+                        // last gate for this, per "ถ้าไม่ระบุจะไม่สามารถดำเนินการต่อได้ ซึ่งด่าน
+                        // สุดท้ายที่ต้องระบุคือ BU ถ้าไม่ระบุจะไม่สามารถส่งต่องานได้".
+                        if (requireComplete && count <= 0) missingCount = true;
+                        return {
+                            type: tr.querySelector('.pEmbType').value,
+                            count,
+                            items: Array.from(tr.querySelectorAll('.pEmbItemDetail')).map(i => i.value),
+                            source: tr.querySelector('.pEmbSource').value,
+                            vendor: tr.querySelector('.pEmbVendor').value.trim(),
+                        };
+                    });
                 if (requireComplete && !part) return null;
                 if (requireComplete && !embNone && embellishment.length === 0) return null;
                 byKey[key] = { part, embNone, embellishment };
             }
+            if (missingCount) return null;
             return byKey;
         }
 
@@ -5850,7 +5981,7 @@
 
             const embByKey = collectApprovalEmb(decision === 'Approved');
             if (decision === 'Approved' && !embByKey) {
-                showToast('กรุณาระบุ พาร์ท (Part) และ Embellishment ให้ครบทุกชิ้นส่วน — ถ้าไม่มี Embellishment ให้ติ๊ก "ไม่มี" (Please specify Part and decide Embellishment for every part, or tick "None")', 'warning');
+                showToast('กรุณาระบุ พาร์ท (Part), Embellishment, และจำนวนตำแหน่งให้ครบทุกชิ้นส่วน — ถ้าไม่มี Embellishment ให้ติ๊ก "ไม่มี" (Please specify Part, Embellishment, and position count for every part, or tick "None")', 'warning');
                 return;
             }
             if (embByKey) {
@@ -5898,6 +6029,7 @@
             if (!canFMApprove(currentUser)) { showToast('คุณไม่มีสิทธิ์อนุมัติรายการนี้ (เฉพาะ Factory Manager / Production Manager)', 'warning'); return; }
             activeActionId = id;
             document.getElementById('fmApprovalItemInfo').innerHTML = buildInfoBlock(item) + deptRemarksBlockHtml(item, 'fmApprovalItemInfo');
+            renderFmMarkerGroups(item);
             document.getElementById('fmApprovalRemark').value = '';
             document.getElementById('fmApprovalName').innerText = `${currentUser.name} (${currentUser.username})`;
             document.getElementById('fmApprovalModal').classList.replace('hidden', 'flex');
@@ -5921,26 +6053,32 @@
             // without this, mainPipelineDone() would wait forever on a cuttingSend that
             // nobody will ever set, and the record could never reach Supermarket.
             const isHeatTransferAccSkip = decision === 'Approved' && ((repairs[idx].dept === 'HeatTransfer' && repairs[idx].heatTransferType === 'acc') || repairs[idx].requestType === 'ACCOnly');
-            // Pattern-matched fabric never gets a marker laid out at all — the requester
-            // already declared this at intake (originFabricType), so there's nothing for
-            // Marker to actually do. Skip straight to Cutting Sheet's queue instead of making
-            // Marker click through a step that's pure formality; non-matched fabric still
-            // needs Marker to do the real marker-laying work first, per "ถ้าเป็นผ้าจับลาย จะไม่มี
-            // การวางมาร์ค จึงต้องการให้ผ่านไปที่ใบปูตัดเลย แต่ถ้าไม่จับลายก็จะส่งให้มาร์คเกอร์
-            // ทำงานก่อน แล้วค่อยส่งต่อให้ปูตัด".
-            const isMatchedFabricSkip = decision === 'Approved' && !isHeatTransferAccSkip && repairs[idx].originFabricType === 'matched';
+            // PM/FM now decides วางมาร์ค/ไม่วางมาร์ค per part-item (see renderFmMarkerGroups),
+            // instead of Marker re-deciding a whole-record fabric type themselves at receive
+            // time, per "ปรับใหม่ให้ pm/FM เป็นคนตัดสินใจในการวางมาร์คหรือไม่วางมาร์คแทนมาร์คเกอร์".
+            // If EVERY part is ticked "ไม่วางมาร์ค", there's nothing for Marker to actually do —
+            // skip straight to Cutting Sheet's queue, same as the old pattern-matched skip; if
+            // ANY part still needs a marker laid, the whole job goes to Marker's queue as
+            // before (Marker only works the ticked-true parts, confirms at send time).
+            const fmMarkerDecision = decision === 'Approved' ? collectFmMarkerDecision() : {};
+            const needsMarker = Object.values(fmMarkerDecision).some(v => v === true);
+            const isMarkerSkip = decision === 'Approved' && !isHeatTransferAccSkip && !needsMarker;
             // See the matching note in submitApproval — this transition was another spot
             // silently leaving statusHistory empty, which is what broke the KICKBACK FOR
             // CORRECTION dropdown for records that had only gone through BU+FM approval so far.
             pushStatusHistory(repairs[idx]);
-            repairs[idx].status = isHeatTransferAccSkip ? 'CuttingSent' : (isMatchedFabricSkip ? 'MarkerSent' : decision);
+            repairs[idx].status = isHeatTransferAccSkip ? 'CuttingSent' : (isMarkerSkip ? 'MarkerSent' : decision);
+            repairs[idx].fmMarkerDecision = fmMarkerDecision;
             if (isHeatTransferAccSkip) {
                 // checkAdvanceToSupermarket() now gates on the cuttingSend field (not status)
                 // since ACC runs independently of status — mark the skipped cutting step as
                 // already "done" so this item can still advance once ACC finishes.
                 repairs[idx].cuttingSend = { by: 'system', ts: getLocalTime() };
             }
-            if (isMatchedFabricSkip) {
+            if (isMarkerSkip) {
+                // 'matched' here means "skip Marker's own work" for every downstream reader
+                // (showCuttingSheet, WIP timeline, CSV) — same meaning it always had, just now
+                // driven by PM/FM's per-part ticks instead of the requester's intake guess.
                 repairs[idx].markerAction = { by: 'system', name: 'system', fabricType: 'matched', ts: getLocalTime() };
             }
             repairs[idx].fmApproval = {
@@ -6097,26 +6235,10 @@
                 other.classList.toggle('hidden', !isOther);
                 if (isOther) other.focus(); else other.value = '';
             }
-            // QC Decision as checkbox "tiles" instead of a dropdown, per "ต้องการให้เป็น
-            // Checkbox เพื่อง่ายกับการทำงาน" — still a single verdict underneath, so picking
-            // one unchecks the others within its own type's group only (there's now one group
-            // per embellishment type, per "ในQC แต่ละส่วนงาน embellishment ตรวจก่อนส่งต่อ...
-            // ครบทุก embellishment").
-            if (e.target.classList.contains('qcDecisionCheck')) {
-                const group = e.target.closest('.qcDecisionGroup');
-                group.querySelectorAll('.qcDecisionCheck').forEach(cb => {
-                    if (cb !== e.target) cb.checked = false;
-                    cb.closest('.qcDecisionLabel').classList.toggle('bg-fuchsia-50', cb.checked);
-                    cb.closest('.qcDecisionLabel').classList.toggle('border-fuchsia-300', cb.checked);
-                    cb.closest('.qcDecisionLabel').classList.toggle('bg-white', !cb.checked);
-                    cb.closest('.qcDecisionLabel').classList.toggle('border-slate-200', !cb.checked);
-                });
-                const repairField = group.closest('.border.rounded-lg').querySelector('.qcRepairQtyField');
-                if (repairField) repairField.classList.toggle('hidden', e.target.value !== 'Repair' || !e.target.checked);
-            }
             if (e.target.id === 'stageQcDefectCat') {
                 renderQcDefectCodeOptions();
             }
+            if (e.target.id === 'stageQcReceivedQty') updateAllQcSplitHints();
             // ACC dispense table: "ไม่ต้องจ่าย" hides every other cell in that row (nothing to
             // fill in); "จ่าย" reveals them. "Job อื่น" reveals its Job No. text input.
             if (e.target.classList.contains('accFulfillMode')) {
@@ -6147,6 +6269,45 @@
             const placeholder = row.querySelector('.rcvCheckQtyPlaceholder');
             if (input) input.classList.toggle('hidden', !isPartial);
             if (placeholder) placeholder.classList.toggle('hidden', isPartial);
+            updateRcvCheckBalance(row);
+        }
+        // QC's per-type decision is now an exact quantity split (Pass/Repair/CutReplace/
+        // NotifyVendor) that must sum to "จำนวนที่ตรวจรับ" — this keeps the running "จัดสรร
+        // แล้ว X / Y" hint honest as QC types, and shows/hides the mandatory repair-reason box
+        // the moment any qty lands in Repair, per "ถ้าติ๊กส่งซ่อม ให้ระบุเหตุผลในการส่งซ่อมด้วย".
+        function updateQcSplitHint(blockEl) {
+            if (!blockEl) return;
+            const inputs = Array.from(blockEl.querySelectorAll('.qcSplitQty'));
+            const sum = inputs.reduce((s, inp) => s + (parseInt(inp.value) || 0), 0);
+            const totalInput = document.getElementById('stageQcReceivedQty');
+            const total = totalInput ? (parseInt(totalInput.value) || 0) : 0;
+            const hint = blockEl.querySelector('.qcSplitSumHint');
+            if (hint) {
+                const balanced = sum === total;
+                hint.textContent = `จัดสรรแล้ว ${sum} / ${total} ชิ้น${balanced ? ' ✓' : ' — ยังไม่ครบ'}`;
+                hint.classList.toggle('text-rose-600', !balanced);
+                hint.classList.toggle('text-emerald-600', balanced);
+            }
+            const repairInput = blockEl.querySelector('.qcSplitQty[data-outcome="Repair"]');
+            const repairQty = repairInput ? (parseInt(repairInput.value) || 0) : 0;
+            const reasonField = blockEl.querySelector('.qcRepairReasonField');
+            if (reasonField) reasonField.classList.toggle('hidden', repairQty <= 0);
+        }
+        function updateAllQcSplitHints() {
+            document.querySelectorAll('#stageExtraFields .qcTypeDecisionBlock').forEach(updateQcSplitHint);
+        }
+        // Recomputes one row's Balance cell live as the state radio or partial qty changes,
+        // instead of only being correct after a fresh render from saved data.
+        function updateRcvCheckBalance(row) {
+            const cell = row.querySelector('.rcvCheckBalanceCell');
+            if (!cell) return;
+            const sentQty = parseInt(row.dataset.sentQty) || 0;
+            const state = (row.querySelector('.rcvCheckState:checked') || {}).value || 'complete';
+            const qtyReceived = row.querySelector('.rcvCheckQty') ? row.querySelector('.rcvCheckQty').value : '';
+            const balance = rcvCheckBalance(state, sentQty, qtyReceived);
+            cell.textContent = balance > 0 ? '-' + balance : 0;
+            cell.classList.toggle('text-rose-600', balance > 0);
+            cell.classList.toggle('text-emerald-600', balance <= 0);
         }
         // Add/remove PO-number rows within the ACC checklist's "PO ใหม่" list — separate
         // 'click' listener since these are buttons, not radio/checkbox 'change' events.
@@ -6166,6 +6327,8 @@
         // of only reflecting the last-saved amount until the record is sent, per "ต้องการให้
         // รายการ Balance...คำนวนเลยไม่ต้องรอกดบันทึก".
         document.getElementById('stageExtraFields').addEventListener('input', (e) => {
+            if (e.target.classList.contains('rcvCheckQty')) { updateRcvCheckBalance(e.target.closest('.rcvCheckRow')); return; }
+            if (e.target.classList.contains('qcSplitQty')) { updateQcSplitHint(e.target.closest('.qcTypeDecisionBlock')); return; }
             if (!e.target.classList.contains('accFulfillQty')) return;
             const row = e.target.closest('.accFulfillRow');
             if (!row) return;
@@ -6185,11 +6348,17 @@
         document.getElementById('marketExtraFields').addEventListener('change', (e) => {
             if (e.target.classList.contains('rcvCheckState')) toggleRcvCheckQtyCell(e.target);
         });
+        document.getElementById('marketExtraFields').addEventListener('input', (e) => {
+            if (e.target.classList.contains('rcvCheckQty')) updateRcvCheckBalance(e.target.closest('.rcvCheckRow'));
+        });
         // Same toggle again for the Origin Receive modal's own container — this one was missed
         // when that checklist was added, which is why the "จำนวนที่ได้รับจริง" qty box never
         // appeared there even after picking "ไม่ครบ", per "ช่องให้กรอกจำนวนก็ยังไม่ขึ้น".
         document.getElementById('receiveExtraFields').addEventListener('change', (e) => {
             if (e.target.classList.contains('rcvCheckState')) toggleRcvCheckQtyCell(e.target);
+        });
+        document.getElementById('receiveExtraFields').addEventListener('input', (e) => {
+            if (e.target.classList.contains('rcvCheckQty')) updateRcvCheckBalance(e.target.closest('.rcvCheckRow'));
         });
 
         function toggleCuttingIssuePanel() {
@@ -6409,10 +6578,17 @@
             const types = applicableEmbTypes(item);
             if (types.length === 0) return true;
             const perType = item.qcInspection && item.qcInspection.perType;
-            // A "Repair" verdict resets that type's own send (see the QC-send handler) and
-            // sends it back to be redone — it must NOT count as done just because a decision
-            // string happens to be recorded; only Pass/CutReplace/NotifyVendor are terminal.
-            return !!perType && types.every(t => !!perType[t] && perType[t] !== 'Repair' && embTypeDone(item, t));
+            // Any Repair qty resets that type's own send (see the QC-send handler) and sends
+            // it back to be redone — it must NOT count as done just because a decision is
+            // recorded; only a split with zero Repair qty (or a legacy non-'Repair' string) is
+            // terminal. embTypeDone(item, t) alone would already catch this (Repair resets
+            // .send to null), but checking the decision directly keeps this self-explanatory.
+            return !!perType && types.every(t => {
+                const d = perType[t];
+                if (!d) return false;
+                const stillNeedsRepair = typeof d === 'string' ? d === 'Repair' : (d.Repair || 0) > 0;
+                return !stillNeedsRepair && embTypeDone(item, t);
+            });
         }
         // ACC runs from FM approval straight through to Supermarket on its own timeline,
         // independent of what stage the main Marker->Cutting pipeline is currently on.
@@ -6477,13 +6653,15 @@
         // Each stage's "send" step: which item field stores the send record, how to build it
         // from the modal's extra fields, and which status comes next (some branch).
         const STAGE_SEND = {
-            // Fabric type is decided at RECEIVE time now (see saveStageAction's special-cased
-            // marker-receive branch) — by the time Marker reaches "send", the only possible
-            // path is the non-directional one that stayed in their queue, so send is plain.
+            // วางมาร์ค/ไม่วางมาร์ค is decided by PM/FM per part at approval time now (see
+            // submitFMApproval/renderFmMarkerGroups) — by the time Marker reaches "send", the
+            // only possible path here is one with at least one part still needing a marker
+            // laid, and Marker's per-part radios (pre-filled from PM/FM, editable) are the
+            // confirm/correct step, per "จะได้เป็นการคอนเฟิร์มอีกที".
             marker: {
                 field: 'markerSend',
-                buildExtra: (extra) => ({ markerLaid: extra.markerLaid === 'yes' }),
-                validate: (extra) => extra.markerLaid ? null : 'กรุณาระบุว่าวางมาร์คหรือไม่ (Please specify whether the marker was laid out)',
+                buildExtra: (extra) => ({ markerLaidByPart: extra.markerLaidByPart, markerLaid: Object.values(extra.markerLaidByPart || {}).some(v => v) }),
+                validate: (extra) => (extra.markerLaidByPart && Object.keys(extra.markerLaidByPart).length) ? null : 'กรุณายืนยันวางมาร์คหรือไม่ในแต่ละชิ้นส่วน (Please confirm marker lay-out for every part)',
                 nextStatus: () => 'FabricCheckPending',
             },
             cuttingSheet: {
@@ -6794,14 +6972,18 @@
                     const typeDividerCls = entryIdx > 0 ? ' border-t-2 border-t-slate-300' : '';
                     return positions.map((posItem, posIdx) => {
                         const rowCls = typeFirstRow && posIdx === 0 ? typeDividerCls : '';
+                        // Column order: Part, Qty, Type, Positions (narrowed), Item — Qty moved
+                        // up next to Part per "ต้องการขยับมาไว้ที่ก่อนจำนวนตำแหน่ง (Positions)
+                        // และลดขนาดช่องจำนวนตำแหน่งลง". This function is shared by both the
+                        // Embellishment stage's own fields and QC's inspect fields, so fixing it
+                        // once here covers every page that shows this table.
                         const partCol = partFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1 text-left" rowspan="${partRowSpan}">${escapeHtml(g.name)}${g.part ? ` (${escapeHtml(g.part)})` : ''}</td>` : '';
-                        const typeCols = typeFirstRow ? `
-                        <td class="border-2 border-slate-300 px-1.5 py-1 text-left" rowspan="${typeRowSpan}">${escapeHtml(EMB_LABELS[e.type] || e.type)}</td>
-                        <td class="border-2 border-slate-300 px-1.5 py-1 text-center" rowspan="${typeRowSpan}">${(e.items && e.items.length) ? e.items.length : (e.count || 0)}</td>` : '';
                         const qtyCol = partFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1 text-center" rowspan="${partRowSpan}">${g.qty}</td>` : '';
+                        const typeCol = typeFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1 text-left" rowspan="${typeRowSpan}">${escapeHtml(EMB_LABELS[e.type] || e.type)}</td>` : '';
+                        const positionsCol = typeFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1 text-center w-12" rowspan="${typeRowSpan}">${(e.items && e.items.length) ? e.items.length : (e.count || 0)}</td>` : '';
                         partFirstRow = false;
                         typeFirstRow = false;
-                        return `<tr class="${rowCls}">${partCol}${typeCols}<td class="border-2 border-slate-300 px-1.5 py-1 text-left">${posItem ? escapeHtml(posItem) : '<span class="text-slate-300">-</span>'}</td>${qtyCol}</tr>`;
+                        return `<tr class="${rowCls}">${partCol}${qtyCol}${typeCol}${positionsCol}<td class="border-2 border-slate-300 px-1.5 py-1 text-left">${posItem ? escapeHtml(posItem) : '<span class="text-slate-300">-</span>'}</td></tr>`;
                     });
                 });
             }).join('');
@@ -6809,7 +6991,7 @@
                 <div class="border-t pt-3">
                     <p class="text-[10px] font-black text-slate-500 uppercase mb-1">ยอดงานที่ต้องทำ <span class="font-normal normal-case opacity-70">(Work Summary)</span></p>
                     <table class="w-full text-[10px] border-collapse">
-                        <thead><tr class="bg-slate-100"><th class="border-2 border-slate-300 px-1.5 py-1 text-left">ชิ้นส่วน <span class="font-normal opacity-70">(Part)</span></th><th class="border-2 border-slate-300 px-1.5 py-1 text-left">ประเภท <span class="font-normal opacity-70">(Type)</span></th><th class="border-2 border-slate-300 px-1.5 py-1">จำนวนตำแหน่ง <span class="font-normal opacity-70">(Positions)</span></th><th class="border-2 border-slate-300 px-1.5 py-1 text-left">Item</th><th class="border-2 border-slate-300 px-1.5 py-1">จำนวน <span class="font-normal opacity-70">(Qty)</span></th></tr></thead>
+                        <thead><tr class="bg-slate-100"><th class="border-2 border-slate-300 px-1.5 py-1 text-left">ชิ้นส่วน <span class="font-normal opacity-70">(Part)</span></th><th class="border-2 border-slate-300 px-1.5 py-1">จำนวน <span class="font-normal opacity-70">(Qty)</span></th><th class="border-2 border-slate-300 px-1.5 py-1 text-left">ประเภท <span class="font-normal opacity-70">(Type)</span></th><th class="border-2 border-slate-300 px-1.5 py-1 w-12">จำนวนตำแหน่ง <span class="font-normal opacity-70">(Pos.)</span></th><th class="border-2 border-slate-300 px-1.5 py-1 text-left">Item</th></tr></thead>
                         <tbody>${rows}</tbody>
                     </table>
                 </div>`;
@@ -6822,9 +7004,18 @@
         // กระบวนการ embellishment ทั้งหมด...รวมถึงรายการ acc...จนถึงกระบวนการส่งเข้าไลน์เย็บ".
         // Each line is independent of the ACC dispense table above — this checks RECEIPT of
         // physical goods already sent, not payment/dispense.
+        // Balance = how much of the sent qty is still outstanding — same "คงเหลือ" idea as the
+        // ACC checklist's Balance column, per "ต้องการให้เพิ่มส่วนตัวเลขที่บาลานซ์ด้วยว่าเหลืออีก
+        // เท่าไร่ทำเหมือนฟอร์มก่อนหน้านี้ ต้องการปรับใช้กับทุกหน้ารับงาน".
+        function rcvCheckBalance(state, sentQty, qtyReceived) {
+            if (state === 'complete') return 0;
+            if (state === 'none') return sentQty;
+            return sentQty - (parseInt(qtyReceived) || 0);
+        }
         function receiveCheckRowHtml(group, idx, label, sentQty, saved) {
             const l = saved || {};
             const state = l.state || 'complete';
+            const balance = rcvCheckBalance(state, sentQty, l.qtyReceived);
             return `
                 <tr class="rcvCheckRow" data-rcv-group="${group}" data-rcv-idx="${idx}" data-sent-qty="${sentQty}">
                     <td class="border-2 border-slate-300 px-1.5 py-1 font-medium align-top">${label}</td>
@@ -6838,17 +7029,27 @@
                         <input type="number" min="0" class="rcvCheckQty text-[10px] w-16 ${state === 'partial' ? '' : 'hidden'}" placeholder="0" value="${l.qtyReceived ?? ''}">
                         <span class="rcvCheckQtyPlaceholder text-slate-300 ${state === 'partial' ? 'hidden' : ''}">-</span>
                     </td>
+                    <td class="border-2 border-slate-300 px-1.5 py-1 text-center align-top font-bold rcvCheckBalanceCell ${balance > 0 ? 'text-rose-600' : 'text-emerald-600'}">${balance > 0 ? '-' + balance : 0}</td>
                 </tr>`;
         }
         // `existingCheck` is whichever check record this checkpoint already has saved
         // (e.g. item.embReceiveChecks[stage]) — passed in rather than looked up here since
         // each checkpoint keys its own record differently.
-        function buildReceiveCheckTable(item, existingCheck, title) {
+        // `relevantPartFilter` narrows which parts actually belong on THIS receive screen —
+        // e.g. an embellishment type's receive check should only list parts that actually have
+        // that type ticked, not every part on the whole record, per "ส่วนของชิ้นงานที่ไม่ได้
+        // ระบุให้นำมาปัก...ไม่จำเป็นต้องนำมาแสดง...ให้ดึงเฉพาะข้อมูลที่เกี่ยวข้องกับงานนั้นจริงๆ".
+        // Defaults to "every part" so the Supermarket/Origin Receive callers (whole-batch
+        // hand-offs, no per-type filtering) keep their existing behavior unchanged.
+        function buildReceiveCheckTable(item, existingCheck, title, relevantPartFilter = () => true) {
             const existing = existingCheck || { parts: [], accRequest: [] };
             const partMap = Object.fromEntries((existing.parts || []).map(l => [l.idx, l]));
             const accMap = Object.fromEntries((existing.accRequest || []).map(l => [l.idx, l]));
-            const partRows = item.parts.map((p, idx) => receiveCheckRowHtml('parts', idx,
-                `${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}${p.part ? ' (' + escapeHtml(p.part) + ')' : ''} — ${escapeHtml(p.size)}`, p.qty, partMap[idx])).join('');
+            const partRows = item.parts
+                .map((p, idx) => ({ p, idx }))
+                .filter(({ p }) => relevantPartFilter(p))
+                .map(({ p, idx }) => receiveCheckRowHtml('parts', idx,
+                    `${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}${p.part ? ' (' + escapeHtml(p.part) + ')' : ''} — ${escapeHtml(p.size)}`, p.qty, partMap[idx])).join('');
             const accRows = (item.accRequestList || []).map((a, idx) => receiveCheckRowHtml('accRequest', idx, escapeHtml(a.label || a.key), a.qty, accMap[idx])).join('');
             if (!partRows && !accRows) return '';
             return `
@@ -6862,6 +7063,7 @@
                                     <th class="border-2 border-slate-300 px-1.5 py-1">จำนวนที่ส่ง</th>
                                     <th class="border-2 border-slate-300 px-1.5 py-1">ได้รับ</th>
                                     <th class="border-2 border-slate-300 px-1.5 py-1">จำนวนที่ได้รับจริง</th>
+                                    <th class="border-2 border-slate-300 px-1.5 py-1">คงเหลือ <span class="font-normal opacity-70">(Balance)</span></th>
                                 </tr>
                             </thead>
                             <tbody>${partRows}${accRows}</tbody>
@@ -6921,6 +7123,13 @@
             const itemNoHtml = Array.isArray(itemNo)
                 ? (itemNo.length ? itemNo.map(n => `<div>${escapeHtml(n)}</div>`).join('') : '<span class="text-slate-300">-</span>')
                 : (itemNo ? escapeHtml(itemNo) : '<span class="text-slate-300">-</span>');
+            // label may likewise be an array of embellishment-type lines (one per type, index-
+            // aligned with itemNo's array so "ปัก" lines up with its own item number instead of
+            // all types being joined onto one comma-separated line) — per "ต้องการให้แยกกันคนละ
+            // บรรทัด และถ้ามีหลายไอเทมก็จะต้องเรียงกันคนละบรรทัดลงมาเรื่อยๆ".
+            const labelHtml = Array.isArray(label)
+                ? (label.length ? label.map(t => `<div>${t}</div>`).join('') : '<span class="text-slate-300">-</span>')
+                : label;
             const l = saved || {};
             const noNeed = !!l.noNeed;
             // A line with no prior decision at all defaults to the "จ่าย" (pay) view so its
@@ -6943,7 +7152,7 @@
             return `
                 <tr class="accFulfillRow ${noNeed ? 'bg-slate-100' : ''}" data-fulfill-group="${group}" data-fulfill-idx="${idx}" data-requested-qty="${requestedQty}" data-existing-paid="${qtyPaid}">
                     <td class="border-2 border-slate-300 px-1.5 py-1 align-top text-slate-500">${partName || '<span class="text-slate-300">-</span>'}</td>
-                    <td class="border-2 border-slate-300 px-1.5 py-1 font-medium align-top">${label}${historyHtml ? `<div class="text-[9px] text-slate-400 mt-1">${historyHtml}</div>` : ''}</td>
+                    <td class="border-2 border-slate-300 px-1.5 py-1 font-medium align-top">${labelHtml}${historyHtml ? `<div class="text-[9px] text-slate-400 mt-1">${historyHtml}</div>` : ''}</td>
                     <td class="border-2 border-slate-300 px-1.5 py-1 align-top">${itemNoHtml}</td>
                     <td class="border-2 border-slate-300 px-1.5 py-1 align-top">${size ? escapeHtml(size) : '<span class="text-slate-300">-</span>'}</td>
                     <td class="border-2 border-slate-300 px-1.5 py-1 text-center align-top font-bold bg-slate-50">${requestedQty}</td>
@@ -6985,16 +7194,17 @@
                 .map((p, idx) => ({ p, idx }))
                 .filter(({ p }) => (p.embellishment || []).length > 0)
                 .map(({ p, idx }) => {
-                    // Each distinct embellishment item number gets its own line — per "ส่วนของ
-                    // รายการที่เป็น item จะเรียงไอเทมลงมาถ้าเป็นคนละไอเทม" — instead of joining
-                    // multiple different items into one comma-separated string.
-                    const itemNos = [...new Set((p.embellishment || []).flatMap(e => (e.items && e.items.length) ? e.items : []).filter(Boolean))];
-                    // Which embellishment type(s) actually need ACC for this part — per
-                    // "ต้องการให้แสดงว่ามาจาก embellishment หรือรายการ acc อะไร" — shown in the
-                    // "รายการ ACC" column instead of the part name (which now has its own column).
-                    const embTypeLabel = [...new Set((p.embellishment || []).map(e => EMB_LABELS[e.type] || e.type))].join(', ');
+                    // One line per embellishment TYPE, index-aligned with its own item
+                    // number(s) on the same line index in the Item column — per "ต้องการให้แยก
+                    // กันคนละบรรทัด และถ้ามีหลายไอเทมก็จะต้องเรียงกันคนละบรรทัดลงมาเรื่อยๆ".
+                    // Previously the type names were joined into one comma-separated line while
+                    // items were stacked separately, so a multi-type part had no visible link
+                    // between which type went with which item number.
+                    const embEntries = p.embellishment || [];
+                    const typeLines = embEntries.map(e => escapeHtml(EMB_LABELS[e.type] || e.type));
+                    const itemLines = embEntries.map(e => (e.items && e.items.length) ? e.items.join(', ') : '-');
                     const partName = `${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}${p.part ? ' (' + escapeHtml(p.part) + ')' : ''}`;
-                    return accFulfillmentRowHtml('parts', idx, partName, escapeHtml(embTypeLabel), itemNos, p.size, p.qty, partMap[idx]);
+                    return accFulfillmentRowHtml('parts', idx, partName, typeLines, itemLines, p.size, p.qty, partMap[idx]);
                 }).join('');
             const accRows = (item.accRequestList || []).map((a, idx) => {
                 // No specific fabric part for an additional ACC requisition line, per "และให้มี
@@ -7377,9 +7587,19 @@
                 const defectQtyForType = (t === qi.currentType) ? defectCodes.reduce((s, d) => s + (parseInt(d.qty) || 0), 0) : 0;
                 const suggestedQty = defectQtyForType || qi.defectQty || totalQty || 1;
                 const partNames = [...new Set(matchingParts.map(p => PART_NAME_LABELS[p.name] || p.name))].join(', ') || '-';
+                // Shown so QC can see up front which request type this will become, per
+                // "ต้องการให้ใช้เป็นแจ้งตัดงานซ่อม (ซัพพลายเออร์)" for outsource-caused defects.
+                const embEntry = (matchingParts[0] && matchingParts[0].embellishment || []).find(e => e.type === t);
+                const isOutsource = embEntry && embEntry.source === 'outsource';
+                const sourceBadge = isOutsource
+                    ? `<span class="text-[9px] font-bold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">Outsource → แจ้งตัดงานซ่อม (ซัพพลายเออร์)</span>`
+                    : `<span class="text-[9px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-0.5">In-house → แจ้งขอตัดเปลี่ยน</span>`;
                 return `
                 <div class="border rounded-lg p-2 bg-white" data-cutreplace-type="${t}">
-                    <div class="text-[10px] font-bold text-slate-700 mb-1">${escapeHtml(EMB_LABELS[t] || t)} <span class="font-normal text-slate-400">— ชิ้นส่วนที่เกี่ยวข้อง: ${escapeHtml(partNames)}</span></div>
+                    <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+                        <div class="text-[10px] font-bold text-slate-700">${escapeHtml(EMB_LABELS[t] || t)} <span class="font-normal text-slate-400">— ชิ้นส่วนที่เกี่ยวข้อง: ${escapeHtml(partNames)}</span></div>
+                        ${sourceBadge}
+                    </div>
                     ${defectCodes.length && t === qi.currentType ? `<div class="text-[9px] text-slate-500 mb-1">Defect ที่พบ: ${defectCodes.map(d => `${escapeHtml(d.code)} (${d.qty || 1})`).join(', ')}</div>` : ''}
                     <label class="text-[9px] font-bold text-red-600 block mb-1">จำนวนที่จะตัดเปลี่ยนใหม่ <span class="opacity-70">(Qty to cut-replace)</span> *</label>
                     <input type="number" min="1" class="cutReplaceQty w-full text-xs" value="${suggestedQty}">
@@ -7393,26 +7613,33 @@
             const item = repairs[idx];
             const rows = document.querySelectorAll('#qcCutReplaceRows [data-cutreplace-type]');
             const newParts = [];
+            let anyOutsource = false;
             rows.forEach(row => {
                 const t = row.dataset.cutreplaceType;
                 const qty = parseInt(row.querySelector('.cutReplaceQty').value) || 1;
                 const matchingParts = item.parts.filter(p => (p.embellishment || []).some(e => e.type === t));
                 const src = matchingParts[0] || item.parts[0];
+                const embEntry = (src.embellishment || []).find(e => e.type === t);
+                if (embEntry && embEntry.source === 'outsource') anyOutsource = true;
                 newParts.push({ name: src.name, part: src.part, size: src.size, qty, sample: false, reason: 'QCDefect', embellishment: [], itemNo: '', fabricItem: src.fabricItem || '' });
             });
             if (!newParts.length) { showToast('ไม่มีรายการให้สร้าง (Nothing to create)', 'warning'); return; }
             const ts = getLocalTime();
+            // Outsource-caused defects get their own request type for separate tracking, per
+            // "ถ้า QC ต้องแจ้งตัดเปลี่ยนใหม่สำหรับ embellishment ที่รับมาจาก outsource ต้องการให้
+            // ใช้เป็นแจ้งตัดงานซ่อม (ซัพพลายเออร์)" — in-house defects still use the plain type.
+            const newRequestType = anyOutsource ? 'SupplierCutReplace' : 'CutReplace';
             const newItem = {
                 id: "R-" + Math.floor(1000 + Math.random() * 9000),
-                docNo: generateDocNo('CutReplace'),
+                docNo: generateDocNo(newRequestType),
                 date: ts, needDate: item.needDate || '', shipOutDate: '',
                 dept: item.dept, line: item.line, heatTransferType: null, originFabricType: item.originFabricType,
-                requestType: 'CutReplace',
+                requestType: newRequestType,
                 style: item.style, job: item.job, item: item.item, color: item.color, po: item.po,
                 remark: `สร้างอัตโนมัติจาก QC Reject ของ ${docLabel(item)} (${(item.qcCutReplace.types || []).map(t => EMB_LABELS[t] || t).join(', ')})`,
                 accRequestList: [],
                 status: 'PendingApproval', statusHistory: [], archived: false, requesterUser: currentUser.username,
-                approval: null, fmApproval: null,
+                approval: null, fmApproval: null, fmMarkerDecision: null,
                 markerReceive: null, markerAction: null, markerSend: null, cuttingSheetReceive: null, cuttingSheetSend: null,
                 fabricCheckReceive: null, fabricCheckSend: null, ppcFabricReceive: null, ppcFabric: null,
                 stockFabricReceive: null, stockFabricSend: null,
@@ -7457,7 +7684,7 @@
                         <span class="block text-[10px] opacity-70">Sent back by QC for repair — ${repairReq.qty} pcs${repairReq.roundNo > 1 ? ` (round ${repairReq.roundNo})` : ''}</span>
                     </div>` : '';
                 const summary = repairBanner + embWorkSummaryHtml(item, [stage]);
-                if (mode === 'receive') return summary + buildReceiveCheckTable(item, (item.embReceiveChecks || {})[stage], `ตรวจสอบรายการที่ได้รับจากแผนกตัด (${EMB_LABELS[stage] || stage})`);
+                if (mode === 'receive') return summary + buildReceiveCheckTable(item, (item.embReceiveChecks || {})[stage], `ตรวจสอบรายการที่ได้รับจากแผนกตัด (${EMB_LABELS[stage] || stage})`, p => (p.embellishment || []).some(e => e.type === stage));
                 return summary + stageEmbSendFieldsHtml(stage, item);
             }
             if (stage === 'qc') {
@@ -7531,7 +7758,8 @@
                             <select id="stageQcDefectCat" class="w-full text-xs bg-white">
                                 ${DEFECT_CATEGORIES.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
                             </select>
-                            <select id="stageQcDefectCode" class="w-full text-xs bg-white"></select>
+                            <input type="text" id="stageQcDefectCode" class="w-full text-xs bg-white" list="qcDefectCodeDatalist" placeholder="พิมพ์ค้นหา code หรือชื่อ defect...">
+                            <datalist id="qcDefectCodeDatalist"></datalist>
                             <button type="button" onclick="addQcDefectCode()" class="btn-secondary text-xs px-3">+ เพิ่ม</button>
                         </div>
                         <div id="stageQcDefectListItems" class="space-y-1 mt-1.5"></div>
@@ -7541,38 +7769,45 @@
                         <textarea id="stageQcDefectNotes" rows="2" class="w-full text-xs" placeholder="รายละเอียดเพิ่มเติมนอกเหนือจากรายการ Defect (ถ้ามี)">${escapeHtml(qi.defectNotes || '')}</textarea>
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ผลการตรวจ <span class="font-normal normal-case opacity-70">(Decision)</span> *</label>
+                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ผลการตรวจ <span class="font-normal normal-case opacity-70">(Decision — split by exact quantity)</span> *</label>
                         <div class="space-y-2">
                             ${inspectTypes.map(t => {
                                 const entry = item.parts.map(p => (p.embellishment || []).find(e => e.type === t)).find(Boolean) || {};
                                 const overrideSource = missingSourceTypes.includes(t) ? null : entry.source;
                                 // In-house work has no external vendor to notify, so it only ever
-                                // gets Pass/CutReplace — per "Inhouse: ปักเสร็จ > QC ปักตรวจ" (no
-                                // reject-to-vendor branch shown) vs "Outsource: ...ไม่ผ่าน=reject
-                                // ซ่อมหรือตัดเปลี่ยนใหม่" which explicitly includes notifying them.
+                                // gets Pass/Repair/CutReplace — per "Inhouse: ปักเสร็จ > QC ปักตรวจ"
+                                // (no reject-to-vendor branch shown) vs "Outsource: ...ไม่ผ่าน=
+                                // reject ซ่อมหรือตัดเปลี่ยนใหม่" which explicitly includes notifying them.
                                 const options = overrideSource === 'inhouse' ? QC_DECISION_OPTIONS.filter(o => o.value !== 'NotifyVendor') : QC_DECISION_OPTIONS;
-                                const saved = qi.perType && qi.perType[t];
                                 const sourceLabel = overrideSource === 'inhouse' ? 'In-house' : overrideSource === 'outsource' ? 'Outsource' : 'ระบุแหล่งที่มาด้านบนก่อน';
-                                const suggestedRepairQty = (qi.defectCodes || []).reduce((s, d) => s + (parseInt(d.qty) || 0), 0) || qi.defectQty || '';
+                                // Only a freshly (re-)opened visit's own split survives here — an
+                                // Admin Undo always clears perType[t] before this can reopen for
+                                // the same type, so no legacy single-string decision ever needs
+                                // rendering back into this form (only into read-only history views).
+                                const savedSplit = (qi.perType && qi.perType[t] && typeof qi.perType[t] === 'object') ? qi.perType[t] : {};
+                                // A brand-new visit defaults every received unit to Pass — the
+                                // common case (nothing wrong) needs no extra typing; QC just
+                                // moves qty down into Repair/CutReplace/NotifyVendor as needed.
+                                const defaultPass = qi.receivedQty ?? '';
                                 return `
-                                <div class="border rounded-lg p-2 bg-slate-50">
+                                <div class="qcTypeDecisionBlock border rounded-lg p-2 bg-slate-50">
                                     <div class="text-[10px] font-bold text-slate-600 mb-1">${escapeHtml(EMB_LABELS[t] || t)} <span class="font-normal text-slate-400">(${sourceLabel})</span></div>
-                                    <div class="qcDecisionGroup grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1.5" data-emb-type="${t}">
+                                    <div class="qcSplitGroup grid grid-cols-2 sm:grid-cols-4 gap-1.5" data-emb-type="${t}">
                                         ${options.map(o => `
-                                            <label class="qcDecisionLabel flex items-center gap-2 text-xs border rounded-lg px-2 py-1.5 cursor-pointer transition-colors ${saved === o.value ? 'bg-fuchsia-50 border-fuchsia-300' : 'bg-white border-slate-200 hover:bg-slate-100'}">
-                                                <input type="checkbox" class="qcDecisionCheck w-4 h-4 text-fuchsia-600 rounded" value="${o.value}" ${saved === o.value ? 'checked' : ''}>
-                                                <span class="font-bold">${o.label}</span>
-                                            </label>`).join('')}
+                                            <div>
+                                                <label class="text-[9px] font-bold block mb-0.5 ${o.value === 'Pass' ? 'text-emerald-600' : o.value === 'Repair' ? 'text-amber-600' : 'text-rose-600'}">${o.label}</label>
+                                                <input type="number" min="0" class="qcSplitQty w-full text-xs" data-outcome="${o.value}" value="${savedSplit[o.value] ?? (o.value === 'Pass' ? defaultPass : '')}">
+                                            </div>`).join('')}
                                     </div>
-                                    <div class="qcRepairQtyField mt-1.5 ${saved === 'Repair' ? '' : 'hidden'}">
-                                        <label class="text-[9px] font-bold text-amber-700 block mb-1">จำนวนที่ต้องส่งซ่อม <span class="opacity-70">(Qty to send for repair)</span> *</label>
-                                        <input type="number" min="1" class="qcRepairQty w-full text-xs" value="${suggestedRepairQty}">
-                                        <p class="text-[9px] text-slate-400 mt-1">จะตีกลับไปให้แผนก ${escapeHtml(EMB_LABELS[t] || t)} ซ่อมตามจำนวนนี้ก่อนตรวจใหม่</p>
+                                    <p class="qcSplitSumHint text-[9px] mt-1 font-bold"></p>
+                                    <div class="qcRepairReasonField mt-1.5 ${(savedSplit.Repair > 0) ? '' : 'hidden'}">
+                                        <label class="text-[9px] font-bold text-amber-700 block mb-1">เหตุผลที่ส่งซ่อม <span class="opacity-70">(Repair reason)</span> *</label>
+                                        <textarea class="qcRepairReason w-full text-xs" rows="2" placeholder="ระบุสิ่งที่ต้องแก้ไข เพื่อให้ปลายทางทราบว่าต้องแก้อะไร">${escapeHtml(savedSplit.repairReason || '')}</textarea>
                                     </div>
                                 </div>`;
                             }).join('')}
                         </div>
-                        <p class="text-[9px] text-slate-400 mt-1">"ส่งซ่อม" = ตีกลับไปแผนกเดิมให้แก้ไขตามจำนวนที่ระบุ | "แจ้งตัดเปลี่ยน"/"แจ้ง Vendor" = สร้างเอกสารแยกหรือแจ้งเตือนตามกระบวนการ</p>
+                        <p class="text-[9px] text-slate-400 mt-1">แต่ละประเภทต้องจัดสรรจำนวนให้ครบตาม "จำนวนที่ตรวจรับ" — ถ้ามีจำนวนส่งซ่อมมากกว่า 0 งานประเภทนั้นทั้งชุดจะถูกตีกลับให้แผนกเดิมแก้ไขก่อน (ยังไม่ส่งต่อจนกว่าจะตรวจซ่อมผ่าน) ส่วนตัดเปลี่ยน/แจ้ง Vendor จะสร้างเอกสารแยกหรือแจ้งเตือนตามกระบวนการ</p>
                     </div>`;
             }
         }
@@ -7606,41 +7841,71 @@
                 return heatTransferSummary + fulfillment;
             }
             if (mode === 'decide' && stage === 'marker') {
-                // The requester may have already ticked this at request creation — pre-select
-                // it here so Marker just confirms instead of deciding blind, per
-                // "เพิ่มส่วนที่ต้นทางเมื่อแจ้งงานสามารถติ๊กเช็คบล็อค...เพื่อให้ง่ายกับแผนกถัดไป".
-                const originHint = item.originFabricType
-                    ? `<p class="text-[9px] text-indigo-600 bg-indigo-50 border border-indigo-100 rounded px-1.5 py-1 mt-1.5">ℹ️ ต้นทางระบุไว้แล้วว่า${item.originFabricType === 'matched' ? 'ผ้าจับลาย' : 'ผ้าไม่จับลาย'} — กรุณายืนยันอีกครั้งก่อนรับงาน</p>`
-                    : '';
+                // PM/FM already decided วางมาร์ค/ไม่วางมาร์ค per part at approval time (see
+                // renderFmMarkerGroups/submitFMApproval) — Marker's receive step is now a plain
+                // receipt with nothing left to pick; this just shows what was decided, per
+                // "มาร์คเกอร์อาจจะไม่ต้องระบุประเภทผ้า...ให้ยกเลิกออก". Reaching this step at all
+                // means at least one part was ticked วางมาร์ค (anything with none would already
+                // have skipped straight to 'MarkerSent').
+                const groups = groupPartsForEmb(item.parts || []);
+                const decision = item.fmMarkerDecision || {};
                 return `
                     <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ประเภทผ้า <span class="font-normal normal-case opacity-70">(Fabric Type)</span> *</label>
-                        <div class="flex gap-4 text-xs bg-slate-50 p-2.5 rounded-lg border">
-                            <label class="flex items-center gap-1"><input type="radio" name="stageFabricType" value="matched" ${item.originFabricType === 'matched' ? 'checked' : ''}> ผ้าจับลาย <span class="opacity-70">(Pattern-matched)</span></label>
-                            <label class="flex items-center gap-1"><input type="radio" name="stageFabricType" value="unmatched" ${item.originFabricType === 'unmatched' ? 'checked' : ''}> ผ้าไม่จับลาย <span class="opacity-70">(Non-directional)</span></label>
+                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ผลการตัดสินใจโดย PM/FM <span class="font-normal normal-case opacity-70">(Marker decision — set by PM/FM)</span></label>
+                        <div class="space-y-1">
+                            ${groups.map(g => `
+                                <div class="flex items-center justify-between gap-2 text-xs bg-slate-50 border rounded-lg px-2 py-1.5">
+                                    <span class="font-bold text-slate-600">${escapeHtml(PART_NAME_LABELS[g.name] || g.name)}${g.part ? ' (' + escapeHtml(g.part) + ')' : ''}</span>
+                                    <span class="font-bold ${decision[g.key] ? 'text-fuchsia-600' : 'text-slate-400'}">${decision[g.key] ? 'วางมาร์ค' : 'ไม่วางมาร์ค'}</span>
+                                </div>`).join('')}
                         </div>
-                        <p class="text-[9px] text-slate-400 mt-1">ผ้าจับลาย → รับงานแล้วส่งต่อใบปูตัดทันที | ผ้าไม่จับลาย → มาร์คเกอร์รับไว้ดำเนินการเอง แล้วค่อยกด "ส่งต่อ" ทีหลัง</p>
-                        ${originHint}
                     </div>`;
             }
             if (mode === 'receive') return '';
             if (stage === 'marker') {
-                // Per "ในส่วนของ Marker ตอนก่อนส่งงานต่อให้มี checkbox ว่า วางมาร์ค หรือ
-                // ไม่วางมาร์ค เพื่อดำเนินการต่อ" — a separate confirmation from the fabric-type
-                // decision at receive: whether Marker actually laid out a marker pattern for
-                // this job before sending it on.
-                const laid = item.markerSend && item.markerSend.markerLaid;
+                // Per-part confirmation instead of one whole-record radio, per "ติ๊กเลือกวาง
+                // มาร์คหรือไม่วางมาร์คในแต่ละรายการไอเทมแทน เพื่อจะได้เป็นการคอนเฟิร์มอีกที" —
+                // pre-filled from PM/FM's own per-part decision, editable here since Marker is
+                // the one who actually did (or didn't) lay each one out and may know better by
+                // the time work is really done.
+                const groups = groupPartsForEmb(item.parts || []);
+                const fmDecision = item.fmMarkerDecision || {};
+                const savedSend = (item.markerSend && item.markerSend.markerLaidByPart) || {};
                 return `
                     <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วางมาร์คหรือไม่ <span class="font-normal normal-case opacity-70">(Marker Laid Out?)</span> *</label>
-                        <div class="flex gap-4 text-xs bg-slate-50 p-2.5 rounded-lg border">
-                            <label class="flex items-center gap-1"><input type="radio" name="stageMarkerLaid" value="yes" ${laid === true ? 'checked' : ''}> วางมาร์ค <span class="opacity-70">(Laid out)</span></label>
-                            <label class="flex items-center gap-1"><input type="radio" name="stageMarkerLaid" value="no" ${laid === false ? 'checked' : ''}> ไม่วางมาร์ค <span class="opacity-70">(Not laid out)</span></label>
+                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">วางมาร์คหรือไม่ (รายชิ้นส่วน) <span class="font-normal normal-case opacity-70">(Marker Laid Out? — per part, confirm/correct PM/FM's call) *</span></label>
+                        <div class="space-y-1.5">
+                            ${groups.map(g => {
+                                const val = (g.key in savedSend) ? savedSend[g.key] : !!fmDecision[g.key];
+                                return `
+                                <div class="markerLaidGroup flex items-center justify-between gap-2 text-xs bg-slate-50 border rounded-lg px-2 py-1.5 flex-wrap" data-key="${escapeHtml(g.key)}">
+                                    <span class="font-bold text-slate-600">${escapeHtml(PART_NAME_LABELS[g.name] || g.name)}${g.part ? ' (' + escapeHtml(g.part) + ')' : ''}</span>
+                                    <div class="flex gap-3">
+                                        <label class="flex items-center gap-1"><input type="radio" name="markerLaid_${escapeHtml(g.key)}" class="markerLaidRadio" value="yes" ${val ? 'checked' : ''}> วางมาร์ค <span class="opacity-70">(Laid out)</span></label>
+                                        <label class="flex items-center gap-1"><input type="radio" name="markerLaid_${escapeHtml(g.key)}" class="markerLaidRadio" value="no" ${!val ? 'checked' : ''}> ไม่วางมาร์ค <span class="opacity-70">(Not laid out)</span></label>
+                                    </div>
+                                </div>`;
+                            }).join('')}
                         </div>
                     </div>`;
             }
             if (stage === 'fabricCheck') {
-                return `
+                // Fabric Check is the last stop before Cutting/Stock Fabric, so every part's
+                // fabric item number must be filled in by the time it sends onward — the field
+                // itself has been open/editable since record creation for whoever knows it, but
+                // this is the hard gate, per "เช็คผ้าจะเป็นส่วนสุดท้ายที่จำเป็นต้องมีก่อนส่งงาน".
+                const fabricItemRows = `
+                    <div>
+                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">Item ผ้า ของแต่ละชิ้นส่วน <span class="font-normal normal-case opacity-70">(Fabric Item — required before sending)</span> *</label>
+                        <div id="stageFabricItemRows" class="space-y-1.5">
+                            ${item.parts.map((p, i) => `
+                                <div class="flex items-center gap-2 text-xs" data-part-idx="${i}">
+                                    <span class="w-2/5 truncate text-slate-500">${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}${p.part ? ' (' + escapeHtml(p.part) + ')' : ''} — ${escapeHtml(p.size)}</span>
+                                    <input type="text" class="stageFabricItemInput flex-1 text-xs" value="${escapeHtml(p.fabricItem || '')}" placeholder="เลขที่ Item ผ้า">
+                                </div>`).join('')}
+                        </div>
+                    </div>`;
+                return fabricItemRows + `
                     <div>
                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">มีผ้าหรือไม่ <span class="font-normal normal-case opacity-70">(Fabric Available?)</span> *</label>
                         <div class="flex gap-4 text-xs bg-slate-50 p-2.5 rounded-lg border">
@@ -7744,6 +8009,7 @@
                 qcDefectDraft = JSON.parse(JSON.stringify((item.qcInspection && item.qcInspection.defectCodes) || []));
                 renderQcDefectCodeOptions();
                 renderQcDefectList();
+                updateAllQcSplitHints();
             }
             // "Report an issue" sections live in their own fixed slot below the buttons —
             // same position for every stage that has one, matching Cutting's layout. Only
@@ -7775,22 +8041,16 @@
             const attachment = null; // attachment upload removed
 
             if (mode === 'decide') {
-                // Marker-only: receiving IS the fabric-type decision. Pattern-matched fabric
-                // routes straight through to Cutting Sheet's queue with no separate send step;
-                // non-directional fabric holds normally until Marker later sends it onward.
-                const fabricType = (document.querySelector('input[name="stageFabricType"]:checked') || {}).value;
-                if (!fabricType) { showToast('กรุณาเลือกประเภทผ้า (ผ้าจับลาย/ผ้าไม่จับลาย) — Please choose the fabric type', 'warning'); return; }
-                item.markerAction = { by: currentUser.username, name: currentUser.name, attachment, ts, fabricType };
+                // Marker-only: the วางมาร์ค/ไม่วางมาร์ค decision now happens at PM/FM approval,
+                // per part (see submitFMApproval/renderFmMarkerGroups) — reaching this step at
+                // all already means at least one part needs a marker laid out (anything with
+                // none would have skipped straight to 'MarkerSent'), so receiving here is just
+                // a plain receipt with nothing left to pick.
+                item.markerAction = { by: currentUser.username, name: currentUser.name, attachment, ts };
                 pushStatusHistory(item);
-                if (fabricType === 'matched') {
-                    item.status = 'MarkerSent';
-                    logAction('MarkerDecide', item.id, `${currentUser.name} รับงาน Marker — ผ้าจับลาย ส่งต่อใบปูตัดทันที`);
-                    showToast('รับงานแล้ว — ผ้าจับลาย ส่งต่อใบปูตัดทันที (Sent straight to Cutting Sheet)', 'success');
-                } else {
-                    item.status = 'MarkerReceived';
-                    logAction('MarkerDecide', item.id, `${currentUser.name} รับงาน Marker — ผ้าไม่จับลาย ดำเนินการเอง`);
-                    showToast('รับงานแล้ว — ผ้าไม่จับลาย ดำเนินการต่อได้เลย (Receipt saved)', 'success');
-                }
+                item.status = 'MarkerReceived';
+                logAction('MarkerDecide', item.id, `${currentUser.name} รับงาน Marker`);
+                showToast('รับงานแล้ว (Receipt saved)', 'success');
             } else if (mode === 'receive' && EMB_STAGE_TYPES.includes(stage)) {
                 item.embStages = item.embStages || {};
                 item.embStages[stage] = { ...(item.embStages[stage] || {}), receive: { by: currentUser.username, name: currentUser.name, attachment, ts } };
@@ -7826,34 +8086,39 @@
                 logAction('EmbSend', item.id, `${currentUser.name} ส่งต่อ (${EMB_LABELS[stage] || stage}) → QC ตรวจ${EMB_LABELS[stage] || stage}`);
                 showToast('บันทึกการส่งต่อเรียบร้อย — ส่งไปให้ QC ตรวจก่อนไปขั้นตอนถัดไป (Sent to QC for inspection)', 'success');
             } else if (mode === 'send' && stage === 'qc') {
-                // One decision PER embellishment type now (per "ในQC แต่ละส่วนงาน embellishment
-                // ตรวจก่อนส่งต่อต้องการเพิ่มให้ครบทุก embellishment") instead of a single verdict
-                // for the whole item — every applicable type must have its own pick.
-                const perTypeDecisions = {};
-                let missingTypeDecision = false;
-                document.querySelectorAll('#stageExtraFields .qcDecisionGroup').forEach(g => {
-                    const t = g.dataset.embType;
-                    const checked = g.querySelector('.qcDecisionCheck:checked');
-                    if (!checked) { missingTypeDecision = true; return; }
-                    perTypeDecisions[t] = checked.value;
-                });
+                // Each embellishment type's decision is now an exact quantity split across
+                // Pass/Repair/CutReplace/NotifyVendor (must sum to that type's received qty),
+                // per "ต้องการให้สามารถเลือกได้มากกว่า 2 รายการ เพราะบางทีมีผ่านบางส่วน...บางครั้ง
+                // ต้องนำไปตัดเปลี่ยน" — replacing the old single pick-one-verdict-per-type UI.
                 const receivedQty = document.getElementById('stageQcReceivedQty').value;
-                if (missingTypeDecision || !Object.keys(perTypeDecisions).length) { showToast('กรุณาเลือกผลการตรวจให้ครบทุกประเภท (Please choose a decision for every type)', 'warning'); return; }
                 if (receivedQty === '') { showToast('กรุณาระบุจำนวนที่ตรวจรับ (Please specify received qty)', 'warning'); return; }
-                // "ส่งซ่อม" needs its own qty — how many units are being kicked back, per
-                // "ถ้าส่งซ่อมงานก็จะถูกตีกลับไปที่ส่วนงานก่อนหน้าเพื่อทำการซ่อมแซมชิ้นงาน ตาม
-                // จำนวนงานที่ถูกรีเจ็คให้ซ่อม".
-                const repairQtyByType = {};
-                let missingRepairQty = false;
-                document.querySelectorAll('#stageExtraFields .qcDecisionGroup').forEach(g => {
-                    const t = g.dataset.embType;
-                    if (perTypeDecisions[t] !== 'Repair') return;
-                    const qtyInput = g.closest('.border.rounded-lg').querySelector('.qcRepairQty');
-                    const qty = qtyInput ? parseInt(qtyInput.value) || 0 : 0;
-                    if (qty <= 0) { missingRepairQty = true; return; }
-                    repairQtyByType[t] = qty;
-                });
-                if (missingRepairQty) { showToast('กรุณาระบุจำนวนที่ต้องส่งซ่อมให้ครบ (Please specify the repair qty)', 'warning'); return; }
+                const receivedQtyNum = parseInt(receivedQty) || 0;
+                const perTypeDecisions = {};
+                const repairReasonByType = {};
+                let sumMismatchType = null;
+                let missingRepairReason = false;
+                for (const blockEl of document.querySelectorAll('#stageExtraFields .qcTypeDecisionBlock')) {
+                    const groupEl = blockEl.querySelector('.qcSplitGroup');
+                    const t = groupEl.dataset.embType;
+                    const split = {};
+                    let sum = 0;
+                    groupEl.querySelectorAll('.qcSplitQty').forEach(inp => {
+                        const qty = parseInt(inp.value) || 0;
+                        split[inp.dataset.outcome] = qty;
+                        sum += qty;
+                    });
+                    if (sum !== receivedQtyNum) { sumMismatchType = t; break; }
+                    if (split.Repair > 0) {
+                        const reason = blockEl.querySelector('.qcRepairReason').value.trim();
+                        if (!reason) { missingRepairReason = true; break; }
+                        repairReasonByType[t] = reason;
+                    }
+                    perTypeDecisions[t] = split;
+                }
+                if (sumMismatchType) { showToast(`จำนวนที่จัดสรรของ ${EMB_LABELS[sumMismatchType] || sumMismatchType} ต้องรวมให้ครบเท่ากับจำนวนที่ตรวจรับ (${receivedQtyNum} ชิ้น)`, 'warning'); return; }
+                if (missingRepairReason) { showToast('กรุณาระบุเหตุผลที่ส่งซ่อม (Please specify the repair reason)', 'warning'); return; }
+                if (!Object.keys(perTypeDecisions).length) { showToast('กรุณาระบุผลการตรวจให้ครบทุกประเภท (Please specify a decision for every type)', 'warning'); return; }
+                const repairQtyByType = Object.fromEntries(Object.entries(perTypeDecisions).filter(([, d]) => d.Repair > 0).map(([t, d]) => [t, d.Repair]));
                 // Safety net: fill in any embellishment source info Cutting somehow left blank.
                 const qcSourceByType = {};
                 for (const row of document.querySelectorAll('#stageQcSourceRows [data-emb-source-type]')) {
@@ -7894,8 +8159,8 @@
                 // a Pass. Rejecting a type still lets the chain continue on to the next type/
                 // Supermarket — same as before this rework — the reject is a follow-up flag,
                 // not a hold.
-                const cutReplaceTypes = Object.entries(perTypeDecisions).filter(([, d]) => d === 'CutReplace').map(([t]) => t);
-                const notifyVendorTypes = Object.entries(perTypeDecisions).filter(([, d]) => d === 'NotifyVendor').map(([t]) => t);
+                const cutReplaceTypes = Object.entries(perTypeDecisions).filter(([, d]) => d.CutReplace > 0).map(([t]) => t);
+                const notifyVendorTypes = Object.entries(perTypeDecisions).filter(([, d]) => d.NotifyVendor > 0).map(([t]) => t);
                 if (cutReplaceTypes.length) {
                     const priorTypes = (item.qcCutReplace && !item.qcCutReplace.resolved) ? item.qcCutReplace.types : [];
                     item.qcCutReplace = { types: [...new Set([...priorTypes, ...cutReplaceTypes])], reason: defectNotesVal, by: currentUser.username, name: currentUser.name, ts, resolved: false };
@@ -7909,7 +8174,7 @@
                 // now that QC decides), or nothing left → chain is fully done, let the normal
                 // Cutting/ACC-parallel advancement to Supermarket take over.
                 const repairTypes = Object.keys(repairQtyByType);
-                const decisionSummary = Object.entries(perTypeDecisions).map(([t, d]) => `${EMB_LABELS[t] || t}: ${QC_DECISION_LABELS[d] || d}${d === 'Repair' ? ` (${repairQtyByType[t]} ชิ้น)` : ''}`).join(', ');
+                const decisionSummary = Object.entries(perTypeDecisions).map(([t, d]) => `${EMB_LABELS[t] || t}: ${qcDecisionSummaryLabel(d)}`).join(', ');
                 if (repairTypes.length) {
                     // Kicked back to redo — reset that type's own receive/send so its
                     // department has to work on it again, and DON'T advance to the next
@@ -7917,7 +8182,7 @@
                     repairTypes.forEach(t => {
                         item.embStages[t] = { receive: null, send: null };
                         const priorReq = (item.qcRepairRequests && item.qcRepairRequests[t]) || null;
-                        item.qcRepairRequests = { ...(item.qcRepairRequests || {}), [t]: { qty: repairQtyByType[t], reason: defectNotesVal, by: currentUser.username, name: currentUser.name, ts, roundNo: (priorReq ? priorReq.roundNo : 0) + 1 } };
+                        item.qcRepairRequests = { ...(item.qcRepairRequests || {}), [t]: { qty: repairQtyByType[t], reason: repairReasonByType[t], by: currentUser.username, name: currentUser.name, ts, roundNo: (priorReq ? priorReq.roundNo : 0) + 1 } };
                     });
                     item.currentEmbStage = repairTypes[0];
                     logAction('QCSend', item.id, `${currentUser.name} บันทึกผลตรวจ QC — ${decisionSummary} (รับ ${item.qcInspection.receivedQty} / defect ${item.qcInspection.defectQty}) → ตีกลับให้ ${repairTypes.map(t => EMB_LABELS[t] || t).join(', ')} ซ่อม`);
@@ -7947,9 +8212,13 @@
                 showToast('บันทึกการรับงานเรียบร้อย (Receipt saved)', 'success');
             } else {
                 const cfg = STAGE_SEND[stage];
+                const markerLaidByPart = {};
+                document.querySelectorAll('#stageExtraFields .markerLaidGroup').forEach(el => {
+                    const checked = el.querySelector('.markerLaidRadio:checked');
+                    markerLaidByPart[el.dataset.key] = checked ? checked.value === 'yes' : false;
+                });
                 const extra = {
-                    fabricType: (document.querySelector('input[name="stageFabricType"]:checked') || {}).value,
-                    markerLaid: (document.querySelector('input[name="stageMarkerLaid"]:checked') || {}).value,
+                    markerLaidByPart,
                     available: (document.querySelector('input[name="stageFabricAvailable"]:checked') || {}).value,
                     fabricSource: (document.querySelector('input[name="stageFabricSource"]:checked') || {}).value,
                     fabricJobSource: (document.querySelector('input[name="stageFabricJobSource"]:checked') || {}).value,
@@ -7959,6 +8228,15 @@
                     appointmentDate: document.getElementById('stagePPCAppointment') ? document.getElementById('stagePPCAppointment').value : undefined,
                     actualArrivalDate: document.getElementById('stagePPCActual') ? document.getElementById('stagePPCActual').value : undefined,
                 };
+                if (stage === 'fabricCheck') {
+                    const fabricItemInputs = Array.from(document.querySelectorAll('.stageFabricItemInput'));
+                    const fabricItemValues = fabricItemInputs.map(inp => inp.value.trim());
+                    if (fabricItemValues.some(v => !v)) {
+                        showToast('กรุณาระบุ Item ผ้า ให้ครบทุกชิ้นส่วนก่อนส่งต่อ (Please fill in the fabric item for every part before sending)', 'warning');
+                        return;
+                    }
+                    fabricItemValues.forEach((v, i) => { if (item.parts[i]) item.parts[i].fabricItem = v; });
+                }
                 const err = cfg.validate(extra, item);
                 if (err) { showToast(err, 'warning'); return; }
                 item[cfg.field] = { ...(item[cfg.field] || {}), by: currentUser.username, name: currentUser.name, attachment, ts, ...cfg.buildExtra(extra, item) };
@@ -8361,9 +8639,9 @@
                     { label: 'ACC ส่งต่อ', step: item.accSend, anchorTs: accReceiveTs, isParallel: true },
                 );
                 steps.push(
-                    { label: 'Marker รับงาน + ระบุประเภทผ้า', step: item.markerAction },
+                    { label: 'Marker รับงาน', step: item.markerAction },
                 );
-                if (item.markerAction && item.markerAction.fabricType === 'unmatched') steps.push(
+                if (item.markerAction && !showCuttingSheet) steps.push(
                     { label: 'Marker ส่งต่อ', step: item.markerSend ? { ...item.markerSend, decision: item.markerSend.markerLaid ? 'วางมาร์ค' : 'ไม่วางมาร์ค' } : null },
                 );
                 if (showCuttingSheet) steps.push(
@@ -8412,7 +8690,8 @@
                         // decision was a repair kickback, pull qty/round from qcRepairRequests
                         // since perType alone doesn't carry that detail.
                         const repairReq = item.qcRepairRequests && item.qcRepairRequests[t];
-                        const decisionLabel = QC_DECISION_LABELS[qi.perType[t]] + (qi.perType[t] === 'Repair' && repairReq ? ` (${repairReq.qty} ชิ้น, รอบ ${repairReq.roundNo})` : '');
+                        const hasRepair = typeof qi.perType[t] === 'string' ? qi.perType[t] === 'Repair' : (qi.perType[t].Repair || 0) > 0;
+                        const decisionLabel = qcDecisionSummaryLabel(qi.perType[t]) + (hasRepair && repairReq ? ` (รอบ ${repairReq.roundNo}${repairReq.reason ? ' — ' + repairReq.reason : ''})` : '');
                         steps.push({ label: `QC ตรวจ ${EMB_LABELS[t] || t}`, step: { name: qi.send && qi.send.name, decision: decisionLabel } });
                     }
                 });
@@ -8811,6 +9090,35 @@
             const markerNotLaidCount = repairs.filter(r => r.markerSend && r.markerSend.markerLaid === false).length;
             document.getElementById('anaMarkerLaidRatio').innerText = (markerLaidCount + markerNotLaidCount) ? `${markerLaidCount} วางมาร์ค / ${markerNotLaidCount} ไม่วางมาร์ค` : '-';
             document.getElementById('anaQcRejectChainCount').innerText = repairs.filter(r => r.sourceQcRejectId).length;
+            // ACC Summary — every ACC line across active records (embellishment-driven parts +
+            // additional ACC requisition lines), split by fulfillment decision, per "ต้องการให้
+            // มีรายการสรุปของ ACC เพื่อให้รู้ว่ารายการทั้งหมดที่ขอมีเท่าไหร่ กี่รายการ และมีที่ต้อง
+            // จ่ายกี่รายการ ไม่ต้องจ่ายกี่รายการ". Anything not explicitly marked "ไม่ต้องจ่าย"
+            // counts as needing payment (matches the checklist's own "pay" default), with fully
+            // paid broken out separately since that's a meaningfully different state.
+            let accTotalLines = 0, accNeedPayLines = 0, accNoNeedLines = 0, accPaidLines = 0;
+            activeForHealth.forEach(r => {
+                const f = r.accFulfillment || { parts: [], accRequest: [] };
+                const partMap = Object.fromEntries((f.parts || []).map(l => [l.idx, l]));
+                const accMap = Object.fromEntries((f.accRequest || []).map(l => [l.idx, l]));
+                r.parts.forEach((p, idx) => {
+                    if (!(p.embellishment || []).length) return;
+                    accTotalLines++;
+                    const line = partMap[idx];
+                    if (line && line.noNeed) accNoNeedLines++;
+                    else { accNeedPayLines++; if (line && line.decision === 'full') accPaidLines++; }
+                });
+                (r.accRequestList || []).forEach((a, idx) => {
+                    accTotalLines++;
+                    const line = accMap[idx];
+                    if (line && line.noNeed) accNoNeedLines++;
+                    else { accNeedPayLines++; if (line && line.decision === 'full') accPaidLines++; }
+                });
+            });
+            document.getElementById('anaAccTotalLines').innerText = accTotalLines;
+            document.getElementById('anaAccNeedPayLines').innerText = accNeedPayLines;
+            document.getElementById('anaAccNoNeedLines').innerText = accNoNeedLines;
+            document.getElementById('anaAccPaidLines').innerText = accPaidLines;
             renderOntimeDelay();
 
             Object.keys(myCharts).forEach(key => { if (myCharts[key]) myCharts[key].destroy(); });
@@ -8921,15 +9229,25 @@
             });
             renderChartDetailsList('defectCodeChart', defectCodeLabels, defectCodeData);
 
-            // QC decision mix — counts every per-type decision (Pass/Repair/CutReplace/NotifyVendor)
-            // recorded across all records' qcInspection.perType.
+            // QC decision mix — sums the actual PIECE COUNT behind each outcome
+            // (Pass/Repair/CutReplace/NotifyVendor) across every record's qcInspection.perType,
+            // now that a decision is an exact-quantity split rather than one verdict per type.
+            // A pre-existing legacy string decision (from before this rework) still counts as
+            // one unit under its own label.
             const qcDecisionMap = {};
             repairs.forEach(r => {
                 const perType = r.qcInspection && r.qcInspection.perType;
                 if (!perType) return;
                 Object.values(perType).forEach(dec => {
-                    const label = QC_DECISION_LABELS[dec] || dec;
-                    qcDecisionMap[label] = (qcDecisionMap[label] || 0) + 1;
+                    if (typeof dec === 'string') {
+                        const label = QC_DECISION_LABELS[dec] || dec;
+                        qcDecisionMap[label] = (qcDecisionMap[label] || 0) + 1;
+                        return;
+                    }
+                    QC_DECISION_OPTIONS.forEach(o => {
+                        const qty = dec[o.value] || 0;
+                        if (qty > 0) qcDecisionMap[o.label] = (qcDecisionMap[o.label] || 0) + qty;
+                    });
                 });
             });
             const qcDecisionLabels = Object.keys(qcDecisionMap).length ? Object.keys(qcDecisionMap) : ['-'];
@@ -9401,7 +9719,7 @@
                     (r.qcInspection && r.qcInspection.receive && r.qcInspection.receive.name) || '',
                     (r.qcInspection && r.qcInspection.receivedQty) ?? '',
                     (r.qcInspection && r.qcInspection.defectQty) ?? '',
-                    (r.qcInspection && r.qcInspection.perType ? Object.entries(r.qcInspection.perType).map(([t, d]) => `${EMB_LABELS[t] || t}: ${QC_DECISION_LABELS[d] || d}`).join(' / ') : ''),
+                    (r.qcInspection && r.qcInspection.perType ? Object.entries(r.qcInspection.perType).map(([t, d]) => `${EMB_LABELS[t] || t}: ${qcDecisionSummaryLabel(d)}`).join(' / ') : ''),
                     (r.qcRepairRequests ? Object.entries(r.qcRepairRequests).map(([t, q]) => `${EMB_LABELS[t] || t}: รอบ ${q.roundNo} (${q.qty} ชิ้น)`).join(' / ') : ''),
                     (r.supermarketReceive && r.supermarketReceive.name) || '',
                     (r.supermarketSend && r.supermarketSend.name) || '',
