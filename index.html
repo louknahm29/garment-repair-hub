@@ -355,7 +355,7 @@
                         <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">เกิน<span class="block opacity-70 text-[9px] normal-case">(Overdue)</span></span>
                     </div>
                     <div class="flex flex-col divide-y divide-slate-100 border-t border-slate-100">
-                        <div onclick="filterByKpi('PendingApproval')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-500">
+                        <div onclick="filterByKpi('pendingApprovalBu')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">⏳</span>
                                 <p class="text-[10px] font-bold uppercase text-amber-600 leading-tight">รอ BU ตรวจสอบ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending BU</span></p>
@@ -364,6 +364,20 @@
                             <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiPendingQty">0</span></span>
                             <h4 id="kpiPending" class="text-sm font-black text-amber-600 leading-none text-center">0</h4>
                             <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiPendingOverdue">0</span></span>
+                        </div>
+                        <!-- Embellishment-dept requests are reviewed by their own EmbApprover,
+                             not BU (see isDeptOwnReview/canApprove) — needs its own row instead
+                             of being silently folded into "รอ BU ตรวจสอบ", per "ยังขาดหัวข้อที่เป็น
+                             รอ หัวหน้า embellishment ตรวจสอบ". -->
+                        <div onclick="filterByKpi('pendingApprovalEmb')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-600">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-base shrink-0">🧷</span>
+                                <p class="text-[10px] font-bold uppercase text-amber-700 leading-tight">รอหัวหน้า Embellishment ตรวจสอบ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending Emb Approver</span></p>
+                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiPendingEmbLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiPendingEmbQty">0</span></span>
+                            <h4 id="kpiPendingEmb" class="text-sm font-black text-amber-700 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiPendingEmbOverdue">0</span></span>
                         </div>
                         <div onclick="filterByKpi('PendingFMApproval')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-500">
                             <div class="flex items-center gap-2 min-w-0">
@@ -2844,7 +2858,6 @@
             { value: 'StockFabricSent', label: 'รอแผนกตัดรับงาน (Pending Cutting Dept)' },
             { value: 'CuttingReceived', label: 'กำลังตัดซ่อม (Cutting In Progress)' },
             { value: 'CuttingSent', label: 'ตัดเสร็จ รอเริ่มงานต่อ (Cut Complete)' },
-            { value: 'ACCReceived', label: 'ACC กำลังดำเนินการ (ACC In Progress)' },
             { value: 'SupermarketPending', label: 'พร้อมส่งเข้าซุปเปอร์มาร์เก็ต (Ready for Supermarket)' },
             { value: 'SupermarketReceived', label: 'ซุปเปอร์มาร์เก็ตรับแล้ว (Received by Supermarket)' },
             { value: 'SupermarketSent', label: 'ส่งเข้าไลน์แล้ว รอต้นทางรับ (Sent to Line)' },
@@ -3178,6 +3191,7 @@
                 const rows = await apiGetAll('Repairs');
                 if (rows && rows.length) {
                     repairs = migrateRepairsData(rows);
+                    resolveDuplicateDocNos();
                 } else {
                     repairs = JSON.parse(JSON.stringify(defaultRepairs));
                     await autoSave(null, true);
@@ -3695,7 +3709,7 @@
             { key: 'qc', label: 'QC', icon: '🔍' },
             { key: 'supermarket', label: 'Supermarket', icon: '🏬' }
         ];
-        let activeKpiTab = 'overview';
+        let activeKpiTab = null;
         function buildKpiTabBar() {
             const bar = document.getElementById('kpiTabBar');
             if (!bar) return;
@@ -3706,6 +3720,20 @@
                 </button>
             `).join('');
         }
+        // No card panel expanded by default on load — only the tab headers show, per
+        // "อาจจะยังไม่ต้องแสดงรายการตามภาพให้แสดงแค่หัวข้อ card ด้านบนก่อน แล้วให้สามารถคลิก
+        // เลือกได้ทีหลัง". The records table below is unaffected (it already shows the full
+        // active list without needing any card selected), this only hides the clickable status
+        // rows until a tab is picked.
+        function hideAllKpiTabs() {
+            activeKpiTab = null;
+            KPI_TABS.forEach(t => {
+                const panel = document.querySelector(`#kpiTabPanels [data-kpi-tab="${t.key}"]`);
+                if (panel) panel.classList.add('hidden');
+                const btn = document.querySelector(`[data-kpi-tab-btn="${t.key}"]`);
+                if (btn) btn.classList.remove('kpiTabBtnActive');
+            });
+        }
         function showKpiTab(key) {
             activeKpiTab = key;
             KPI_TABS.forEach(t => {
@@ -3714,7 +3742,6 @@
                 const btn = document.querySelector(`[data-kpi-tab-btn="${t.key}"]`);
                 if (btn) btn.classList.toggle('kpiTabBtnActive', t.key === key);
             });
-            if (currentUser) localStorage.setItem('kpiActiveTab_' + currentUser.username, key);
         }
         function updateKpiTabBadges() {
             KPI_TABS.forEach(t => {
@@ -3891,6 +3918,13 @@
             if (exportMenu && !exportMenu.classList.contains('hidden') && exportWrapper && !exportWrapper.contains(e.target)) {
                 exportMenu.classList.add('hidden');
             }
+            // Clicking anywhere outside the KPI tab bar/panels collapses whichever card is
+            // open — per "ถ้าคลิกที่อื่นโดยที่ไม่ได้คลิกหัวข้อ card ก็ให้ย่อรายการนั้นไปเช่นกัน".
+            const kpiTabBar = document.getElementById('kpiTabBar');
+            const kpiTabPanels = document.getElementById('kpiTabPanels');
+            if (activeKpiTab && kpiTabBar && kpiTabPanels && !kpiTabBar.contains(e.target) && !kpiTabPanels.contains(e.target)) {
+                hideAllKpiTabs();
+            }
         });
 
         // --- AUTO-REFRESH (pull latest data from Google Sheet every 5s so other
@@ -3928,6 +3962,7 @@
                 ]);
                 detectAndNotify(newRepairs || []);
                 repairs = migrateRepairsData(newRepairs || []);
+                resolveDuplicateDocNos();
                 users = newUsers || [];
                 auditLog = (newLog || []).slice().reverse();
 
@@ -3971,8 +4006,11 @@
             renderNotifPanel();
             loadKpiSeenCounts();
             buildKpiTabBar();
-            const savedTab = localStorage.getItem('kpiActiveTab_' + currentUser.username);
-            showKpiTab(KPI_TABS.some(t => t.key === savedTab) ? savedTab : 'overview');
+            // No card panel auto-expanded on load — just the tab headers, per "อาจจะยังไม่ต้อง
+            // แสดงรายการ...ให้แสดงแค่หัวข้อ card ด้านบนก่อน แล้วให้สามารถคลิกเลือกได้ทีหลัง". The
+            // records table below still shows the full active list regardless (activeKpiPredicate
+            // stays null until a card is clicked), only the status-row list itself starts hidden.
+            hideAllKpiTabs();
             populateLines();
             populateDatalists();
             // switchTab('records') alone already does a full render (KPI dashboard + rows) —
@@ -4702,7 +4740,12 @@
             StockFabricSent: 'รอแผนกตัดรับงาน (Pending Cutting Dept)',
             CuttingReceived: 'กำลังตัดซ่อม (Cutting In Progress)',
             CuttingSent: 'ตัดเสร็จ รอเริ่มงานต่อ (Cut Complete — next: Embellishment/QC)',
-            ACCReceived: 'ACC กำลังดำเนินการ (ACC In Progress)',
+            // ACCReceived intentionally has no entry here — ACC is a parallel track keyed off
+            // item.accReceive/accSend, never item.status (see saveStageAction's mode==='receive'
+            // branch, which explicitly skips the STAGE_RECEIVE_STATUS assignment whenever
+            // PARALLEL_STAGE_PERM[stage] is set, which is true for 'acc'), so no record can ever
+            // actually be in this status. STAGE_RECEIVE_STATUS.acc still maps to the string for
+            // legacy-data-shape completeness, but it's never read for 'acc' at runtime.
             SupermarketPending: 'พร้อมส่งเข้าซุปเปอร์มาร์เก็ต (Ready for Supermarket)',
             SupermarketReceived: 'ซุปเปอร์มาร์เก็ตรับแล้ว (Received by Supermarket)',
             SupermarketSent: 'ส่งเข้าไลน์แล้ว รอต้นทางรับ (Sent to Line — Pending Origin Receive)',
@@ -4754,6 +4797,13 @@
             // cutting-QC check applies to every job regardless (see CUTTING_QC_TYPE), per
             // "ในรายการนี้ไม่มี Embellishment แต่พบว่าหน้าสถานะงานมี". Says just "QC" when
             // there's genuinely no embellishment to route through.
+            // ACCOnly / HeatTransfer-ACC requests get parked at 'CuttingSent' purely as an
+            // internal bookkeeping stub (cuttingSend.by === 'system') so mainPipelineDone()
+            // can resolve — no cutting ever actually happens, so the label must not claim it
+            // did, per "รายการเบิก ACC จะไม่มีงานที่เกี่ยวกับตัด".
+            if (item.status === 'CuttingSent' && item.cuttingSend && item.cuttingSend.by === 'system') {
+                return statusLabelHtml('รอ ACC ดำเนินการ (Waiting on ACC — no cutting involved)');
+            }
             if (item.status === 'CuttingSent' && applicableEmbTypes(item).length === 0) {
                 return statusLabelHtml('ตัดเสร็จ รอเริ่มงานต่อ (Cut Complete — next: QC ตรวจงานตัด)');
             }
@@ -4844,6 +4894,30 @@
             logAction('BackfillDocNo', null, `เติมเลข Document No. ย้อนหลังให้ ${changedIds.length} รายการ (เรียงตามวันที่แจ้ง)`);
             autoSave(changedIds);
         }
+        // This is a client-only app with no server-side atomic counter — generateDocNo() just
+        // scans the locally-loaded `repairs` array, so two people submitting a new request
+        // within the same few seconds (before either save round-trips back) can both compute
+        // the same "next" number. That can't be prevented outright without a real backend
+        // sequence, so instead this self-heals it the same way backfillMissingDocNos() already
+        // self-heals missing numbers: runs on every data load/refresh, and whenever two active
+        // records share a docNo, the older one (by date) keeps it and the newer one(s) get a
+        // freshly generated number instead.
+        function resolveDuplicateDocNos() {
+            const byDocNo = {};
+            repairs.forEach(r => { if (r.docNo) (byDocNo[r.docNo] = byDocNo[r.docNo] || []).push(r); });
+            const changedIds = [];
+            Object.values(byDocNo).forEach(group => {
+                if (group.length < 2) return;
+                group.sort((a, b) => new Date(a.date) - new Date(b.date));
+                group.slice(1).forEach(r => {
+                    const oldDocNo = r.docNo;
+                    r.docNo = generateDocNo(r.requestType);
+                    changedIds.push(r.id);
+                    logAction('ResolveDuplicateDocNo', r.id, `พบเลขที่เอกสารซ้ำ (${oldDocNo}) — เปลี่ยนเป็น ${r.docNo} อัตโนมัติ (Duplicate docNo auto-resolved)`);
+                });
+            });
+            if (changedIds.length) autoSave(changedIds);
+        }
         // Work-in-process summary blocks above the records table — counted at the LINE-ITEM
         // level (parts vs accRequestList), not by the record's requestType flag, so a record
         // asking for both Cut-Replace AND ACC together contributes to both blocks naturally.
@@ -4902,7 +4976,6 @@
             StockFabricSent: 'bg-sky-100 text-sky-800 border border-sky-200',
             CuttingReceived: 'bg-indigo-100 text-indigo-800 border border-indigo-200',
             CuttingSent: 'bg-purple-100 text-purple-800 border border-purple-200',
-            ACCReceived: 'bg-lime-100 text-lime-800 border border-lime-200',
             SupermarketPending: 'bg-teal-100 text-teal-800 border border-teal-200',
             SupermarketReceived: 'bg-teal-100 text-teal-800 border border-teal-200',
             SupermarketSent: 'bg-cyan-100 text-cyan-800 border border-cyan-200',
@@ -4960,7 +5033,11 @@
             // Includes archived/completed docs too (a merge relationship doesn't stop mattering
             // once the job finishes) — sourced from the full list, not just `active`.
             setKpi('kpiMergedDocs', repairs.filter(r => (r.mergedFrom || []).length > 0 || !!r.mergedInto));
-            setKpi('kpiPending', byStatus('PendingApproval'));
+            // Split by who actually reviews it (see isDeptOwnReview/canApprove) — an
+            // Embellishment-dept request is reviewed by EmbApprover, not BU, so it gets counted
+            // under its own row instead of the generic "รอ BU ตรวจสอบ" bucket.
+            setKpi('kpiPending', byStatus('PendingApproval').filter(r => !EMB_STAGE_TYPES.includes(r.dept)));
+            setKpi('kpiPendingEmb', byStatus('PendingApproval').filter(r => EMB_STAGE_TYPES.includes(r.dept)));
             setKpi('kpiPendingFM', byStatus('PendingFMApproval'));
             setKpi('kpiRejected', active.filter(r => r.status === 'Rejected' || r.status === 'FMRejected'));
             setKpi('kpiApproved', byStatus('Approved'));
@@ -5186,6 +5263,14 @@
 
                 // Row 1: the single status-transition action, sized/styled like the status-pill
                 let statusRow = '';
+                // A record that's been merged into another (item.mergedInto) keeps its own
+                // status/parts data intact by design (see mergeSelectedGroup), but its parts
+                // have already been copied onto the primary record, which is now the one
+                // actually moving through the pipeline — showing action buttons here too would
+                // let the same physical pieces get approved/cut/QC'd twice. mergeRefBadgeHtml
+                // already surfaces "รวมเข้ากับ ..." on this row so it's clear why no actions
+                // remain; only entirely-passive utility icons (view/print) stay available below.
+                if (!item.mergedInto) {
                 if (item.status === 'PendingApproval' && canApprove(currentUser, item)) {
                     // Label reflects who's actually reviewing — Embellishment/QC-originated
                     // requests skip BU (see canApprove), so the button should say so instead
@@ -5239,7 +5324,12 @@
                         }
                         return statusActionBtn(!done && !received ? `รับงาน (${EMB_LABELS[t]})` : `(${EMB_LABELS[t]}) ส่งต่อ`, `openStageModal('${item.id}','${t}')`, 'bg-pink-100 text-pink-800 border border-pink-200 hover:bg-pink-200');
                     }).join('');
-                    const qcBtns = canQCAct(currentUser) ? (item.qcPendingTypes || []).map(t => {
+                    // ACCOnly / HeatTransfer-ACC records only ever reach 'CuttingSent' via the
+                    // system bookkeeping stub (no real cutting happened) — CUTTING_QC_TYPE must
+                    // never surface a QC button for those, per "ไม่จำเป็นต้องมี QC ตัดและ
+                    // กระบวนการตัดเข้ามาเกี่ยวข้อง" for pure ACC requisitions.
+                    const isCuttingStub = !!(item.cuttingSend && item.cuttingSend.by === 'system');
+                    const qcBtns = canQCAct(currentUser) ? (item.qcPendingTypes || []).filter(t => !(isCuttingStub && t === CUTTING_QC_TYPE)).map(t => {
                         const visit = item.qcInspection && item.qcInspection.visits && item.qcInspection.visits[t];
                         const received = !!(visit && visit.receive);
                         return statusActionBtn(!received ? `รับงาน (QC — ${EMB_LABELS[t] || t})` : `บันทึกผลตรวจ (QC — ${EMB_LABELS[t] || t})`, `openStageModal('${item.id}','qc:${t}')`, 'bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-200 hover:bg-fuchsia-200');
@@ -5270,6 +5360,7 @@
                     const accFulfillBtn = statusActionBtn('ดำเนินการค้างจ่าย ACC ต่อ', `openAccFulfillmentModal('${item.id}')`, 'bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200');
                     statusRow = statusRow ? statusRow + accFulfillBtn : accFulfillBtn;
                 }
+                } // end !item.mergedInto
 
                 // Row 2: secondary utility icons — smaller than the status-action row
                 let utilityRow = utilityBtn('🔍', 'ดูข้อมูล', `openDetailModal('${item.id}')`, 'bg-slate-50 text-slate-600 hover:bg-slate-100');
@@ -5283,10 +5374,10 @@
                 // Kickback (to any already-visited department) only makes sense before the
                 // item is actually cut — once cut, per spec, corrections require a brand new
                 // cut request instead, so the icon is simply not offered anymore at that point.
-                if (canKickbackItem(currentUser, item) && !item.cuttingSend) {
+                if (canKickbackItem(currentUser, item) && !item.cuttingSend && !item.mergedInto) {
                     utilityRow += utilityBtn('↩️', 'ตีกลับแก้ไข', `openKickbackModal('${item.id}')`, 'bg-slate-50 text-orange-500 hover:bg-orange-50');
                 }
-                if (canKickback(currentUser)) {
+                if (canKickback(currentUser) && !item.mergedInto) {
                     utilityRow += utilityBtn('🚫', 'ยกเลิกใบสั่งซ่อม', `openCancelModal('${item.id}')`, 'bg-slate-50 text-rose-600 hover:bg-rose-50');
                 }
                 if (item.qcCutReplace && !item.qcCutReplace.resolved && canResolveQcCutReplace(currentUser)) {
@@ -5407,6 +5498,14 @@
             urgent: { label: '🔶 ด่วน (Urgent)', test: r => r.urgency === 'urgent' },
             veryUrgent: { label: '🔴 ด่วนมาก (Very Urgent)', test: r => r.urgency === 'veryUrgent' },
             mostUrgent: { label: '‼️ ด่วนที่สุด (Most Urgent)', test: r => r.urgency === 'mostUrgent' },
+            // PendingApproval is reviewed by different people depending on who the request
+            // originated from (see isDeptOwnReview/canApprove) — an Embellishment-dept request
+            // needs its own EmbApprover, not BU, so it needs its own KPI row instead of being
+            // silently counted under "รอ BU ตรวจสอบ", per "ยังขาดหัวข้อที่เป็น รอ หัวหน้า
+            // embellishment ตรวจสอบ". pendingApprovalBu excludes those so the two rows don't
+            // double-count the same records.
+            pendingApprovalEmb: { label: 'รอหัวหน้า Embellishment ตรวจสอบ', test: r => r.status === 'PendingApproval' && EMB_STAGE_TYPES.includes(r.dept) },
+            pendingApprovalBu: { label: 'รอ BU ตรวจสอบ', test: r => r.status === 'PendingApproval' && !EMB_STAGE_TYPES.includes(r.dept) },
             anyRejected: { label: 'ถูกตีกลับ (Rejected)', test: r => r.status === 'Rejected' || r.status === 'FMRejected' },
             cuttingIssue: { label: 'ปัญหาการตัด (Cutting Issue)', test: r => r.cuttingIssue },
             cuttingPending: { label: 'รายการตัดคงค้าง', test: r => r.cuttingPending && !r.cuttingPending.resolved },
@@ -5442,7 +5541,12 @@
                     if (r.status !== 'CuttingSent') return false;
                     const visits = (r.qcInspection && r.qcInspection.visits) || {};
                     const qcFresh = (r.qcPendingTypes || []).some(t => !(visits[t] && visits[t].receive));
-                    const deptFresh = (r.activeDeptTypes || []).some(t => !(r.embStages && r.embStages[t] && r.embStages[t].receive));
+                    // Must match stageNotYetReceived()'s deptFresh check exactly (same
+                    // !embTypeDone guard) — the two used to drift, which stayed harmless only
+                    // because a "done" type is always removed from activeDeptTypes at the same
+                    // time it's marked done, but that's an invariant this predicate shouldn't
+                    // silently depend on holding elsewhere.
+                    const deptFresh = (r.activeDeptTypes || []).some(t => !embTypeDone(r, t) && !(r.embStages && r.embStages[t] && r.embStages[t].receive));
                     return qcFresh || deptFresh;
                 },
             },
@@ -6838,6 +6942,14 @@
             const withText = DEPT_REMARK_ROLES.filter(k => remarks[k] && remarks[k].text);
             const mine = DEPT_REMARK_ROLES.filter(k => hasRole(currentUser, k));
             if (!withText.length && !mine.length) return '';
+            // A closed record (cancelled/fully received/merged away) isn't moving through
+            // anyone's action queue anymore — writing a fresh remark on it wouldn't be a note
+            // to nobody, but it also wouldn't be surfaced to anyone actively working the item,
+            // so say so instead of silently offering a normal-looking write box.
+            const closedReason = item.mergedInto ? 'รวมเข้ากับใบอื่นแล้ว (Merged into another request)'
+                : item.status === 'Cancelled' ? 'ใบสั่งซ่อมนี้ถูกยกเลิกแล้ว (Request cancelled)'
+                : item.archived ? 'รายการนี้เสร็จสมบูรณ์และปิดแล้ว (Fully completed and closed)'
+                : null;
             return `
                 <div class="border-t border-slate-200 pt-1.5 mt-1.5">
                     <div class="font-bold text-slate-600 mb-1">Remark แต่ละส่วนงาน <span class="font-normal opacity-70">(Department Remarks)</span></div>
@@ -6846,7 +6958,9 @@
                             <b class="text-slate-600">${escapeHtml(DEPT_REMARK_LABELS[k] || k)}:</b> <span class="text-slate-600">${escapeHtml(remarks[k].text)}</span>
                             <span class="block text-[8px] text-slate-400">${escapeHtml(remarks[k].name || '')}${remarks[k].ts ? ' · ' + new Date(remarks[k].ts).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }) : ''}</span>
                         </div>`).join('')}</div>` : ''}
-                    ${mine.map(k => `
+                    ${closedReason
+                        ? (mine.length ? `<p class="text-[9px] text-amber-600 italic">🔒 ${escapeHtml(closedReason)} — ไม่มีใครกำลังดำเนินการต่อ Remark ใหม่จะไม่ถูกเห็นระหว่างการทำงาน (No one is actively working this — a new remark won't surface in anyone's queue)</p>` : '')
+                        : mine.map(k => `
                         <div class="mt-1">
                             <textarea id="deptRemark_${item.id}_${k}" rows="2" class="w-full text-xs" placeholder="เขียน Remark ของแผนกนี้...">${escapeHtml((remarks[k] && remarks[k].text) || '')}</textarea>
                             <button type="button" onclick="saveDeptRemark('${item.id}','${k}','${infoElId}')" class="btn-secondary text-[10px] py-1 px-2 mt-1">บันทึก Remark</button>
@@ -7130,6 +7244,7 @@
         function openApprovalModal(id) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
+            if (item.mergedInto) { showToast('รายการนี้ถูกรวมเข้ากับใบอื่นแล้ว ดำเนินการต่อไม่ได้ (Already merged into another request)', 'warning'); return; }
             if (!canApprove(currentUser, item)) { showToast('คุณไม่มีสิทธิ์ตรวจสอบรายการนี้ (No permission to review)', 'warning'); return; }
             activeActionId = id;
             // Embellishment/QC-originated requests are reviewed by that department's own
@@ -7246,6 +7361,7 @@
         function submitAddEmbellishment() {
             const idx = repairs.findIndex(r => r.id === activeActionId);
             if (idx === -1) return;
+            if (!hasRole(currentUser, 'Admin')) { showToast('เฉพาะ Admin เท่านั้น (Admin only)', 'warning'); return; }
             const item = repairs[idx];
             const newTicksByKey = collectAddEmbNewTicks();
             const totalNew = Object.values(newTicksByKey).reduce((s, arr) => s + arr.length, 0);
@@ -7275,6 +7391,10 @@
         async function submitApproval(decision) {
             const idx = repairs.findIndex(r => r.id === activeActionId);
             if (idx === -1) return;
+            // Re-verify here too, not just when openApprovalModal populated the modal — module-
+            // level state (activeActionId) is trivially settable from outside the intended flow,
+            // and a role can also change between opening the modal and clicking Save.
+            if (!canApprove(currentUser, repairs[idx])) { showToast('คุณไม่มีสิทธิ์ตรวจสอบรายการนี้ (No permission to review)', 'warning'); return; }
 
             const po = document.getElementById('approvalPO').value.trim();
             const itemField = document.getElementById('approvalItemField').value.trim();
@@ -7332,6 +7452,7 @@
         function openFMApprovalModal(id) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
+            if (item.mergedInto) { showToast('รายการนี้ถูกรวมเข้ากับใบอื่นแล้ว ดำเนินการต่อไม่ได้ (Already merged into another request)', 'warning'); return; }
             if (!canFMApprove(currentUser)) { showToast('คุณไม่มีสิทธิ์อนุมัติรายการนี้ (เฉพาะ Factory Manager / Production Manager)', 'warning'); return; }
             activeActionId = id;
             document.getElementById('fmApprovalItemInfo').innerHTML = buildInfoBlock(item) + deptRemarksBlockHtml(item, 'fmApprovalItemInfo');
@@ -7344,6 +7465,7 @@
         async function submitFMApproval(decision) {
             const idx = repairs.findIndex(r => r.id === activeActionId);
             if (idx === -1) return;
+            if (!canFMApprove(currentUser)) { showToast('คุณไม่มีสิทธิ์อนุมัติรายการนี้ (เฉพาะ Factory Manager / Production Manager)', 'warning'); return; }
 
             const remark = document.getElementById('fmApprovalRemark').value.trim();
             if (decision === 'FMRejected' && !remark) {
@@ -7406,6 +7528,7 @@
         function openActionModal(id) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
+            if (item.mergedInto) { showToast('รายการนี้ถูกรวมเข้ากับใบอื่นแล้ว ดำเนินการต่อไม่ได้ (Already merged into another request)', 'warning'); return; }
             if (!canCuttingAct(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
 
             activeActionId = id;
@@ -7743,6 +7866,7 @@
         async function saveAction() {
             const idx = repairs.findIndex(r => r.id === activeActionId);
             if (idx === -1) return;
+            if (!canCuttingAct(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
             if (actionMode === 'cuttingPendingOnly') { saveCuttingPendingOnly(); return; }
             const ts = getLocalTime();
             const attachment = null; // attachment upload removed
@@ -7960,15 +8084,33 @@
         // already queued (no-op either way).
         function backfillCuttingQc(r) {
             if (r.status !== 'CuttingSent') return;
+            // ACCOnly / HeatTransfer-ACC requests are stamped into 'CuttingSent' purely as an
+            // internal bookkeeping stub (cuttingSend.by === 'system') — no actual cutting ever
+            // happens for them, so they must never be queued for a Cutting-QC check, per
+            // "รายการเบิก ACC จะไม่มีงานที่เกี่ยวกับตัด ดังนั้นไม่จำเป็นต้องมี QC ตัด...เข้ามา
+            // เกี่ยวข้อง".
+            if (r.cuttingSend && r.cuttingSend.by === 'system') return;
             const hasDecision = !!(r.qcInspection && r.qcInspection.perType && r.qcInspection.perType[CUTTING_QC_TYPE]);
             const alreadyQueued = (r.qcPendingTypes || []).includes(CUTTING_QC_TYPE);
             if (!hasDecision && !alreadyQueued) {
                 r.qcPendingTypes = [...(r.qcPendingTypes || []), CUTTING_QC_TYPE];
             }
         }
+        // Cleans up CUTTING_QC_TYPE that was already wrongly queued onto ACCOnly /
+        // HeatTransfer-ACC stub records by earlier app versions (before the guard above
+        // existed) — otherwise records already saved to the sheet with the bogus entry would
+        // keep showing a Cutting-QC button forever, since backfillCuttingQc alone only stops
+        // it from happening again, it doesn't undo what's already there.
+        function stripBogusCuttingQc(r) {
+            if (!(r.cuttingSend && r.cuttingSend.by === 'system')) return;
+            if (Array.isArray(r.qcPendingTypes) && r.qcPendingTypes.includes(CUTTING_QC_TYPE)) {
+                r.qcPendingTypes = r.qcPendingTypes.filter(t => t !== CUTTING_QC_TYPE);
+            }
+        }
         function migrateRepairsData(list) {
             (list || []).forEach(migrateLegacyEmbFields);
             (list || []).forEach(backfillCuttingQc);
+            (list || []).forEach(stripBogusCuttingQc);
             restoreLegacyMergedRecords(list);
             return list;
         }
@@ -8000,6 +8142,15 @@
             const t = item.qcInspection && item.qcInspection.currentType;
             return t ? [t] : applicableEmbTypes(item);
         }
+        // ACCOnly requests (and the HeatTransfer "acc" variant — see the FM approval handler's
+        // isHeatTransferAccSkip) never touch fabric/cutting at all — their cuttingSend is just a
+        // system-stamped placeholder so mainPipelineDone() doesn't wait forever, not a real cut.
+        // The mandatory Cutting-QC gate has nothing to inspect for them, per "ถ้ารายการเบิก acc
+        // จะไม่มีงานที่เกี่ยวกับตัด ดังนั้นไม่จำเป็นต้องมี QC ตัดและกระบวนการตัดเข้ามาอนุมัติหรือ
+        // เกี่ยวข้อง".
+        function cuttingQcApplicable(item) {
+            return !(item.requestType === 'ACCOnly' || (item.dept === 'HeatTransfer' && item.heatTransferType === 'acc'));
+        }
         // No embellishment ticked at all -> nothing to inspect -> QC doesn't apply either.
         // Otherwise EVERY ticked type must have its own QC decision recorded — each type is
         // inspected in its own visit now (send type -> QC that type -> next type...), so
@@ -8019,13 +8170,15 @@
                 const stillNeedsRepair = typeof d === 'string' ? d === 'Repair' : (d.Repair || 0) > 0;
                 return !stillNeedsRepair && embTypeDone(item, t);
             }));
-            // Cutting QC is a mandatory gate for every job, independent of embellishment — per
-            // "ทุกงานต้องผ่าน QC ตรวจตัดก่อนเข้า Supermarket เสมอ". It has no upstream production
-            // department to "send" it on (Cutting itself queues it directly), so its own
-            // completion is just: QC recorded a decision and it isn't a still-open CutReplace
-            // (there's no Repair option offered for it — see stageQcSendFieldsHtml).
+            // Cutting QC is a mandatory gate for every job that actually gets cut, independent
+            // of embellishment — per "ทุกงานต้องผ่าน QC ตรวจตัดก่อนเข้า Supermarket เสมอ". It has
+            // no upstream production department to "send" it on (Cutting itself queues it
+            // directly), so its own completion is just: QC recorded a decision and it isn't a
+            // still-open CutReplace (there's no Repair option offered for it — see
+            // stageQcSendFieldsHtml). ACCOnly/HeatTransfer-acc jobs skip this gate entirely
+            // (see cuttingQcApplicable) since there's no cutting to inspect.
             const cuttingQcDecision = perType && perType[CUTTING_QC_TYPE];
-            const cuttingQcDone = !!cuttingQcDecision;
+            const cuttingQcDone = cuttingQcApplicable(item) ? !!cuttingQcDecision : true;
             return embTypesDone && cuttingQcDone;
         }
         // ACC runs from FM approval straight through to Supermarket on its own timeline,
@@ -8189,7 +8342,17 @@
                 const label = forcedStage === 'acc' ? (PARALLEL_STAGE_TITLE.acc || 'ACC')
                     : (forcedStage === 'qc' || returnQcType) ? `QC${returnQcType ? ' (' + (EMB_LABELS[returnQcType] || returnQcType) + ')' : ''}`
                     : (EMB_LABELS[forcedStage] || forcedStage);
-                const kickbackTargets = ['acc', ...applicableEmbTypes(item)].filter(s => s !== forcedStage && s !== returnQcType);
+                // Only offer a target whose own work hasn't been SENT yet — this panel is for
+                // redirecting a still-open problem to the department that actually owns it, not
+                // for undoing a department's already-completed/shipped work. Reverting a finished
+                // step is Admin-only (see adminUndoableTracks/adminRevertTrack below); allowing it
+                // here too, gated by nothing but the CURRENT stage's own permission, would let e.g.
+                // a Heat-transfer worker silently wipe ACC's already-sent delivery.
+                const kickbackTargets = ['acc', ...applicableEmbTypes(item)].filter(s => {
+                    if (s === forcedStage || s === returnQcType) return false;
+                    if (s === 'acc') return !item.accSend;
+                    return !(item.embStages && item.embStages[s] && item.embStages[s].send);
+                });
                 const targetLabel = (s) => s === 'acc' ? (PARALLEL_STAGE_TITLE.acc || 'ACC') : (EMB_LABELS[s] || s);
                 return `
                     <div class="border-t pt-3 mt-1">
@@ -8233,6 +8396,7 @@
         function returnToPreviousStep() {
             const idx = repairs.findIndex(r => r.id === activeActionId);
             if (idx === -1) return;
+            if (!stageActionInfo || !stageActionInfo.perm || !stageActionInfo.perm(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
             const item = repairs[idx];
             const reason = document.getElementById('returnStepReason').value.trim();
             const { mode, forcedStage } = stageActionInfo || {};
@@ -8258,10 +8422,22 @@
                 const targetSel = document.getElementById('returnStepTarget');
                 const target = targetSel ? targetSel.value : '';
                 if (target) {
+                    // Re-verify here too (not just when the option list was built) — the target
+                    // may have finished and sent its own work in the time this modal sat open.
+                    const targetAlreadySent = target === 'acc' ? !!item.accSend : !!(item.embStages && item.embStages[target] && item.embStages[target].send);
+                    if (targetAlreadySent) {
+                        showToast('แผนกนี้ส่งงานเสร็จไปแล้ว ต้องให้แอดมินเป็นผู้ยกเลิกแทน (Already sent — only Admin can undo finished work)', 'warning');
+                        return;
+                    }
                     const targetName = target === 'acc' ? (PARALLEL_STAGE_TITLE.acc || 'ACC') : (EMB_LABELS[target] || target);
                     if (target === 'acc') {
                         item.accReceive = null;
                         item.accSend = null;
+                        // ACC is being reset back to "not started" — any earlier out-of-stock/
+                        // waiting-PO flag it raised no longer describes where the item actually
+                        // is now, so it would otherwise sit there showing a stale problem with
+                        // no connection to this kickback.
+                        item.accIssue = null;
                     } else {
                         item.embStages = item.embStages || {};
                         item.embStages[target] = { ...(item.embStages[target] || {}), receive: null, send: null };
@@ -8818,6 +8994,19 @@
             const line = (f[group] || []).find(l => l.idx === idx);
             return line && line.unit ? line.unit : '';
         }
+        // Every ACC/part line that has actually had SOME quantity physically handed over
+        // (qtyPaid > 0), whether or not it was ever completed — used to warn before
+        // cancelling a request so already-dispensed stock never just silently disappears
+        // from the record with nothing left pointing back at it, per the review finding
+        // that Cancel didn't reconcile outstanding/already-issued ACC fulfillment at all.
+        function accDispensedLines(item) {
+            const f = item.accFulfillment;
+            if (!f) return [];
+            const partLabel = (l) => { const p = item.parts[l.idx]; return p ? `${PART_NAME_LABELS[p.name] || p.name} — ${p.size}` : `Part #${l.idx}`; };
+            const accLabel = (l) => { const a = (item.accRequestList || [])[l.idx]; return a ? (a.label || a.key) : `ACC #${l.idx}`; };
+            const fromGroup = (arr, labelFn) => (arr || []).filter(l => (l.qtyPaid || 0) > 0).map(l => ({ ...l, label: labelFn(l) }));
+            return [...fromGroup(f.parts, partLabel), ...fromGroup(f.accRequest, accLabel)];
+        }
         function hasOutstandingAcc(item) {
             const f = item.accFulfillment;
             if (!f) return false;
@@ -8889,6 +9078,7 @@
         function openAccFulfillmentModal(id) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
+            if (item.status === 'Cancelled') { showToast('ใบสั่งซ่อมนี้ถูกยกเลิกแล้ว ไม่สามารถจ่าย ACC เพิ่มได้ (Request cancelled — no further ACC dispensing)', 'warning'); return; }
             if (!canACCAct(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
             activeActionId = id;
             stageActionInfo = { stage: 'accFulfillmentOnly' };
@@ -8904,6 +9094,8 @@
         function saveAccFulfillmentOnly() {
             const idx = repairs.findIndex(r => r.id === activeActionId);
             if (idx === -1) return;
+            if (!canACCAct(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
+            if (repairs[idx].status === 'Cancelled') { showToast('ใบสั่งซ่อมนี้ถูกยกเลิกแล้ว ไม่สามารถจ่าย ACC เพิ่มได้ (Request cancelled — no further ACC dispensing)', 'warning'); return; }
             repairs[idx].accFulfillment = collectAccFulfillment();
             logAction('AccFulfillmentUpdate', repairs[idx].id, `${currentUser.name} อัปเดตรายการจ่าย ACC (${hasOutstandingAcc(repairs[idx]) ? 'ยังมีรายการคงค้าง' : 'ครบทุกรายการ'})`);
             showToast('บันทึกรายการจ่าย ACC เรียบร้อย (Saved)', 'success');
@@ -9484,6 +9676,7 @@
         function openStageModal(id, forcedStage) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
+            if (item.mergedInto) { showToast('รายการนี้ถูกรวมเข้ากับใบอื่นแล้ว ดำเนินการต่อไม่ได้ (Already merged into another request)', 'warning'); return; }
             let stage, mode, perm, title, qcType = null;
             if (forcedStage === 'acc') {
                 // ACC — independent parallel track; mode is derived from its own field
@@ -9521,7 +9714,7 @@
             if (!perm(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
 
             activeActionId = id;
-            stageActionInfo = { stage, mode, forcedStage, qcType };
+            stageActionInfo = { stage, mode, forcedStage, qcType, perm };
 
             document.getElementById('stageItemInfo').innerHTML = buildInfoBlock(item) + deptRemarksBlockHtml(item, 'stageItemInfo');
             document.getElementById('stageActionName').innerText = `${currentUser.name} (${currentUser.username})`;
@@ -9561,6 +9754,7 @@
             const idx = repairs.findIndex(r => r.id === activeActionId);
             if (idx === -1 || !stageActionInfo) return;
             if (stageActionInfo.stage === 'accFulfillmentOnly') { saveAccFulfillmentOnly(); return; }
+            if (!stageActionInfo.perm || !stageActionInfo.perm(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
             const item = repairs[idx];
             const { stage, mode, qcType } = stageActionInfo;
             const ts = getLocalTime();
@@ -9693,7 +9887,15 @@
                         },
                     },
                 };
-                item.qcPendingTypes = (item.qcPendingTypes || []).filter(t => t !== qcType);
+                // Normally perTypeDecisions has exactly one key (qcType itself). The legacy
+                // fallback in qcInspectTypes() (no qcType resolved — old records missing
+                // per-type data) can hand back several types decided in one go here, so every
+                // decided type must be cleared from qcPendingTypes, not just qcType alone —
+                // otherwise a non-primary type stayed "pending at QC" forever while a Repair
+                // verdict on it simultaneously pushed it into activeDeptTypes below, leaving it
+                // in both arrays at once.
+                const decidedTypes = Object.keys(perTypeDecisions);
+                item.qcPendingTypes = (item.qcPendingTypes || []).filter(t => !decidedTypes.includes(t));
                 const visitForLog = item.qcInspection.visits[qcType];
                 // Neither "แจ้งตัดเปลี่ยน" nor "แจ้ง Vendor" ends here — QC still needs to
                 // actually go file the cut-replace request / notify the vendor, PER TYPE now.
@@ -9828,6 +10030,7 @@
         function openMarketModal(id) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
+            if (item.mergedInto) { showToast('รายการนี้ถูกรวมเข้ากับใบอื่นแล้ว ดำเนินการต่อไม่ได้ (Already merged into another request)', 'warning'); return; }
             if (!canSupermarketAct(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (เฉพาะซุปเปอร์มาร์เก็ต / Supermarket only)', 'warning'); return; }
 
             activeActionId = id;
@@ -9848,6 +10051,7 @@
         async function saveMarketAction() {
             const idx = repairs.findIndex(r => r.id === activeActionId);
             if (idx === -1) return;
+            if (!canSupermarketAct(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (เฉพาะซุปเปอร์มาร์เก็ต / Supermarket only)', 'warning'); return; }
             const ts = getLocalTime();
             const attachment = null; // attachment upload removed
 
@@ -9880,6 +10084,7 @@
         function openReceiveModal(id) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
+            if (item.mergedInto) { showToast('รายการนี้ถูกรวมเข้ากับใบอื่นแล้ว ดำเนินการต่อไม่ได้ (Already merged into another request)', 'warning'); return; }
             if (!canOriginReceive(currentUser, item)) { showToast('คุณไม่มีสิทธิ์รับงานนี้ (ไม่ใช่ผู้ขอต้นทาง / not the origin requester)', 'warning'); return; }
             activeActionId = id;
             document.getElementById('receiveItemInfo').innerHTML = buildInfoBlock(item) + deptRemarksBlockHtml(item, 'receiveItemInfo');
@@ -9890,6 +10095,7 @@
         async function confirmOriginReceive() {
             const idx = repairs.findIndex(r => r.id === activeActionId);
             if (idx === -1) return;
+            if (!canOriginReceive(currentUser, repairs[idx])) { showToast('คุณไม่มีสิทธิ์รับงานนี้ (ไม่ใช่ผู้ขอต้นทาง / not the origin requester)', 'warning'); return; }
             const attachment = null; // attachment upload removed
             repairs[idx].originReceive = { by: currentUser.username, name: currentUser.name, attachment, ts: getLocalTime() };
             repairs[idx].originReceiveCheck = collectReceiveCheck('receiveExtraFields');
@@ -9929,6 +10135,7 @@
             const idx = repairs.findIndex(r => r.id === kickbackActionId);
             if (idx === -1) return;
             const item = repairs[idx];
+            if (!canKickbackItem(currentUser, item)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
             const target = document.getElementById('kickbackTarget').value;
             const reason = document.getElementById('kickbackReason').value.trim();
             if (!target) { showToast('ไม่มีขั้นตอนก่อนหน้าให้ตีกลับ (No earlier stage to kick back to)', 'warning'); return; }
@@ -9958,7 +10165,18 @@
             if (!item) return;
             if (!canKickback(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
             cancelActionId = id;
-            document.getElementById('cancelRequestItemInfo').innerHTML = buildInfoBlock(item);
+            const dispensed = accDispensedLines(item);
+            // ACC may have already physically handed over stock before anyone cancels the
+            // request — that quantity doesn't un-happen just because the record is closed, so
+            // surface it loudly here instead of letting it silently vanish with the record.
+            const dispensedWarning = dispensed.length ? `
+                <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs space-y-1">
+                    <p class="font-bold text-rose-700">⚠️ ACC จ่ายของไปแล้วบางส่วน/ทั้งหมด — กรุณาประสานงาน ACC เพื่อเคลียร์สต็อค/รับของคืนก่อนยืนยันยกเลิก</p>
+                    <ul class="list-disc list-inside text-rose-600">
+                        ${dispensed.map(l => `<li>${escapeHtml(l.label)}: จ่ายแล้ว ${l.qtyPaid}${escapeHtml(l.unit || '')}</li>`).join('')}
+                    </ul>
+                </div>` : '';
+            document.getElementById('cancelRequestItemInfo').innerHTML = buildInfoBlock(item) + dispensedWarning;
             document.getElementById('cancelRequestReason').value = '';
             document.getElementById('cancelRequestModal').classList.replace('hidden', 'flex');
         }
@@ -9967,19 +10185,28 @@
             const idx = repairs.findIndex(r => r.id === cancelActionId);
             if (idx === -1) return;
             const item = repairs[idx];
+            if (!canKickback(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
             const reason = document.getElementById('cancelRequestReason').value.trim();
             if (!reason) { showToast('กรุณาระบุสาเหตุที่ยกเลิก (Please specify a cancellation reason)', 'warning'); return; }
             pushStatusHistory(item);
+            // Snapshot any already-dispensed ACC quantity onto the cancellation record itself —
+            // once archived, this is the only place left where "X units were already handed
+            // out before this got cancelled" stays visible for reconciliation/audit.
+            const dispensed = accDispensedLines(item);
             // The cancelling department isn't necessarily who caused the problem — the reason
             // is what matters for the record, not an at-fault department field.
-            item.cancelReason = { text: reason, by: currentUser.username, name: currentUser.name, ts: getLocalTime() };
+            item.cancelReason = {
+                text: reason, by: currentUser.username, name: currentUser.name, ts: getLocalTime(),
+                accDispensed: dispensed.length ? dispensed.map(l => ({ label: l.label, qtyPaid: l.qtyPaid, unit: l.unit || '' })) : undefined,
+            };
             item.status = 'Cancelled';
             item.archived = true;
-            logAction('CancelRequest', item.id, `${currentUser.name} ยกเลิกใบสั่งซ่อม — เหตุผล: ${reason}`);
+            const dispensedNote = dispensed.length ? ` — ⚠️ ACC จ่ายของไปแล้ว: ${dispensed.map(l => `${l.label} x${l.qtyPaid}${l.unit || ''}`).join(', ')} (ต้องเคลียร์สต็อคเอง)` : '';
+            logAction('CancelRequest', item.id, `${currentUser.name} ยกเลิกใบสั่งซ่อม — เหตุผล: ${reason}${dispensedNote}`);
             autoSave(item.id);
             renderTable();
             closeModal('cancelRequestModal');
-            showToast('ยกเลิกใบสั่งซ่อมเรียบร้อย (Request cancelled)', 'success');
+            showToast(dispensed.length ? 'ยกเลิกใบสั่งซ่อมเรียบร้อย — โปรดอย่าลืมเคลียร์สต็อค ACC ที่จ่ายไปแล้ว (Cancelled — remember to reconcile already-dispensed ACC stock)' : 'ยกเลิกใบสั่งซ่อมเรียบร้อย (Request cancelled)', dispensed.length ? 'warning' : 'success');
         }
 
         function promptDelete(id) {
@@ -11369,7 +11596,8 @@
         function buildExportData() {
             const headers = ["ID", "เลขที่เอกสาร (Doc No.)", "วันที่แจ้ง (Date Reported)", "วันที่ต้องการ (Need Date)", "วันส่งออก (Ship-Out Date)", "แผนก (Dept)", "ไลน์ผลิต (Line)", "ประเภทคำขอ (Heat Transfer)", "ประเภทคำขอ (Cut-Replace/ACC Only)", "อ้างอิง QC Reject", "ผู้ขอ (Requester)", "Style", "Job", "Item", "CW", "PO No.", "สาเหตุ (Reasons — Per Part)", "Remark", "Alert", "สถานะ (Status)", "ผู้ตรวจสอบ (BU)", "วันที่ตรวจสอบ (BU)", "ผู้อนุมัติ (PM/FM)", "วันที่อนุมัติ (PM/FM)", "Remark (PM/FM)", "ผู้รับงาน (Marker)", "ประเภทผ้า (Marker)", "วางมาร์ค (Marker)", "ผู้รับงาน (ใบปูตัด)", "ผู้ส่งต่อ (ใบปูตัด)", "ผู้รับงาน (เช็คผ้า)", "มีผ้าหรือไม่ (เช็คผ้า)", "ผู้รับงาน (PPC Fabric)", "วันผ้าเข้าจริง (PPC Fabric)", "ผู้รับงาน (สต็อคผ้า)", "ผู้ส่งต่อ (สต็อคผ้า)", "ปัญหาแผนกตัด (Cutting Issue)", "ผู้รับงานตัด (Cutting Receiver)", "ผู้ตัดเสร็จ (Cutting Sender)", "ค้างตัด (Cutting Pending)", "ผู้รับงาน (ACC)", "คงค้างจ่าย (ACC)", "ประวัติปัญหา ACC (จำนวนรอบ)", "ผู้ส่งต่อ (ACC)",
                 ...EMB_STAGE_TYPES.flatMap(t => [`ผู้รับงาน (${EMB_LABELS[t]})`, `ผู้ส่งต่อ (${EMB_LABELS[t]})`, `Vendor Outsource (${EMB_LABELS[t]})`]),
-                "ผู้รับงาน (QC)", "จำนวนตรวจรับ (QC)", "จำนวน Defect (QC)", "ผลตรวจ (QC)", "รอบส่งซ่อม QC (QC Repair Rounds)", "ผู้รับงาน (ซุปเปอร์มาร์เก็ต)", "ผู้ส่งงานเข้าไลน์ (ซุปเปอร์มาร์เก็ต)", "ผู้รับงานต้นทาง (Origin Receiver)"];
+                "ผู้รับงาน (QC)", "จำนวนตรวจรับ (QC)", "จำนวน Defect (QC)", "ผลตรวจ (QC)", "รอบส่งซ่อม QC (QC Repair Rounds)", "ผู้รับงาน (ซุปเปอร์มาร์เก็ต)", "ผู้ส่งงานเข้าไลน์ (ซุปเปอร์มาร์เก็ต)", "ผู้รับงานต้นทาง (Origin Receiver)",
+                "สาเหตุยกเลิก (Cancel Reason)", "ACC จ่ายไปแล้วก่อนยกเลิก (ACC Dispensed Before Cancel)", "ตีกลับล่าสุด (Latest Kickback)", "รวมจาก (Merged From)", "รวมเข้ากับ (Merged Into)", "Remark แต่ละส่วนงาน (Department Remarks)"];
             const rows = repairs.map(r => {
                 const partReasons = [...new Set(r.parts.map(p => REASON_LABELS[p.reason] || p.reason).filter(Boolean))].join(' / ');
                 return [
@@ -11437,7 +11665,13 @@
                     (r.qcRepairRequests ? Object.entries(r.qcRepairRequests).map(([t, q]) => `${EMB_LABELS[t] || t}: รอบ ${q.roundNo} (${q.qty} ชิ้น)`).join(' / ') : ''),
                     (r.supermarketReceive && r.supermarketReceive.name) || '',
                     (r.supermarketSend && r.supermarketSend.name) || '',
-                    (r.originReceive && r.originReceive.name) || ''
+                    (r.originReceive && r.originReceive.name) || '',
+                    r.cancelReason ? `${r.cancelReason.text || ''} (${r.cancelReason.name || ''}${r.cancelReason.ts ? ' · ' + r.cancelReason.ts : ''})` : '',
+                    (r.cancelReason && r.cancelReason.accDispensed) ? r.cancelReason.accDispensed.map(l => `${l.label} x${l.qtyPaid}${l.unit || ''}`).join(' / ') : '',
+                    r.kickbackInfo ? `${r.kickbackInfo.from || ''} → ${STATUS_LABELS[r.kickbackInfo.to] || r.kickbackInfo.to || ''} (${r.kickbackInfo.name || ''}${r.kickbackInfo.reason ? ' — ' + r.kickbackInfo.reason : ''})` : '',
+                    (r.mergedFrom || []).map(m => m.docNo || m.id).join(' / '),
+                    r.mergedInto ? (r.mergedIntoDocNo || docNoOf(r.mergedInto)) : '',
+                    Object.entries(r.deptRemarks || {}).filter(([, v]) => v && v.text).map(([k, v]) => `${DEPT_REMARK_LABELS[k] || k}: ${v.text}`).join(' / ')
                 ];
             });
             return { headers, rows };
