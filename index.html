@@ -270,6 +270,39 @@
                             <h4 id="kpiOverdue" class="text-sm font-black text-red-600 leading-none text-center">0</h4>
                             <span class="text-[10px] font-bold text-rose-500 leading-none text-center"></span>
                         </div>
+                        <!-- Urgency-level breakdown — per "ต้องการให้มีส่วนที่สามารถเลือกดูข้อมูล
+                             กรองเพื่อดูความด่วนของงานได้ว่าในรายการด่วนแต่ละระดับมีอะไรที่ต้องทำ
+                             บ้าง". Uses the same activeKpiPredicate mechanism as every other card. -->
+                        <div onclick="filterByKpi('urgent')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-amber-50 transition-colors border-l-2 border-l-amber-400">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-base shrink-0">🔶</span>
+                                <p class="text-[10px] font-bold uppercase text-amber-600 leading-tight">ด่วน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Urgent</span></p>
+                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiUrgentLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiUrgentQty">0</span></span>
+                            <h4 id="kpiUrgent" class="text-sm font-black text-amber-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"></span>
+                        </div>
+                        <div onclick="filterByKpi('veryUrgent')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-500">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-base shrink-0">🔴</span>
+                                <p class="text-[10px] font-bold uppercase text-orange-600 leading-tight">ด่วนมาก <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Very Urgent</span></p>
+                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiVeryUrgentLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiVeryUrgentQty">0</span></span>
+                            <h4 id="kpiVeryUrgent" class="text-sm font-black text-orange-600 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"></span>
+                        </div>
+                        <div onclick="filterByKpi('mostUrgent')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-rose-50 transition-colors border-l-2 border-l-rose-600">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-base shrink-0">‼️</span>
+                                <p class="text-[10px] font-bold uppercase text-rose-700 leading-tight">ด่วนที่สุด <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Most Urgent</span></p>
+                            </div>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiMostUrgentLines">0</span></span>
+                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiMostUrgentQty">0</span></span>
+                            <h4 id="kpiMostUrgent" class="text-sm font-black text-rose-700 leading-none text-center">0</h4>
+                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"></span>
+                        </div>
                         <div onclick="goToCompletedHistory()" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-emerald-50 transition-colors border-l-2 border-l-emerald-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">✅</span>
@@ -2039,7 +2072,7 @@
          This lets an Admin tick NEW types onto a part (existing ticks stay locked/untouched —
          see renderAddEmbGroups) and immediately activates whichever of them are sendable now. -->
     <div id="addEmbModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="bg-white rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-pink-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
                     <h3 class="font-bold text-base">เพิ่ม Embellishment (Admin)</h3>
@@ -2270,7 +2303,7 @@
 
     <!-- MODAL: QC CUT-REPLACE AUTO-CREATE -->
     <div id="qcCutReplaceModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="bg-white rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-red-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
                     <h3 class="font-bold text-base">สร้างใบแจ้งตัดเปลี่ยนใหม่ (QC Cut-Replace)</h3>
@@ -2294,7 +2327,11 @@
 
     <!-- MODAL: MERGE SAME-JOB REQUESTS -->
     <div id="mergeModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <!-- Widened from max-w-3xl — this modal stacks several full buildPartsRatioTable()
+             tables (per-document + combined result), the exact table that was overflowing/
+             squished in the screenshot, per "หน้าจอที่รีวิวดูแบบนี้ต้องการให้แสดงข้อมูลเต็มได้
+             หรือไม่ในแถบของความกว้างในทุกๆหน้าทุกกระบวนการที่ต้องการวิวดูหรือปริ้น". -->
+        <div class="bg-white rounded-2xl w-full max-w-6xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-indigo-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
                     <h3 class="font-bold text-base">รวมใบสั่งซ่อม (Job/Style เดียวกัน)</h3>
@@ -2331,7 +2368,7 @@
 
     <!-- MODAL: KICKBACK TO AN EARLIER DEPARTMENT (correcting qty/data before cutting) -->
     <div id="kickbackModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="bg-white rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-orange-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
                     <h3 class="font-bold text-base">ตีกลับไปแผนกก่อนหน้าเพื่อแก้ไข</h3>
@@ -2360,7 +2397,7 @@
 
     <!-- MODAL: CANCEL REQUEST -->
     <div id="cancelRequestModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="bg-white rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-rose-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
                     <h3 class="font-bold text-base">ยกเลิกใบสั่งซ่อม</h3>
@@ -4712,6 +4749,14 @@
             if (item.status === 'Rejected' && isDeptOwnReview(item)) {
                 return statusLabelHtml(`${item.dept} ไม่ผ่านตรวจสอบ (Rejected by ${item.dept})`);
             }
+            // STATUS_LABELS['CuttingSent'] always said "next: Embellishment/QC" even for a
+            // record with no embellishment ticked at all — misleading now that a plain
+            // cutting-QC check applies to every job regardless (see CUTTING_QC_TYPE), per
+            // "ในรายการนี้ไม่มี Embellishment แต่พบว่าหน้าสถานะงานมี". Says just "QC" when
+            // there's genuinely no embellishment to route through.
+            if (item.status === 'CuttingSent' && applicableEmbTypes(item).length === 0) {
+                return statusLabelHtml('ตัดเสร็จ รอเริ่มงานต่อ (Cut Complete — next: QC ตรวจงานตัด)');
+            }
             return statusLabelHtml(STATUS_LABELS[item.status] || item.status);
         }
         // Which kind of request this is, at a glance — a Cut-Replace request can ALSO carry
@@ -5106,6 +5151,9 @@
             setKpi('kpiWaitingMainOnly', active.filter(r => r.status === 'CuttingSent' && !mainPipelineDone(r) && !!r.accSend));
             setKpi('kpiWaitingBoth', active.filter(r => r.status === 'CuttingSent' && !mainPipelineDone(r) && !r.accSend));
             setKpi('kpiOverdue', active.filter(r => alertInfo(r)));
+            setKpi('kpiUrgent', active.filter(r => r.urgency === 'urgent'));
+            setKpi('kpiVeryUrgent', active.filter(r => r.urgency === 'veryUrgent'));
+            setKpi('kpiMostUrgent', active.filter(r => r.urgency === 'mostUrgent'));
             // "เสร็จสมบูรณ์" must mean actually-received, not just archived — Cancelled
             // records also set archived:true, so a blanket archived-count here was silently
             // counting cancelled orders as completed.
@@ -5351,6 +5399,14 @@
         // silently dropping it.
         const KPI_PREDICATES = {
             overdue: { label: 'เกินกำหนด (Overdue)', test: r => alertInfo(r) },
+            // Per "ต้องการให้มีส่วนที่สามารถเลือกดูข้อมูลกรองเพื่อดูความด่วนของงานได้ว่าในรายการ
+            // ด่วนแต่ละระดับมีอะไรที่ต้องทำบ้าง" — one predicate per urgency level, matching the
+            // 3 values urgencyBadgeHtml/URGENCY_LABELS already recognize (URGENCY_LABELS itself
+            // is declared later in the file, so its Thai text is duplicated here as a literal
+            // rather than referenced, to avoid a temporal-dead-zone error at load time).
+            urgent: { label: '🔶 ด่วน (Urgent)', test: r => r.urgency === 'urgent' },
+            veryUrgent: { label: '🔴 ด่วนมาก (Very Urgent)', test: r => r.urgency === 'veryUrgent' },
+            mostUrgent: { label: '‼️ ด่วนที่สุด (Most Urgent)', test: r => r.urgency === 'mostUrgent' },
             anyRejected: { label: 'ถูกตีกลับ (Rejected)', test: r => r.status === 'Rejected' || r.status === 'FMRejected' },
             cuttingIssue: { label: 'ปัญหาการตัด (Cutting Issue)', test: r => r.cuttingIssue },
             cuttingPending: { label: 'รายการตัดคงค้าง', test: r => r.cuttingPending && !r.cuttingPending.resolved },
@@ -6608,9 +6664,16 @@
                             <th class="border-2 border-slate-300 px-1.5 py-1 text-left whitespace-nowrap">Embellishment</th>
                             <th class="border-2 border-slate-300 px-1.5 py-1 text-left">Item <span class="font-normal text-slate-400">(Embellishment)</span></th>
                             <th class="border-2 border-slate-300 px-0.5 py-1 whitespace-nowrap w-4">จำนวนตำแหน่ง<span class="block font-normal text-slate-400">(Positions)</span></th>
-                            ${usedSizes.map(s => `<th class="border-2 border-slate-300 px-1.5 py-1">${s}</th>`).join('')}
+                            <!-- Fixed, equal width for every size column (S/M/L/XL/2XL/etc.) —
+                                 previously unset, so a wider code like "2XL" made its own column
+                                 visibly wider than "S"'s, per "ต้องการ fix ให้ความกว้างของช่อง
+                                 ไซส์เท่ากันทั้งหมด". -->
+                            ${usedSizes.map(s => `<th class="border-2 border-slate-300 px-1 py-1 w-10">${s}</th>`).join('')}
                             <th class="border-2 border-slate-300 px-1.5 py-1 bg-slate-200">Total</th>
-                            <th class="border-2 border-slate-300 px-1.5 py-1 text-left">หมายเหตุ <span class="font-normal text-slate-400">(Remark)</span></th>
+                            <!-- Widened ~3x (+200%) — remark badges (e.g. "งานไม่ครบ (Incomplete
+                                 Work)") were being squeezed by an unset auto-width column, per
+                                 "เพิ่มความกว้างของช่องหมายเหตุอีก 200%". -->
+                            <th class="border-2 border-slate-300 px-1.5 py-1 text-left min-w-[280px]">หมายเหตุ <span class="font-normal text-slate-400">(Remark)</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -6657,7 +6720,7 @@
                                     <td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap" rowspan="${partRowSpan}">${escapeHtml(PART_NAME_LABELS[g.name] || g.name)}</td>
                                     <td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap" rowspan="${partRowSpan}">${escapeHtml(g.part) || '-'}</td>
                                     <td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap" rowspan="${partRowSpan}">${color ? escapeHtml(color) : '<span class="text-slate-300">-</span>'}</td>` : '';
-                                    const sizeCols = partFirstRow ? usedSizes.map(s => `<td class="border-2 border-slate-300 px-1.5 py-1 text-center" rowspan="${partRowSpan}">${g.sizes[s] || '-'}</td>`).join('') : '';
+                                    const sizeCols = partFirstRow ? usedSizes.map(s => `<td class="border-2 border-slate-300 px-1 py-1 w-10 text-center" rowspan="${partRowSpan}">${g.sizes[s] || '-'}</td>`).join('') : '';
                                     const totalCol = partFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1 text-center font-bold bg-slate-50" rowspan="${partRowSpan}">${total}</td>` : '';
                                     // Item (Embellishment) now comes before จำนวนตำแหน่ง (Positions)
                                     // — per "ต้องการให้ Item (Embellishment) อยู่ก่อนจำนวนตำแหน่ง".
@@ -6673,7 +6736,7 @@
                                         const positionCount = (e.items && e.items.length) ? e.items.length : (e.count || 0);
                                         positionsCol = typeFirstRow ? `<td class="border-2 border-slate-300 px-0.5 py-1 text-center font-bold" rowspan="${typeRowSpan}">${positionCount}</td>` : '';
                                     }
-                                    const remarkCol = partFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1" rowspan="${partRowSpan}">${badges}</td>` : '';
+                                    const remarkCol = partFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1 min-w-[280px]" rowspan="${partRowSpan}">${badges}</td>` : '';
                                     partFirstRow = false;
                                     typeFirstRow = false;
                                     return `<tr class="${rowCls}">${docNoCol}${partCols}${typeCol}${itemCol}${positionsCol}${sizeCols}${totalCol}${remarkCol}</tr>`;
@@ -8248,7 +8311,14 @@
             // Several types can be active at their own dept or waiting at QC in parallel now —
             // offer an independent undo track per type instead of assuming a single "current" one.
             const undoVisits = (item.qcInspection && item.qcInspection.visits) || {};
-            (item.qcPendingTypes || []).forEach(t => {
+            // CUTTING_QC_TYPE is deliberately excluded here — the 'emb:' undo below hands the
+            // type back to its OWN production department's queue (activeDeptTypes), but Cutting
+            // QC has no such department (Cutting itself queues it straight into qcPendingTypes,
+            // never via an embStages send). Offering this track for it let an Admin move it
+            // into activeDeptTypes with no role/button that could ever act on it there — a
+            // permanent dead end, since it also can't be kicked back out (excluded from
+            // kickbackTargets too). Before QC has received it, there's simply nothing to undo.
+            (item.qcPendingTypes || []).filter(t => t !== CUTTING_QC_TYPE).forEach(t => {
                 const visit = undoVisits[t];
                 if (!(visit && visit.receive)) {
                     tracks.push({ key: 'emb:' + t, label: `${EMB_LABELS[t] || t} — ยกเลิกการส่งต่อล่าสุด` });
@@ -8985,7 +9055,12 @@
             const qiVisits = qi.visits || {};
             const types = item.qcCutReplace.types || [];
             document.getElementById('qcCutReplaceRows').innerHTML = types.map(t => {
-                const matchingParts = item.parts.filter(p => (p.embellishment || []).some(e => e.type === t));
+                // A Cutting-QC defect isn't tied to one embellishment type/part the way a real
+                // embellishment CutReplace is — it can affect any/all pieces of the job, so
+                // there's no single "matching part" to key off. Per-type matching only makes
+                // sense for real embellishment types.
+                const isCuttingQc = t === CUTTING_QC_TYPE;
+                const matchingParts = isCuttingQc ? item.parts : item.parts.filter(p => (p.embellishment || []).some(e => e.type === t));
                 const totalQty = matchingParts.reduce((s, p) => s + parseInt(p.qty || 0), 0);
                 // Each type now has its own independent visit, so its own defect detail is
                 // always available here regardless of which type QC inspected most recently.
@@ -8995,12 +9070,16 @@
                 const defectCodesForType = (visitForType && visitForType.defectCodes) || [];
                 const defectQtyForType = defectCodesForType.reduce((s, d) => s + (parseInt(d.qty) || 0), 0);
                 const suggestedQty = defectQtyForType || (visitForType && visitForType.defectQty) || totalQty || 1;
-                const partNames = [...new Set(matchingParts.map(p => PART_NAME_LABELS[p.name] || p.name))].join(', ') || '-';
+                const partNames = isCuttingQc ? 'ทั้งหมด (All parts)' : ([...new Set(matchingParts.map(p => PART_NAME_LABELS[p.name] || p.name))].join(', ') || '-');
                 // Shown so QC can see up front which request type this will become, per
                 // "ต้องการให้ใช้เป็นแจ้งตัดงานซ่อม (ซัพพลายเออร์)" for outsource-caused defects.
-                const embEntry = (matchingParts[0] && matchingParts[0].embellishment || []).find(e => e.type === t);
+                // Cutting QC has no source (in-house/outsource) concept at all — it always
+                // becomes a plain internal Cut-Replace.
+                const embEntry = isCuttingQc ? null : (matchingParts[0] && matchingParts[0].embellishment || []).find(e => e.type === t);
                 const isOutsource = embEntry && embEntry.source === 'outsource';
-                const sourceBadge = isOutsource
+                const sourceBadge = isCuttingQc
+                    ? `<span class="text-[9px] font-bold text-slate-600 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5">ปัญหาจากการตัด → แจ้งขอตัดเปลี่ยน (Cutting defect → Cut-Replace)</span>`
+                    : isOutsource
                     ? `<span class="text-[9px] font-bold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">Outsource → แจ้งตัดงานซ่อม (ซัพพลายเออร์)</span>`
                     : `<span class="text-[9px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-0.5">In-house → แจ้งขอตัดเปลี่ยน</span>`;
                 return `
@@ -9010,6 +9089,7 @@
                         ${sourceBadge}
                     </div>
                     ${defectCodesForType.length ? `<div class="text-[9px] text-slate-500 mb-1">Defect ที่พบ: ${defectCodesForType.map(d => `${escapeHtml(d.code)} (${d.qty || 1})`).join(', ')}</div>` : ''}
+                    ${isCuttingQc ? `<p class="text-[9px] text-slate-400 mb-1">จะสร้างใบตัดเปลี่ยนใหม่ทุกชิ้นส่วนของงานนี้ ตามจำนวนเดิมของแต่ละชิ้น (ไม่ใช่จำนวนด้านล่าง) <span class="opacity-70">(Every part of this job will be re-created at its own original qty — the number below is just for the record/reason)</span></p>` : ''}
                     <label class="text-[9px] font-bold text-red-600 block mb-1">จำนวนที่จะตัดเปลี่ยนใหม่ <span class="opacity-70">(Qty to cut-replace)</span> *</label>
                     <input type="number" min="1" class="cutReplaceQty w-full text-xs" value="${suggestedQty}">
                 </div>`;
@@ -9025,6 +9105,16 @@
             let anyOutsource = false;
             rows.forEach(row => {
                 const t = row.dataset.cutreplaceType;
+                if (t === CUTTING_QC_TYPE) {
+                    // Not tied to one part like an embellishment type — clone every part of the
+                    // original job at its OWN original qty, since a cutting defect isn't
+                    // attributable to a single arbitrary part the way `item.parts[0]` would
+                    // wrongly imply. The qty typed above is informational only for this case.
+                    item.parts.forEach(p => {
+                        newParts.push({ name: p.name, part: p.part, size: p.size, qty: p.qty, sample: false, reason: 'QCDefect', embellishment: [], itemNo: '', fabricItem: p.fabricItem || '' });
+                    });
+                    return;
+                }
                 const qty = parseInt(row.querySelector('.cutReplaceQty').value) || 1;
                 const matchingParts = item.parts.filter(p => (p.embellishment || []).some(e => e.type === t));
                 const src = matchingParts[0] || item.parts[0];
@@ -10075,6 +10165,21 @@
                     { label: 'รับงานตัด (แผนกตัด)', step: item.cuttingReceive },
                     { label: 'ตัดเสร็จ', step: item.cuttingSend },
                 );
+                // Mandatory Cutting-QC check applies to every job regardless of embellishment
+                // (see CUTTING_QC_TYPE) — shown here as its own step, separate from the
+                // embellishment-type loop below (which only covers types with an
+                // embStages[t].receive, something Cutting QC never has since it has no
+                // production department of its own).
+                {
+                    const cuttingQcVisit = (item.qcInspection && item.qcInspection.visits && item.qcInspection.visits[CUTTING_QC_TYPE]) || null;
+                    const cuttingQcDecision = item.qcInspection && item.qcInspection.perType && item.qcInspection.perType[CUTTING_QC_TYPE];
+                    if (cuttingQcVisit || cuttingQcDecision) {
+                        steps.push(
+                            { label: 'QC รับงาน (ตรวจงานตัด)', step: cuttingQcVisit && cuttingQcVisit.receive },
+                            { label: 'QC บันทึกผลตรวจ (ตรวจงานตัด)', step: cuttingQcDecision ? { name: cuttingQcVisit && cuttingQcVisit.send && cuttingQcVisit.send.name, decision: qcDecisionSummaryLabel(cuttingQcDecision) } : (cuttingQcVisit && cuttingQcVisit.send) },
+                        );
+                    }
+                }
                 // The embellishment chain is sequential and visited in whatever order was
                 // actually chosen at each hand-off — sort by receive time so the timeline
                 // reflects the real path, not a fixed type order. QC now inspects each type
