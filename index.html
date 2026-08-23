@@ -2906,6 +2906,36 @@
         // two different colors/sizes), per "ในแต่ละรายการให้สามารถกดเพิ่มลดได้เนื่องจากอาจจะมี
         // หลายรายการย่อย" — so every ticked item gets its own +/- list of sub-rows instead of
         // a single fixed set of fields.
+        // Sizes actually being requested in this record's own Parts (ชิ้นส่วน) section — the
+        // ACC requisition size field should only ever offer these, not an unrelated generic
+        // list, per "รายการไซส์ในส่วนของอุปกรณ์ที่เบิกต้องการให้มีเหมือนกับรายการชิ้นส่วน".
+        function currentFormPartSizes() {
+            const sizes = [];
+            document.querySelectorAll('#partsContainer .pSizeQty').forEach(inp => {
+                const qty = parseInt(inp.value) || 0;
+                const size = inp.dataset.size;
+                if (qty > 0 && size && !sizes.includes(size)) sizes.push(size);
+            });
+            return sizes;
+        }
+        // ACCOnly requests have no Parts section to draw from at all (it's hidden/optional for
+        // that request type) — fall back to the standard size list in that case instead of
+        // leaving the field with nothing to offer.
+        function accSizeOptionsHtml(selected) {
+            const sizes = currentFormPartSizes();
+            const options = sizes.length ? sizes : SIZE_OPTIONS;
+            const list = options.includes(selected) || !selected ? options : [...options, selected];
+            return `<option value="">-- ไซส์ --</option>` + list.map(s => `<option value="${escapeHtml(s)}" ${s === selected ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('');
+        }
+        // Re-renders every already-open ACC size dropdown's option list whenever the Parts
+        // section changes (qty entered, part added/removed, size group added) — the dropdown
+        // is built once when a sub-row is created, so it would otherwise go stale the moment
+        // the underlying Parts sizes change afterward.
+        function refreshAccReqSizeOptions() {
+            document.querySelectorAll('#accRequestContainer .accReqSize').forEach(sel => {
+                sel.innerHTML = accSizeOptionsHtml(sel.value);
+            });
+        }
         function accSubRowHtml(key, s = {}) {
             return `
                 <div class="accReqSubRow grid grid-cols-[1fr_0.8fr_0.8fr_0.8fr_auto] gap-1.5 items-center">
@@ -2913,7 +2943,7 @@
                         ? `<input type="text" class="accReqOtherName text-[11px]" placeholder="ระบุชื่อรายการ (Item name)" value="${escapeHtml(s.itemName || '')}">`
                         : `<input type="text" class="accReqItem text-[11px]" placeholder="Item" value="${escapeHtml(s.itemName || '')}">`}
                     <input type="text" class="accReqColor text-[11px] w-full min-w-0" placeholder="สี (Color)" value="${escapeHtml(s.color || '')}">
-                    <input type="text" class="accReqSize text-[11px] w-full min-w-0" list="sizeList" placeholder="ไซส์ (Size)" value="${escapeHtml(s.size || '')}">
+                    <select class="accReqSize text-[11px] w-full min-w-0">${accSizeOptionsHtml(s.size || '')}</select>
                     <input type="number" min="0" class="accReqQty text-[11px] w-full min-w-0" placeholder="จำนวน (Qty)" value="${s.qty || ''}">
                     <button type="button" class="accReqRemoveRow text-rose-400 hover:text-rose-600 text-sm font-bold px-1" onclick="removeAccRequestSubRow(this)">✕</button>
                 </div>`;
@@ -4140,6 +4170,16 @@
             document.getElementById('partsSection').classList.toggle('hidden', isAccOnly);
             document.getElementById('partsRequiredMark').classList.toggle('hidden', isAccOnly);
             document.getElementById('partsOptionalHint').classList.toggle('hidden', !isAccOnly);
+            // BUG FIX: hiding partsSection doesn't remove its rows from the form — .pName and
+            // .pReason are both marked required="" in the row template, so the browser's native
+            // HTML5 validation silently refused to submit ANY ACCOnly request no matter what
+            // else was filled in, since a required field the user can't even see can never be
+            // satisfied. form.checkValidity() blocks before the JS submit handler ever runs, so
+            // no custom Thai/English toast ever appeared either — it just looked like the Save
+            // button did nothing at all.
+            document.querySelectorAll('#partsContainer .pName, #partsContainer .pReason').forEach(el => {
+                el.required = !isAccOnly;
+            });
             // Header changes to match — per "คลิกที่หัวข้อ แจ้งขอ ACC (ACC Only) ให้หน้าต่างฟอร์ม
             // ...หัวเอกสารจะเปลี่ยนจาก แจ้งซ่อมงาน/ขอตัดเปลี่ยนใหม่ เป็น แจ้งขอเบิก ACC".
             const meta = REQUEST_TYPE_META[type] || REQUEST_TYPE_META.CutReplace;
@@ -4463,6 +4503,7 @@
         document.getElementById('partsContainer').addEventListener('click', (e) => {
             if (!e.target.classList.contains('pSizeGroupRemove')) return;
             e.target.closest('.pSizeGroupRow').remove();
+            refreshAccReqSizeOptions();
         });
 
         function addPartRow(name = '', part = '', sizes = null, reason = '', sample = false, embEntries = null, itemNo = '', fabricItem = '', cw = '', bundleNo = '') {
@@ -4504,7 +4545,7 @@
                 </div>
                 <div class="sm:col-span-2">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">มัดที่ <span class="opacity-70">(Bundle No.)</span></label>
-                    <input type="number" min="0" class="pBundleNo w-full text-xs" value="${escapeHtml(bundleNo)}" placeholder="ระบุมัดที่">
+                    <input type="text" class="pBundleNo w-full text-xs" value="${escapeHtml(bundleNo)}" placeholder="ระบุมัดที่">
                 </div>
                 <div class="sm:col-span-2 flex items-center justify-center h-[34px] border rounded-lg bg-white px-2">
                     <label class="pSampleLabel flex items-center gap-1.5 cursor-pointer">
@@ -4566,6 +4607,7 @@
                 const total = Array.from(row.querySelectorAll('.pSizeQty')).reduce((sum, inp) => sum + (parseInt(inp.value) || 0), 0);
                 const totalEl = row.querySelector('.pTotalDisplay');
                 if (totalEl) totalEl.innerText = total;
+                refreshAccReqSizeOptions();
             }
             if (e.target.classList.contains('pEmbCount')) {
                 const typeRow = e.target.closest('.pEmbTypeRow');
@@ -4639,12 +4681,14 @@
             }
             groupRows.insertAdjacentHTML('beforeend', sizeGroupRowHtml(group.key, group.label, group.sizes, {}));
             select.value = '';
+            refreshAccReqSizeOptions();
         });
 
         function removePartRow(id) {
             const rows = document.querySelectorAll('#partsContainer > div');
             if (rows.length > 1) {
                 document.getElementById(id).remove();
+                refreshAccReqSizeOptions();
             } else {
                 showToast('ต้องมีรายการชิ้นส่วนอย่างน้อย 1 รายการ (At least 1 part required)', 'warning');
             }
@@ -6520,6 +6564,14 @@
             }
 
             const accRequestList = collectAccRequestList();
+            // Every ticked ACC requisition line must have a real quantity before this can go
+            // out to the next department for review — per "ต้องการให้ระบุจำนวนทุกครั้งในตอนที่
+            // สร้างใบขอก่อนส่งให้หน่วยงานถัดไปตรวจสอบ". Checked here at creation/edit so a
+            // zero/blank-qty line never even reaches BU review in the first place.
+            if (accRequestList.some(a => !(a.qty > 0))) {
+                showToast('กรุณาระบุจำนวนให้ครบทุกรายการที่ขอเบิก ACC (Please specify a quantity for every ticked ACC requisition line)', 'warning');
+                return;
+            }
             const requestType = currentRequestType();
             const remark = document.getElementById('fRemark').value;
             const po = document.getElementById('fPO').value;
@@ -8752,7 +8804,7 @@
         // ตรวจสอบ") and per ACC requisition entry, each markable as จ่าย/ไม่จ่าย/คงค้าง with a
         // qty-paid field, so ACC (and everyone downstream) can see exactly what was
         // dispensed and what's still outstanding — resumable via completeAccFulfillment().
-        const ACC_UNIT_OPTIONS = ['ชิ้น', 'หลา', 'เมตร'];
+        const ACC_UNIT_OPTIONS = ['ชิ้น', 'หลา', 'เมตร', 'หลอด', 'แพ็ค'];
         // Per "อาจจะต้องมีแสดงเลขไอเทม acc และรายการเช่น ฮีท item 1234 หรือป้ายแคร์ item 15494
         // เป็นตารางข้อมูลใต้ชื่อชิ้น" — itemDetails is a list of {typeLabel, itemNo} shown as
         // a small table under the line's label, since one part/line is often more than one
@@ -8772,7 +8824,15 @@
             // itemNo may be a single string (ACC requisition lines) or an array of distinct
             // item numbers (a part can carry more than one embellishment item) — each gets its
             // own line instead of being joined into one string.
-            const itemNoHtml = Array.isArray(itemNo)
+            // For a direct ACC requisition line specifically (not the parts/embellishment item
+            // numbers, which stay read-only here), ACC can correct the item name itself —
+            // the requester may have typed it wrong at the very start, and ACC is the one who
+            // actually notices when the physical item doesn't match, per "ต้องการให้แผนกอย่าง
+            // ACC สามารถระบุไอเทมหรือชื่อรายการได้กรณีที่ส่งมาแล้วและบางครั้งอาจจะมีการพิมพ์ผิด
+            // มาตั้งแต่ต้นทาง".
+            const itemNoHtml = group === 'accRequest'
+                ? `<input type="text" class="accItemNameEdit text-[10px] w-full min-w-0" data-acc-idx="${idx}" value="${escapeHtml(itemNo || '')}" placeholder="ชื่อรายการ (Item name)">`
+                : Array.isArray(itemNo)
                 ? (itemNo.length ? itemNo.map(n => `<div>${escapeHtml(n)}</div>`).join('') : '<span class="text-slate-300">-</span>')
                 : (itemNo ? escapeHtml(itemNo) : '<span class="text-slate-300">-</span>');
             // label may likewise be an array of embellishment-type lines (one per type, index-
@@ -8804,8 +8864,8 @@
             return `
                 <tr class="accFulfillRow ${noNeed ? 'bg-slate-100' : ''}" data-fulfill-group="${group}" data-fulfill-idx="${idx}" data-requested-qty="${requestedQty}" data-existing-paid="${qtyPaid}">
                     <td class="border-2 border-slate-300 px-1.5 py-1 align-top text-slate-500">${partName || '<span class="text-slate-300">-</span>'}</td>
-                    <td class="border-2 border-slate-300 px-1.5 py-1 font-medium align-top">${labelHtml}${historyHtml ? `<div class="text-[9px] text-slate-400 mt-1">${historyHtml}</div>` : ''}</td>
-                    <td class="border-2 border-slate-300 px-1.5 py-1 align-top">${itemNoHtml}</td>
+                    <td class="border-2 border-slate-300 px-1.5 py-1 font-medium align-top min-w-[160px]">${labelHtml}${historyHtml ? `<div class="text-[9px] text-slate-400 mt-1">${historyHtml}</div>` : ''}</td>
+                    <td class="border-2 border-slate-300 px-1.5 py-1 align-top min-w-[140px]">${itemNoHtml}</td>
                     <td class="border-2 border-slate-300 px-1.5 py-1 align-top">${size ? escapeHtml(size) : '<span class="text-slate-300">-</span>'}</td>
                     <td class="border-2 border-slate-300 px-1.5 py-1 text-center align-top font-bold bg-slate-50">${requestedQty}</td>
                     <td class="border-2 border-slate-300 px-1.5 py-1 align-top whitespace-nowrap">
@@ -8819,7 +8879,7 @@
                             ${ACC_UNIT_OPTIONS.map(u => `<option value="${u}" ${u === unit ? 'selected' : ''}>${u}</option>`).join('')}
                         </select>
                     </td>
-                    <td class="border-2 border-slate-300 px-1.5 py-1 align-top accFulfillPayCell ${isPaying ? '' : 'hidden'} whitespace-nowrap min-w-[220px]">
+                    <td class="border-2 border-slate-300 px-1.5 py-1 align-top accFulfillPayCell ${isPaying ? '' : 'hidden'} min-w-[132px]">
                         <label class="flex items-center gap-2 text-[9px] leading-5"><input type="checkbox" class="accFulfillPoSame sq-radio" ${poUseSame ? 'checked' : ''}> PO เดิม</label>
                         <label class="flex items-center gap-2 text-[9px] leading-5 mt-0.5"><input type="checkbox" class="accFulfillPoOther sq-radio" ${poUseOther ? 'checked' : ''}> PO ใหม่</label>
                         <div class="accFulfillPoNumbers mt-1 space-y-1 ${poUseOther ? '' : 'hidden'}">
@@ -8882,15 +8942,15 @@
                             <thead>
                                 <tr class="bg-slate-100">
                                     <th class="border-2 border-slate-300 px-1.5 py-1 text-left">ชื่อชิ้นส่วน <span class="font-normal opacity-70">(Part)</span></th>
-                                    <th class="border-2 border-slate-300 px-1.5 py-1 text-left">รายการ / ประเภท <span class="font-normal opacity-70">(Item / Type)</span></th>
-                                    <th class="border-2 border-slate-300 px-1.5 py-1 text-left">Item</th>
+                                    <th class="border-2 border-slate-300 px-1.5 py-1 text-left min-w-[160px]">รายการ / ประเภท <span class="font-normal opacity-70">(Item / Type)</span></th>
+                                    <th class="border-2 border-slate-300 px-1.5 py-1 text-left min-w-[140px]">Item</th>
                                     <th class="border-2 border-slate-300 px-1.5 py-1 text-left">Size</th>
                                     <th class="border-2 border-slate-300 px-1.5 py-1">จำนวนที่ขอ</th>
                                     <th class="border-2 border-slate-300 px-1.5 py-1">ดำเนินการ</th>
                                     <th class="border-2 border-slate-300 px-1.5 py-1">จำนวนจ่าย</th>
                                     <th class="border-2 border-slate-300 px-1.5 py-1">Balance</th>
                                     <th class="border-2 border-slate-300 px-1.5 py-1">หน่วย</th>
-                                    <th class="border-2 border-slate-300 px-1.5 py-1 text-left">ใช้ของจาก</th>
+                                    <th class="border-2 border-slate-300 px-1.5 py-1 text-left min-w-[132px]">ใช้ของจาก</th>
                                     <th class="border-2 border-slate-300 px-1.5 py-1 text-left">วันนัดรับของ</th>
                                     <th class="border-2 border-slate-300 px-1.5 py-1 text-left">Remark</th>
                                 </tr>
@@ -8931,6 +8991,22 @@
                 const enteredThisRound = qtyInput && (parseInt(qtyInput.value) || 0) > 0;
                 const resolvedEarlier = !!prior && (prior.noNeed || prior.decision);
                 return !enteredThisRound && !resolvedEarlier;
+            });
+        }
+        // Applies any ACC item-name corrections made in the fulfillment checklist directly
+        // onto item.accRequestList — separate from collectAccFulfillment() (which only handles
+        // paid-qty/decision fields) since this touches the original requisition line itself.
+        function collectAccItemNameEdits(item) {
+            document.querySelectorAll('.accItemNameEdit').forEach(inp => {
+                const idx = parseInt(inp.dataset.accIdx, 10);
+                const line = item.accRequestList && item.accRequestList[idx];
+                if (!line) return;
+                const newName = inp.value.trim();
+                const oldName = line.itemName || '';
+                if (newName && newName !== oldName) {
+                    logAction('AccItemNameCorrected', item.id, `${currentUser.name} แก้ไขชื่อรายการ ACC จาก "${oldName}" เป็น "${newName}"`);
+                    line.itemName = newName;
+                }
             });
         }
         function collectAccFulfillment() {
@@ -9096,6 +9172,7 @@
             if (idx === -1) return;
             if (!canACCAct(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
             if (repairs[idx].status === 'Cancelled') { showToast('ใบสั่งซ่อมนี้ถูกยกเลิกแล้ว ไม่สามารถจ่าย ACC เพิ่มได้ (Request cancelled — no further ACC dispensing)', 'warning'); return; }
+            collectAccItemNameEdits(repairs[idx]);
             repairs[idx].accFulfillment = collectAccFulfillment();
             logAction('AccFulfillmentUpdate', repairs[idx].id, `${currentUser.name} อัปเดตรายการจ่าย ACC (${hasOutstandingAcc(repairs[idx]) ? 'ยังมีรายการคงค้าง' : 'ครบทุกรายการ'})`);
             showToast('บันทึกรายการจ่าย ACC เรียบร้อย (Saved)', 'success');
@@ -9989,7 +10066,7 @@
                 const err = cfg.validate(extra, item);
                 if (err) { showToast(err, 'warning'); return; }
                 item[cfg.field] = { ...(item[cfg.field] || {}), by: currentUser.username, name: currentUser.name, attachment, ts, ...cfg.buildExtra(extra, item) };
-                if (stage === 'acc') item.accFulfillment = collectAccFulfillment();
+                if (stage === 'acc') { collectAccItemNameEdits(item); item.accFulfillment = collectAccFulfillment(); }
                 if (PARALLEL_STAGE_PERM[stage]) {
                     // Don't chain forward directly — only move on to Supermarket once every
                     // applicable parallel/sequential track has been sent.
