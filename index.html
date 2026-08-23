@@ -6650,8 +6650,10 @@
                 ...allSizesUsed.filter(s => !SIZE_OPTIONS.includes(s)),
             ];
             const grandTotal = groups.reduce((sum, g) => sum + Object.values(g.sizes).reduce((a, b) => a + b, 0), 0);
-            const positionCountOf = e => (e.items && e.items.length) ? e.items.length : (e.count || 0);
-            const grandPositions = groups.reduce((sum, g) => sum + g.embEntries.reduce((s, e) => s + positionCountOf(e), 0), 0);
+            // Positions is now the part's real quantity (see positionCount fix below), so the
+            // grand total counts each part's quantity once — not per embellishment type, which
+            // would otherwise double-count a part with both ฮีท and ปัก against the same pieces.
+            const grandPositions = groups.reduce((sum, g) => sum + (g.embEntries.length ? Object.values(g.sizes).reduce((a, b) => a + b, 0) : 0), 0);
             return `
                 <table class="w-full text-[10px] border-collapse">
                     <thead>
@@ -6690,21 +6692,19 @@
                             // type within the part, so Item is its own column per position
                             // instead of multiple positions stacked in one type's cell. Falls
                             // back to a single "ไม่มี/-" row when the part has no embellishment.
-                            // A position only gets its own row when at least one position in
-                            // the type actually has a NAME typed in — an untitled count (e.g. a
-                            // BU typing "23" into the position-count field, per the "จำนวน
-                            // ตำแหน่งอาจจะทำเหมือนเป็นรายการที่เป็น single ได้หรือไม่" report)
-                            // otherwise exploded into that many blank "-" rows, which carries no
-                            // information beyond the single number already shown in the
-                            // Positions column. Collapses to ONE row in that case instead.
-                            const namedPositionsOf = e => (e && e.items ? e.items.filter(x => x && String(x).trim()) : []);
-                            const partRowSpan = g.embEntries.length
-                                ? g.embEntries.reduce((sum, e) => sum + (namedPositionsOf(e).length ? e.items.length : 1), 0)
-                                : 1;
+                            // Always splits into `total` rows (the same real-quantity value shown
+                            // in จำนวนตำแหน่ง/Total, see the positionCount fix above), even before
+                            // any item name has been typed in — per "ต้องการให้ Item (Embellishment)
+                            // แยกเป็น...row เพื่อแตกบรรทัดให้ acc กรอกข้อมูล". This used to collapse
+                            // untitled positions into one blank row to avoid exploding into a wild
+                            // BU-typed count (e.g. "23"), but จำนวนตำแหน่ง is now bounded to the
+                            // part's real quantity, so it's safe to always show every real slot.
+                            const positionRowsOf = () => Math.max(total, 1);
+                            const partRowSpan = g.embEntries.length ? g.embEntries.length * positionRowsOf() : 1;
                             let partFirstRow = true;
                             const entries = g.embEntries.length ? g.embEntries : [null];
                             return entries.flatMap((e, entryIdx) => {
-                                const positions = e ? (namedPositionsOf(e).length ? e.items : ['']) : [null];
+                                const positions = e ? Array.from({ length: positionRowsOf() }, (_, i) => (e.items && e.items[i]) || '') : [null];
                                 const typeRowSpan = positions.length;
                                 let typeFirstRow = true;
                                 // A visible divider where one embellishment type's rows end and
@@ -6733,8 +6733,14 @@
                                         const sourceLabel = e.source ? (e.source === 'inhouse' ? 'In-house' : ('Outsource' + (e.vendor ? ' (' + escapeHtml(e.vendor) + ')' : ''))) : '';
                                         typeCol = typeFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap" rowspan="${typeRowSpan}">${escapeHtml(EMB_LABELS[e.type] || e.type)}${sourceLabel ? `<span class="block text-[9px] text-slate-400 font-normal">${sourceLabel}</span>` : ''}</td>` : '';
                                         itemCol = `<td class="border-2 border-slate-300 px-1.5 py-1">${posItem ? escapeHtml(posItem) : '<span class="text-slate-300">-</span>'}</td>`;
-                                        const positionCount = (e.items && e.items.length) ? e.items.length : (e.count || 0);
-                                        positionsCol = typeFirstRow ? `<td class="border-2 border-slate-300 px-0.5 py-1 text-center font-bold" rowspan="${typeRowSpan}">${positionCount}</td>` : '';
+                                        // จำนวนตำแหน่ง = the part's real total quantity (same value
+                                        // as the Total column), NOT the BU-typed e.count/e.items.length
+                                        // — per "เป็น 'จำนวนชิ้นที่มีจริง' ตามไซซ์": a manually-typed
+                                        // count could say "11" while only one size actually has real
+                                        // qty, which misled readers. Each type row already belongs to
+                                        // its own part group, so ปัก vs พิมพ์ on different parts stay
+                                        // naturally distinct.
+                                        positionsCol = typeFirstRow ? `<td class="border-2 border-slate-300 px-0.5 py-1 text-center font-bold" rowspan="${typeRowSpan}">${total}</td>` : '';
                                     }
                                     const remarkCol = partFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1 min-w-[280px]" rowspan="${partRowSpan}">${badges}</td>` : '';
                                     partFirstRow = false;
