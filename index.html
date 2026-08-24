@@ -1952,6 +1952,16 @@
                      utility class) — same fix pattern as the Urgency field's !mt-0 earlier. -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100" style="margin-top:0.75rem !important">
                     <div>
+                        <label class="text-[10px] font-extrabold text-slate-600 block mb-1">Customer</label>
+                        <input type="text" id="fCustomer" list="customerList" placeholder="เช่น Nike" class="w-full text-xs bg-white">
+                        <datalist id="customerList"></datalist>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-extrabold text-slate-600 block mb-1">Season</label>
+                        <input type="text" id="fSeason" list="seasonList" placeholder="เช่น SS27" class="w-full text-xs bg-white">
+                        <datalist id="seasonList"></datalist>
+                    </div>
+                    <div>
                         <label class="text-[10px] font-extrabold text-slate-600 block mb-1">Style No. *</label>
                         <input type="text" id="fStyle" list="styleList" placeholder="เช่น TSH-2026" class="w-full text-xs bg-white" required>
                         <datalist id="styleList"></datalist>
@@ -2861,6 +2871,12 @@
             { value: 'SupermarketPending', label: 'พร้อมส่งเข้าซุปเปอร์มาร์เก็ต (Ready for Supermarket)' },
             { value: 'SupermarketReceived', label: 'ซุปเปอร์มาร์เก็ตรับแล้ว (Received by Supermarket)' },
             { value: 'SupermarketSent', label: 'ส่งเข้าไลน์แล้ว รอต้นทางรับ (Sent to Line)' },
+            // ACC is a parallel track keyed off item.accReceive/accSend, not item.status, so
+            // these two use special pseudo-values matched in getFilteredRepairs() instead of a
+            // plain r.status comparison — per "เพิ่มสถานะ รอ ACC รับงาน / สถานะ ACC ส่งต่อ" in
+            // the status search/filter dropdown.
+            { value: '__accWaiting__', label: 'รอ ACC รับงาน (Pending ACC Receive)' },
+            { value: '__accSent__', label: 'ACC ส่งต่อแล้ว (ACC Sent)' },
         ];
         document.getElementById('filterStatus').insertAdjacentHTML('beforeend', FILTER_STATUS_OPTIONS.map(o => `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`).join(''));
 
@@ -3022,7 +3038,8 @@
             { value: 'Stain', label: 'เปื้อน / คราบสกปรก (Stain/Dirt)' },
             { value: 'Missing', label: 'ชิ้นส่วนสูญหาย (Missing Part)' },
             { value: 'Incomplete Work', label: 'งานไม่ครบ (Incomplete Work)' },
-            { value: 'QCDefect', label: 'QC ตรวจพบ Defect ต้องตัดเปลี่ยน (QC Defect — Cut Replace)' }
+            { value: 'QCDefect', label: 'QC ตรวจพบ Defect ต้องตัดเปลี่ยน (QC Defect — Cut Replace)' },
+            { value: 'SupplierDefect', label: 'เสียจาก Supplier (Supplier Defect)' }
         ];
         // Heat Transfer requests (fDept === 'HeatTransfer') use their own, narrower reason
         // list instead of the general garment-defect reasons above.
@@ -4246,6 +4263,8 @@
                 const dl = document.getElementById(id);
                 dl.innerHTML = arr.map(v => `<option value="${escapeHtml(v)}">`).join('');
             };
+            setDl('customerList', [...new Set(repairs.map(r => r.customer).filter(Boolean))]);
+            setDl('seasonList', [...new Set(repairs.map(r => r.season).filter(Boolean))]);
             setDl('styleList', [...new Set(repairs.map(r => r.style).filter(Boolean))]);
             setDl('jobList', [...new Set(repairs.map(r => r.job).filter(Boolean))]);
             setDl('itemList', [...new Set(repairs.map(r => r.item).filter(Boolean))]);
@@ -4538,6 +4557,7 @@
                         </select>
                         <input type="text" class="pPartOther w-1/2 text-xs uppercase ${isOtherPart ? '' : 'opacity-40 bg-slate-100 cursor-not-allowed'}" style="text-transform:uppercase" value="${escapeHtml(isOtherPart ? part : '')}" placeholder="ระบุพาร์ท" ${isOtherPart ? '' : 'disabled'}>
                     </div>
+                    <p class="text-[9px] text-slate-400 mt-1">ถ้าหัวหน้าไลน์ไม่ทราบพาร์ท ปล่อยว่างไว้ได้ — ผู้ตรวจสอบ (BU) จะเป็นผู้กรอกแทน</p>
                 </div>
                 <div class="sm:col-span-2">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">สี <span class="opacity-70">(Color)</span></label>
@@ -5363,7 +5383,12 @@
                         // yet started) — once a type is already received/in progress, ACC's own
                         // timeline no longer matters for it. accActionable() is the same item-
                         // wide "does ACC still owe something here" check ACC's own button uses.
-                        if (!done && !received && accActionable(item)) {
+                        // Printing types (PadPrint/ScreenPrint) don't wait on ACC's supporting
+                        // materials at all — they go straight to their own department, per
+                        // "ส่วนของ embellishment ที่เป็นงานพิมพ์, padprint ไม่ต้องเด้งข้อมูลไปหา
+                        // ACC แต่ส่งให้หน่วยงานถัดไปเลย".
+                        const waitsOnAcc = !['PadPrint', 'ScreenPrint'].includes(t);
+                        if (!done && !received && accActionable(item) && waitsOnAcc) {
                             return `<div class="status-pill bg-slate-100 text-slate-400 border border-slate-200 text-center cursor-not-allowed" title="ต้องรอ ACC กดส่งต่องานก่อน — รายการนี้มีของที่ ACC ต้องจ่ายให้ก่อนเริ่มงาน Embellishment (Waiting for ACC to send first)">🔒 รอ ACC ส่งของก่อน <span class="font-normal opacity-70">(${EMB_LABELS[t]})</span></div>`;
                         }
                         return statusActionBtn(!done && !received ? `รับงาน (${EMB_LABELS[t]})` : `(${EMB_LABELS[t]}) ส่งต่อ`, `openStageModal('${item.id}','${t}')`, 'bg-pink-100 text-pink-800 border border-pink-200 hover:bg-pink-200');
@@ -5809,7 +5834,10 @@
                                     asText(r.color).toLowerCase().includes(search) ||
                                     asText(r.po).toLowerCase().includes(search);
                 const matchRequestType = requestType === 'all' || (r.requestType || 'CutReplace') === requestType;
-                const matchStatus = status === 'all' || r.status === status;
+                const matchStatus = status === 'all' ? true
+                    : status === '__accWaiting__' ? (accActionable(r) && !r.accReceive)
+                    : status === '__accSent__' ? !!r.accSend
+                    : r.status === status;
                 const matchDept = dept === 'all' || r.dept === dept;
                 return matchSearch && matchRequestType && matchStatus && matchDept;
             });
@@ -6462,6 +6490,8 @@
             const fabricTypeRadio = document.querySelector(`input[name="fFabricType"][value="${item.originFabricType || ''}"]`);
             if (fabricTypeRadio) fabricTypeRadio.checked = true;
             document.getElementById('fLine').value = item.line;
+            document.getElementById('fCustomer').value = item.customer || '';
+            document.getElementById('fSeason').value = item.season || '';
             document.getElementById('fStyle').value = item.style;
             document.getElementById('fJob').value = item.job;
             document.getElementById('fItem').value = item.item;
@@ -6528,10 +6558,13 @@
                 const fabricItem = row.querySelector('.pFabricItem').value.trim();
                 const cw = row.querySelector('.pCW').value.trim();
                 const bundleNo = row.querySelector('.pBundleNo').value.trim();
-                // มัดที่/CW/พาร์ท must be filled in before this can go on to PM/FM approval,
-                // per "ต้องการบังคับกรอก...ก่อนส่งต่อให้ PM/FM อนุมัติ" — checked here at
+                // มัดที่/CW must be filled in before this can go on to PM/FM approval, per
+                // "ต้องการบังคับกรอก...ก่อนส่งต่อให้ PM/FM อนุมัติ" — checked here at
                 // creation/edit so nothing without them ever gets that far in the first place.
-                if (!bundleNo || !cw || !part) missingMandatoryRow = true;
+                // พาร์ท (Part) is deliberately NOT required here — per "หัวหน้าไลน์ไม่รู้พาท
+                // ให้ BU ใส่แทน", the line leader creating the request often doesn't know the
+                // part code; BU fills it in later during their own review instead.
+                if (!bundleNo || !cw) missingMandatoryRow = true;
                 // Embellishment is entered separately by BU during approval review (see the
                 // approvalModal embellishment section), not on this form — so a brand-new part
                 // always starts with none. But when EDITING an existing record, a part the BU
@@ -6559,7 +6592,7 @@
                 return;
             }
             if (missingMandatoryRow && !isAccOnlyRequest) {
-                showToast('กรุณาระบุ มัดที่, CW., และ พาร์ท ให้ครบทุกรายการชิ้นส่วน (Please fill in Bundle No., CW., and Part for every part)', 'warning');
+                showToast('กรุณาระบุ มัดที่ และ CW. ให้ครบทุกรายการชิ้นส่วน (Please fill in Bundle No. and CW. for every part)', 'warning');
                 return;
             }
 
@@ -6600,6 +6633,8 @@
                     shipOutDate,
                     urgency,
                     dept, line, heatTransferType, originFabricType,
+                    customer: document.getElementById('fCustomer').value,
+                    season: document.getElementById('fSeason').value,
                     style: document.getElementById('fStyle').value,
                     job: document.getElementById('fJob').value,
                     item: document.getElementById('fItem').value,
@@ -6629,13 +6664,21 @@
                     shipOutDate,
                     urgency,
                     dept, line, heatTransferType, originFabricType,
+                    customer: document.getElementById('fCustomer').value,
+                    season: document.getElementById('fSeason').value,
                     style: document.getElementById('fStyle').value,
                     job: document.getElementById('fJob').value,
                     item: document.getElementById('fItem').value,
                     color: document.getElementById('fColor').value,
                     po,
                     remark, accRequestList, requestType,
-                    status: "PendingApproval",
+                    // Supplier-caused cut-replace requests skip BU review entirely and land
+                    // directly on PM/FM's queue, per "เมื่อบันทึกข้อมูลใบขอแล้ว ให้ส่งต่อไปที่
+                    // PM/FM ต่อเลย ไม่ต้องผ่าน BU ตรวจสอบ" — unlike the Embellishment/QC-dept
+                    // case (isDeptOwnReview), which still holds at the same PendingApproval step
+                    // but lets that department's own head act on it instead of BU, this one has
+                    // no reviewer at all before PM/FM.
+                    status: requestType === 'SupplierCutReplace' ? 'PendingFMApproval' : 'PendingApproval',
                     statusHistory: [],
                     archived: false,
                     requesterUser: currentUser.username,
@@ -6677,7 +6720,10 @@
                 };
                 repairs.unshift(newItem);
                 logAction('Create', newItem.id, `สร้างใบสั่งซ่อมใหม่ (${newItem.style}/${newItem.job})`);
-                showToast(`สร้างใบสั่งซ่อม ${docLabel(newItem)} เรียบร้อยแล้ว รอ BU ตรวจสอบ (Created, pending BU review)`, 'success');
+                const nextStepMsg = requestType === 'SupplierCutReplace'
+                    ? 'รอ PM/FM อนุมัติ (pending PM/FM approval)'
+                    : 'รอ BU ตรวจสอบ (pending BU review)';
+                showToast(`สร้างใบสั่งซ่อม ${docLabel(newItem)} เรียบร้อยแล้ว ${nextStepMsg}`, 'success');
                 savedId = newItem.id;
             }
 
@@ -7123,6 +7169,8 @@
                 </div>
                 <table class="w-full text-xs border-collapse">
                     <tbody>
+                        ${item.customer ? infoRow('Customer', escapeHtml(item.customer)) : ''}
+                        ${item.season ? infoRow('Season', escapeHtml(item.season)) : ''}
                         ${infoRow('PO No.', item.po ? escapeHtml(item.po) : '<span class="text-amber-600 font-bold">ยังไม่ระบุ</span>')}
                         ${infoRow('Job No.', escapeHtml(item.job))}
                         ${infoRow('Item', escapeHtml(item.item))}
@@ -8311,7 +8359,14 @@
                 field: 'markerSend',
                 buildExtra: (extra) => ({ markerLaidByPart: extra.markerLaidByPart, markerLaid: Object.values(extra.markerLaidByPart || {}).some(v => v) }),
                 validate: (extra) => (extra.markerLaidByPart && Object.keys(extra.markerLaidByPart).length) ? null : 'กรุณายืนยันวางมาร์คหรือไม่ในแต่ละชิ้นส่วน (Please confirm marker lay-out for every part)',
-                nextStatus: () => 'FabricCheckPending',
+                // BUG FIX: this used to jump straight to 'FabricCheckPending', completely
+                // skipping the Cutting Sheet department (ใบปูตัด) for every record that ever
+                // actually reaches Marker's own send step — including "ไม่วางมาร์ค" (plain
+                // fabric) sent BY Marker themselves, not the earlier PM/FM-decided skip. Every
+                // record must pass through Cutting Sheet next regardless of markerLaid, same as
+                // the isMarkerSkip bypass path (which already correctly lands on 'MarkerSent'),
+                // per "ทั้งผ้าพื้น ผ้าลาย ต้องมีขั้นตอน รับ - ส่ง ใบปูตัด".
+                nextStatus: () => 'MarkerSent',
             },
             cuttingSheet: {
                 field: 'cuttingSheetSend',
@@ -10340,6 +10395,8 @@
                     ${cuttingIssueBadge(item)}
 
                     <div class="grid grid-cols-2 gap-2 text-[11px]">
+                        ${item.customer ? `<div><b>Customer:</b> ${escapeHtml(item.customer)}</div>` : ''}
+                        ${item.season ? `<div><b>Season:</b> ${escapeHtml(item.season)}</div>` : ''}
                         <div><b>PO No.:</b> ${item.po ? escapeHtml(item.po) : 'ยังไม่ระบุ'}</div>
                         <div><b>Job No:</b> ${escapeHtml(item.job)}</div>
                         <div><b>Item:</b> ${escapeHtml(item.item)}</div>
@@ -11671,7 +11728,7 @@
         // CSV/Excel/PDF export paths so all three formats always carry the exact same columns,
         // per "เปลี่ยนคำว่าส่งออก CSV เป็น Export File และมี dropdown ให้เลือกว่าเป็น CSV, Excel, Pdf".
         function buildExportData() {
-            const headers = ["ID", "เลขที่เอกสาร (Doc No.)", "วันที่แจ้ง (Date Reported)", "วันที่ต้องการ (Need Date)", "วันส่งออก (Ship-Out Date)", "แผนก (Dept)", "ไลน์ผลิต (Line)", "ประเภทคำขอ (Heat Transfer)", "ประเภทคำขอ (Cut-Replace/ACC Only)", "อ้างอิง QC Reject", "ผู้ขอ (Requester)", "Style", "Job", "Item", "CW", "PO No.", "สาเหตุ (Reasons — Per Part)", "Remark", "Alert", "สถานะ (Status)", "ผู้ตรวจสอบ (BU)", "วันที่ตรวจสอบ (BU)", "ผู้อนุมัติ (PM/FM)", "วันที่อนุมัติ (PM/FM)", "Remark (PM/FM)", "ผู้รับงาน (Marker)", "ประเภทผ้า (Marker)", "วางมาร์ค (Marker)", "ผู้รับงาน (ใบปูตัด)", "ผู้ส่งต่อ (ใบปูตัด)", "ผู้รับงาน (เช็คผ้า)", "มีผ้าหรือไม่ (เช็คผ้า)", "ผู้รับงาน (PPC Fabric)", "วันผ้าเข้าจริง (PPC Fabric)", "ผู้รับงาน (สต็อคผ้า)", "ผู้ส่งต่อ (สต็อคผ้า)", "ปัญหาแผนกตัด (Cutting Issue)", "ผู้รับงานตัด (Cutting Receiver)", "ผู้ตัดเสร็จ (Cutting Sender)", "ค้างตัด (Cutting Pending)", "ผู้รับงาน (ACC)", "คงค้างจ่าย (ACC)", "ประวัติปัญหา ACC (จำนวนรอบ)", "ผู้ส่งต่อ (ACC)",
+            const headers = ["ID", "เลขที่เอกสาร (Doc No.)", "วันที่แจ้ง (Date Reported)", "วันที่ต้องการ (Need Date)", "วันส่งออก (Ship-Out Date)", "แผนก (Dept)", "ไลน์ผลิต (Line)", "ประเภทคำขอ (Heat Transfer)", "ประเภทคำขอ (Cut-Replace/ACC Only)", "อ้างอิง QC Reject", "ผู้ขอ (Requester)", "Customer", "Season", "Style", "Job", "Item", "CW", "PO No.", "สาเหตุ (Reasons — Per Part)", "Remark", "Alert", "สถานะ (Status)", "ผู้ตรวจสอบ (BU)", "วันที่ตรวจสอบ (BU)", "ผู้อนุมัติ (PM/FM)", "วันที่อนุมัติ (PM/FM)", "Remark (PM/FM)", "ผู้รับงาน (Marker)", "ประเภทผ้า (Marker)", "วางมาร์ค (Marker)", "ผู้รับงาน (ใบปูตัด)", "ผู้ส่งต่อ (ใบปูตัด)", "ผู้รับงาน (เช็คผ้า)", "มีผ้าหรือไม่ (เช็คผ้า)", "ผู้รับงาน (PPC Fabric)", "วันผ้าเข้าจริง (PPC Fabric)", "ผู้รับงาน (สต็อคผ้า)", "ผู้ส่งต่อ (สต็อคผ้า)", "ปัญหาแผนกตัด (Cutting Issue)", "ผู้รับงานตัด (Cutting Receiver)", "ผู้ตัดเสร็จ (Cutting Sender)", "ค้างตัด (Cutting Pending)", "ผู้รับงาน (ACC)", "คงค้างจ่าย (ACC)", "ประวัติปัญหา ACC (จำนวนรอบ)", "ผู้ส่งต่อ (ACC)",
                 ...EMB_STAGE_TYPES.flatMap(t => [`ผู้รับงาน (${EMB_LABELS[t]})`, `ผู้ส่งต่อ (${EMB_LABELS[t]})`, `Vendor Outsource (${EMB_LABELS[t]})`]),
                 "ผู้รับงาน (QC)", "จำนวนตรวจรับ (QC)", "จำนวน Defect (QC)", "ผลตรวจ (QC)", "รอบส่งซ่อม QC (QC Repair Rounds)", "ผู้รับงาน (ซุปเปอร์มาร์เก็ต)", "ผู้ส่งงานเข้าไลน์ (ซุปเปอร์มาร์เก็ต)", "ผู้รับงานต้นทาง (Origin Receiver)",
                 "สาเหตุยกเลิก (Cancel Reason)", "ACC จ่ายไปแล้วก่อนยกเลิก (ACC Dispensed Before Cancel)", "ตีกลับล่าสุด (Latest Kickback)", "รวมจาก (Merged From)", "รวมเข้ากับ (Merged Into)", "Remark แต่ละส่วนงาน (Department Remarks)"];
@@ -11683,6 +11740,7 @@
                     r.requestType === 'ACCOnly' ? 'แจ้งขอเบิกอุปกรณ์ (ACC)' : (r.requestType === 'SupplierCutReplace' ? 'แจ้งตัดงานซ่อม (ซัพพลายเออร์)' : 'แจ้งขอตัดเปลี่ยน'),
                     r.sourceQcRejectId || '',
                     r.requesterUser || '',
+                    r.customer || '', r.season || '',
                     r.style, r.job, r.item, r.color, r.po || '',
                     partReasons, r.remark || '',
                     (alertInfo(r) || []).join(' / '),
