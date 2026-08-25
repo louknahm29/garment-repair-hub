@@ -3867,7 +3867,7 @@
                 if (!hasRole(currentUser, t)) return false;
                 const done = embTypeDone(item, t);
                 const received = !!(item.embStages && item.embStages[t] && item.embStages[t].receive);
-                const waitsOnAcc = !PRINT_TYPES.includes(t);
+                const waitsOnAcc = typeNeedsAcc(item, t);
                 if (!done && !received && accActionable(item) && waitsOnAcc) return false;
                 return true;
             });
@@ -5434,8 +5434,10 @@
                         // Printing types (PadPrint/ScreenPrint) don't wait on ACC's supporting
                         // materials at all — they go straight to their own department, per
                         // "ส่วนของ embellishment ที่เป็นงานพิมพ์, padprint ไม่ต้องเด้งข้อมูลไปหา
-                        // ACC แต่ส่งให้หน่วยงานถัดไปเลย".
-                        const waitsOnAcc = !['PadPrint', 'ScreenPrint'].includes(t);
+                        // ACC แต่ส่งให้หน่วยงานถัดไปเลย". Same for a SupplierCutReplace type
+                        // outsourced to the supplier — per "ถ้าเป็นตัดเปลี่ยน (ซัพพลายเออร์) ที่
+                        // มาจาก outsource ไม่ต้องผ่านที่ ACC ให้ไปถัดไปเลย" (see typeNeedsAcc).
+                        const waitsOnAcc = typeNeedsAcc(item, t);
                         if (!done && !received && accActionable(item) && waitsOnAcc) {
                             return `<div class="status-pill bg-slate-100 text-slate-400 border border-slate-200 text-center cursor-not-allowed" title="ต้องรอ ACC กดส่งต่องานก่อน — รายการนี้มีของที่ ACC ต้องจ่ายให้ก่อนเริ่มงาน Embellishment (Waiting for ACC to send first)">🔒 รอ ACC ส่งของก่อน <span class="font-normal opacity-70">(${EMB_LABELS[t]})</span></div>`;
                         }
@@ -7863,7 +7865,7 @@
                             ${order.map(t => `
                                 <span class="flex items-center gap-1">
                                     <span class="text-slate-500">${EMB_LABELS[t] || t}</span>
-                                    <select class="mEmbOrderSelect text-[10px]" data-type="${t}">
+                                    <select class="mEmbOrderSelect text-[10px]" data-type="${t}" data-prev-value="${order.indexOf(t) + 1}">
                                         ${order.map((_, i) => `<option value="${i + 1}" ${order.indexOf(t) === i ? 'selected' : ''}>${i + 1}</option>`).join('')}
                                     </select>
                                 </span>`).join('')}
@@ -7922,7 +7924,17 @@
             }
         }
         document.getElementById('mEmbOrderRows').addEventListener('change', (e) => {
-            if (e.target.classList.contains('mEmbOrderSelect')) refreshEmbChecklist();
+            if (e.target.classList.contains('mEmbOrderSelect')) {
+                // Keep ranks a valid permutation within the row — picking a rank another type
+                // already has SWAPS the two instead of leaving an ambiguous tie (which would
+                // silently fall back to DOM order rather than what the user actually chose).
+                const row = e.target.closest('.mEmbOrderRow');
+                const siblings = Array.from(row.querySelectorAll('.mEmbOrderSelect')).filter(s => s !== e.target);
+                const clash = siblings.find(s => s.value === e.target.value);
+                if (clash) clash.value = e.target.dataset.prevValue || '1';
+                e.target.dataset.prevValue = e.target.value;
+                refreshEmbChecklist();
+            }
         });
         // In-house/Outsource must be confirmed for every type actually being sent NOW (not
         // every applicable type) — regenerated whenever the checklist above changes, per
@@ -8475,6 +8487,25 @@
         // completely disjoint pieces are never blocked by each other, per "เป็นคนละชิ้น...
         // สามารถส่งแยกไปดำเนินการได้โดยไม่ต้องรอ ยกเว้นกรณีชิ้นเดียวกัน...เลือกลำดับการส่งงาน".
         const PRINT_TYPES = ['PadPrint', 'ScreenPrint'];
+        // Whether a given embellishment entry needs ACC to dispense anything at all. Print
+        // types never do (see hasAccContent's original comment). Neither does an entry outsourced
+        // on a SupplierCutReplace request — the supplier handles their own materials for work
+        // THEY caused and are fixing, per "ถ้าเป็นตัดเปลี่ยน (ซัพพลายเออร์) ที่มาจาก outsource
+        // ไม่ต้องผ่านที่ ACC ให้ไปถัดไปเลย". Scoped to SupplierCutReplace specifically — an
+        // ordinary Repair request with some outsourced embellishment may still need ACC for
+        // other supporting items, so this must not become a blanket "outsource skips ACC" rule.
+        function embNeedsAcc(item, e) {
+            if (PRINT_TYPES.includes(e.type)) return false;
+            if (item.requestType === 'SupplierCutReplace' && e.source === 'outsource') return false;
+            return true;
+        }
+        // Whether ANY embellishment entry of type t on this item still needs ACC — used to gate
+        // the "🔒 รอ ACC ส่งของก่อน" lock per-type instead of just per-print-type, so a
+        // SupplierCutReplace type outsourced on every piece it's ticked on is never locked
+        // waiting on ACC either.
+        function typeNeedsAcc(item, t) {
+            return (item.parts || []).some(p => (p.embellishment || []).some(e => e.type === t && embNeedsAcc(item, e)));
+        }
         // Which order a single physical piece's embellishment types get worked in — defaults to
         // however they happened to be ticked at BU approval, but the department actually
         // SENDING the piece on (Cutting today) can override it explicitly per "ถ้าเป็นชิ้น
@@ -8582,7 +8613,21 @@
         // must not get its own dispensing row either.
         function hasAccContent(item) {
             if ((item.accRequestList || []).length > 0) return true;
-            return (item.parts || []).some(p => (p.embellishment || []).some(e => !PRINT_TYPES.includes(e.type)));
+            return (item.parts || []).some(p => (p.embellishment || []).some(e => embNeedsAcc(item, e)));
+        }
+        // Decodes accFulfillment's 'parts' group virtualIdx (partIdx*10 + typeIdx, see
+        // accFulfillmentChecklistHtml) back to the actual part + embellishment entry it refers
+        // to — the SAME filtered (embNeedsAcc-filtered) enumeration order the checklist itself
+        // uses when generating rows, so every other reader of accFulfillment.parts[].idx stays
+        // in sync with it instead of misreading virtualIdx as a plain item.parts[] index.
+        function accPartsRowsInfo(item) {
+            const out = [];
+            (item.parts || []).forEach((p, partIdx) => {
+                (p.embellishment || []).filter(e => embNeedsAcc(item, e)).forEach((e, typeIdx) => {
+                    out.push({ virtualIdx: partIdx * 10 + typeIdx, part: p, embEntry: e });
+                });
+            });
+            return out;
         }
         function accActionable(item) {
             return !!(item.fmApproval && item.fmApproval.decision === 'Approved') && !item.accSend && hasAccContent(item);
@@ -9273,9 +9318,9 @@
             // ACC content (e.g. ปัก+ฮีท+แพดปริ้น on the same piece only shows rows for ปัก/ฮีท).
             const partRows = item.parts
                 .map((p, idx) => ({ p, idx }))
-                .filter(({ p }) => (p.embellishment || []).some(e => !PRINT_TYPES.includes(e.type)))
+                .filter(({ p }) => (p.embellishment || []).some(e => embNeedsAcc(item, e)))
                 .flatMap(({ p, idx }) => {
-                    const embEntries = (p.embellishment || []).filter(e => !PRINT_TYPES.includes(e.type));
+                    const embEntries = (p.embellishment || []).filter(e => embNeedsAcc(item, e));
                     const partName = `${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}${p.part ? ' (' + escapeHtml(p.part) + ')' : ''}`;
                     return embEntries.map((e, typeIdx) => {
                         const virtualIdx = idx * 10 + typeIdx;
@@ -9444,7 +9489,13 @@
         function accDispensedLines(item) {
             const f = item.accFulfillment;
             if (!f) return [];
-            const partLabel = (l) => { const p = item.parts[l.idx]; return p ? `${PART_NAME_LABELS[p.name] || p.name} — ${p.size}` : `Part #${l.idx}`; };
+            // BUG FIX: the 'parts' group's idx is virtualIdx (partIdx*10+typeIdx, see
+            // accFulfillmentChecklistHtml), NOT a real item.parts[] index — indexing
+            // item.parts[l.idx] directly resolved to the wrong part (or undefined) for any
+            // part beyond the very first embellishment entry. Decode via accPartsRowsInfo
+            // instead, same as every other correct reader of this idx scheme.
+            const rowByVirtualIdx = Object.fromEntries(accPartsRowsInfo(item).map(r => [r.virtualIdx, r]));
+            const partLabel = (l) => { const r = rowByVirtualIdx[l.idx]; return r ? `${PART_NAME_LABELS[r.part.name] || r.part.name} — ${r.part.size} (${EMB_LABELS[r.embEntry.type] || r.embEntry.type})` : `Part #${l.idx}`; };
             const accLabel = (l) => { const a = (item.accRequestList || [])[l.idx]; return a ? (a.label || a.key) : `ACC #${l.idx}`; };
             const fromGroup = (arr, labelFn) => (arr || []).filter(l => (l.qtyPaid || 0) > 0).map(l => ({ ...l, label: labelFn(l) }));
             return [...fromGroup(f.parts, partLabel), ...fromGroup(f.accRequest, accLabel)];
@@ -9460,9 +9511,14 @@
         function outstandingAccLines(item) {
             const f = item.accFulfillment;
             if (!f) return [];
-            const partLabel = (l) => { const p = item.parts[l.idx]; return p ? `${PART_NAME_LABELS[p.name] || p.name} — ${p.size}` : `Part #${l.idx}`; };
+            // Same virtualIdx decoding as accDispensedLines above — see its comment.
+            const rowByVirtualIdx = Object.fromEntries(accPartsRowsInfo(item).map(r => [r.virtualIdx, r]));
+            const partLabel = (l) => { const r = rowByVirtualIdx[l.idx]; return r ? `${PART_NAME_LABELS[r.part.name] || r.part.name} — ${r.part.size} (${EMB_LABELS[r.embEntry.type] || r.embEntry.type})` : `Part #${l.idx}`; };
             const accLabel = (l) => { const a = (item.accRequestList || [])[l.idx]; return a ? (a.label || a.key) : `ACC #${l.idx}`; };
-            const fromGroup = (arr, labelFn, group) => (arr || []).filter(l => !l.noNeed && l.decision && l.decision !== 'full').map(l => ({ ...l, group, label: labelFn(l), requestedQty: (group === 'parts' ? (item.parts[l.idx] || {}).qty : ((item.accRequestList || [])[l.idx] || {}).qty) || 0 }));
+            const fromGroup = (arr, labelFn, group) => (arr || []).filter(l => !l.noNeed && l.decision && l.decision !== 'full').map(l => {
+                const src = group === 'parts' ? (rowByVirtualIdx[l.idx] || {}).part : (item.accRequestList || [])[l.idx];
+                return { ...l, group, label: labelFn(l), requestedQty: (src && src.qty) || 0 };
+            });
             return [...fromGroup(f.parts, partLabel, 'parts'), ...fromGroup(f.accRequest, accLabel, 'accRequest')];
         }
         // Full dispense history table — every part/ACC-requisition line that has fulfillment
@@ -9472,15 +9528,21 @@
             const f = item.accFulfillment;
             if (!f) return '';
             const rows = [];
-            item.parts.forEach((p, idx) => {
-                const line = (f.parts || []).find(l => l.idx === idx);
+            // BUG FIX: was matching `l.idx === idx` against the real item.parts[] index, but
+            // the 'parts' group's idx is virtualIdx (partIdx*10+typeIdx) — only ever equal to
+            // a real index by coincidence (partIdx 0, typeIdx 0). Every other part/type's
+            // history silently vanished from this table. Iterate the same filtered
+            // (part, type) enumeration accFulfillmentChecklistHtml itself uses instead.
+            accPartsRowsInfo(item).forEach(({ virtualIdx, part: p, embEntry: e }) => {
+                const line = (f.parts || []).find(l => l.idx === virtualIdx);
                 if (!line) return;
                 // First column leads with the ACC/embellishment item itself (type + item
                 // numbers) — same info shown in the ACC checklist's "รายการ ACC"/"Item"
                 // columns — per "ให้แสดงเป็นชื่อรายการ...ที่มาจาก embellish ว่ามีรายการอะไรบ้าง
-                // ที่ขอ มีกี่ไอเทม", with the part name kept as a smaller line for context.
-                const embTypeLabel = [...new Set((p.embellishment || []).map(e => EMB_LABELS[e.type] || e.type))].join(', ');
-                const itemNos = [...new Set((p.embellishment || []).flatMap(e => (e.items && e.items.length) ? e.items : []).filter(Boolean))];
+                // ที่ขอ มีกี่ไอเทม", with the part name kept as a smaller line for context. Now
+                // per (part, type) row, matching the split ACC checklist rows.
+                const embTypeLabel = EMB_LABELS[e.type] || e.type;
+                const itemNos = (e.items && e.items.length) ? [...new Set(e.items.filter(Boolean))] : [];
                 const partName = `${PART_NAME_LABELS[p.name] || p.name} — ${p.size}`;
                 const label = itemNos.length ? `${embTypeLabel} — Item: ${itemNos.join(', ')}` : (embTypeLabel || partName);
                 rows.push({ label, sub: partName, line });
@@ -11551,13 +11613,19 @@
             const bumpAcc = (bucket, docId, qty) => { bucket.docs.add(docId); bucket.lines++; bucket.pcs += qty; };
             activeForHealth.forEach(r => {
                 const f = r.accFulfillment || { parts: [], accRequest: [] };
+                // BUG FIX: partMap is keyed by virtualIdx (partIdx*10+typeIdx), but this used
+                // to look it up with the real item.parts[] index — mismatched for any part
+                // beyond the first, permanently stranding it in "needPay". Also iterated raw
+                // p.embellishment (any length > 0) rather than accPartsRowsInfo's print-type-
+                // filtered rows, so a part ticked ONLY with PadPrint/ScreenPrint (never
+                // actually part of ACC's checklist — see hasAccContent) was still counted here,
+                // permanently inflating "ACC ค้างจ่าย" with items ACC was never meant to touch.
                 const partMap = Object.fromEntries((f.parts || []).map(l => [l.idx, l]));
                 const accMap = Object.fromEntries((f.accRequest || []).map(l => [l.idx, l]));
-                r.parts.forEach((p, idx) => {
-                    if (!(p.embellishment || []).length) return;
+                accPartsRowsInfo(r).forEach(({ virtualIdx, part: p }) => {
                     const qty = parseInt(p.qty) || 0;
                     bumpAcc(accBuckets.total, r.id, qty);
-                    const line = partMap[idx];
+                    const line = partMap[virtualIdx];
                     if (line && line.noNeed) bumpAcc(accBuckets.noNeed, r.id, qty);
                     else { bumpAcc(accBuckets.needPay, r.id, qty); if (line && line.decision === 'full') bumpAcc(accBuckets.paid, r.id, qty); }
                 });
