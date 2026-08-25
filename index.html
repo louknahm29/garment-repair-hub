@@ -2560,6 +2560,10 @@
                         <option value="CuttingHead">หัวหน้าแผนกตัด (Cutting Head)</option>
                         <option value="ACCHead">หัวหน้า ACC</option>
                         <option value="EmbellishmentHead">หัวหน้าแผนก Embellishment</option>
+                        <option value="EmbHead">หัวหน้าห้องปัก (Embroidery Head)</option>
+                        <option value="PadPrintHead">หัวหน้าแพดปริ้น (Pad Print Head)</option>
+                        <option value="ScreenPrintHead">หัวหน้าพิมพ์ (Screen Print Head)</option>
+                        <option value="HeatTransferHead">หัวหน้าฮีททรานเฟอร์ (Heat Transfer Head)</option>
                         <option value="QCHead">หัวหน้า QC</option>
                         <option value="SupermarketHead">หัวหน้าซุปเปอร์มาร์เก็ต (Supermarket Head)</option>
                         <option value="FactoryManager">Factory Manager</option>
@@ -4555,6 +4559,19 @@
             const sizeQtys = sizes || {};
             const entries = embEntries || [];
             const entryByType = Object.fromEntries(entries.map(e => [e.type, e]));
+            // Read-only summary of whatever Embellishment/ACC BU already ticked for this part —
+            // this form never lets anyone edit that (see the comment on `embellishment` in the
+            // submit handler below — it's BU's own approval-screen job), but until now nothing
+            // showed it here either, so re-opening a record to edit gave zero indication of
+            // what was actually requested. Per "ต้องการให้มีแสดงในหน้าแก้ไขหรือรายละเอียด
+            // จะได้รู้ว่าคือรายการอะไรที่ติ๊กขอมา".
+            const embSummaryHtml = entries.length ? `
+                <div class="col-span-full bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-2">
+                    <div class="text-[9px] font-bold text-indigo-600 uppercase mb-1">Embellishment ที่ขอไว้ <span class="font-normal normal-case text-indigo-400">(ระบุแล้วโดย BU — แก้ไขได้ที่หน้าตรวจสอบเท่านั้น)</span></div>
+                    <div class="flex flex-wrap gap-1.5">
+                        ${entries.map(e => `<span class="inline-block bg-white border border-indigo-200 rounded px-2 py-1 text-[10px] text-indigo-700 whitespace-nowrap">${escapeHtml(EMB_LABELS[e.type] || e.type)} × ${(e.items && e.items.length) ? e.items.length : (e.count || 0)}${e.source ? ' — ' + (e.source === 'inhouse' ? 'In-house' : ('Outsource' + (e.vendor ? ' (' + escapeHtml(e.vendor) + ')' : ''))) : ''}</span>`).join('')}
+                    </div>
+                </div>` : '';
             const reasonOpts = currentReasonOptions();
             const isOtherPart = !!part && !PART_LETTER_OPTIONS.includes(part);
             const isOtherReason = !!reason && !reasonOpts.some(r => r.value === reason);
@@ -4610,6 +4627,7 @@
                         <span class="text-[9px] font-bold text-slate-600 uppercase">มีชิ้นงานเสียแนบ</span>
                     </label>
                 </div>
+                ${embSummaryHtml}
                 <div class="sm:col-span-12">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">ระบุจำนวนแต่ละไซส์ (Size Ratio) <span class="font-normal normal-case opacity-70">— เหมือนที่จะส่งให้มาร์คเกอร์</span> *</label>
                     <div class="pSizeRatioBox flex flex-wrap gap-1.5 bg-white border rounded-lg p-2">
@@ -6936,7 +6954,14 @@
         // document no...แสดงด้วยในเอกสารที่รวม". Grouping folds sourceDocNo into the key too
         // (only when present) so two source docs that happen to tick the same Part Name/Part
         // Letter stay as separate rows instead of silently merging their quantities together.
-        function buildPartsRatioTable(parts, color) {
+        // collapsePositions=true renders ONE row per (part, embellishment type) with the Item
+        // numbers joined into that row's own cell, instead of exploding into one row per
+        // recorded position — for a plain READ-ONLY summary view (e.g. openDetailModal's quick
+        // "รายละเอียดรายการ") where nobody is typing item numbers in, per-position rows just
+        // add clutter (and, per a real report, blow up into a wall of blank "-" rows whenever a
+        // BU-typed count/items array is large). Used only where per-position editing genuinely
+        // isn't happening — the ACC checklist / print ticket still use the exploded form.
+        function buildPartsRatioTable(parts, color, collapsePositions) {
             const hasSourceDoc = parts.some(p => p.sourceDocNo);
             const groups = [];
             const groupMap = {};
@@ -7023,7 +7048,7 @@
                             // ACTUALLY-recorded-item approach embWorkSummaryHtml already uses —
                             // จำนวนตำแหน่ง/Total columns below still show the real full quantity
                             // regardless, only the row COUNT shrinks to match real data.
-                            const positionRowsOf = (e) => (e && e.items && e.items.length) ? e.items.length : 1;
+                            const positionRowsOf = (e) => collapsePositions ? 1 : ((e && e.items && e.items.length) ? e.items.length : 1);
                             const partRowSpan = g.embEntries.length ? g.embEntries.reduce((sum, e) => sum + positionRowsOf(e), 0) : 1;
                             let partFirstRow = true;
                             const entries = g.embEntries.length ? g.embEntries : [null];
@@ -7056,7 +7081,10 @@
                                     } else {
                                         const sourceLabel = e.source ? (e.source === 'inhouse' ? 'In-house' : ('Outsource' + (e.vendor ? ' (' + escapeHtml(e.vendor) + ')' : ''))) : '';
                                         typeCol = typeFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap" rowspan="${typeRowSpan}">${escapeHtml(EMB_LABELS[e.type] || e.type)}${sourceLabel ? `<span class="block text-[9px] text-slate-400 font-normal">${sourceLabel}</span>` : ''}</td>` : '';
-                                        itemCol = `<td class="border-2 border-slate-300 px-1.5 py-1">${posItem ? escapeHtml(posItem) : '<span class="text-slate-300">-</span>'}</td>`;
+                                        const itemDisplay = collapsePositions
+                                            ? ((e.items || []).filter(Boolean).join(', ') || '')
+                                            : posItem;
+                                        itemCol = `<td class="border-2 border-slate-300 px-1.5 py-1">${itemDisplay ? escapeHtml(itemDisplay) : '<span class="text-slate-300">-</span>'}</td>`;
                                         // จำนวนตำแหน่ง = the real number of embellishment positions
                                         // per piece (e.g. อกซ้าย+แขน = 2), NOT the part's piece
                                         // quantity — per "จำนวนปักมี 2 ตำแหน่ง ดังนั้นในตารางจะต้อง
@@ -7357,6 +7385,36 @@
             });
             return groups;
         }
+        // BUG FIX: groupPartsForEmb keys purely on (name, part) — intentional for the common
+        // case of the SAME physical part across several sizes, but a genuine data-loss risk
+        // when the line leader leaves Part blank on TWO DIFFERENT bundles that happen to share
+        // a part NAME (the form's own hint explicitly tells them to leave Part blank when
+        // unsure — see #fPart's helper text). Two such rows silently collapse into ONE card;
+        // BU only ever sees/reviews the first, and submitApproval's write-back then stamps that
+        // one decision onto BOTH raw rows, destroying the second bundle's real embellishment
+        // need with no error shown. Root cause of "BU ไม่ใส่ Part...Buแอพได้ไปถึง PM แอพไม่ได้"
+        // that the earlier isFilled/Part-required guard only partially covered (that guard
+        // passes cleanly on exactly this collision, since the merge fills Part on both rows).
+        // Detects the case using Bundle No. / CW — two rows sharing a blank-Part key but
+        // DIFFERENT bundle/CW are genuinely different physical pieces, not the same part in
+        // different sizes.
+        function findAmbiguousPartGroups(parts) {
+            const byKey = {};
+            (parts || []).forEach(p => {
+                const key = (p.name || '') + '||' + (p.part || '');
+                (byKey[key] = byKey[key] || []).push(p);
+            });
+            // Only flag it when Part is BLANK — once Part is explicitly filled in (by whoever
+            // created/edited the record), several bundles legitimately sharing that same real
+            // Part code is the intended, normal case (e.g. two production bundles of the same
+            // "Front, Part A" needing identical embellishment) and must NOT be blocked. This
+            // guard only exists for the case where the merge happens purely because both rows
+            // happen to share an EMPTY part code, not a deliberately assigned one.
+            return Object.values(byKey).filter(group =>
+                group.length > 1 && !isFilled(group[0].part) &&
+                new Set(group.map(p => (p.bundleNo || '') + '||' + (p.cw || ''))).size > 1
+            );
+        }
 
         // Renders the BU-facing Embellishment section: one card per part, a "ไม่มี" checkbox,
         // and (unless "ไม่มี" is ticked) the same type/count/source rows used elsewhere.
@@ -7525,6 +7583,13 @@
             document.getElementById('approvalModal').classList.replace('hidden', 'flex');
         }
 
+        // "-" (or a run of dashes) is a common placeholder typed just to satisfy a "required"
+        // field without actually providing real data — treat it as blank everywhere BU/PM
+        // completeness is enforced, per "ห้ามใช้ - ในการเขียนข้อมูล".
+        function isFilled(v) {
+            const s = String(v ?? '').trim();
+            return s !== '' && !/^-+$/.test(s);
+        }
         // Reads the approval modal's Embellishment cards back into { key -> {embNone, embellishment[]} },
         // and (for Approve only) requires every part to have been explicitly decided —
         // either ticked "ไม่มี" or at least one type ticked — before letting the review pass.
@@ -7552,7 +7617,7 @@
                             vendor: tr.querySelector('.pEmbVendor').value.trim(),
                         };
                     });
-                if (requireComplete && !part) return null;
+                if (requireComplete && !isFilled(part)) return null;
                 if (requireComplete && !embNone && embellishment.length === 0) return null;
                 byKey[key] = { part, embNone, embellishment };
             }
@@ -7656,11 +7721,20 @@
             // and a role can also change between opening the modal and clicking Save.
             if (!canApprove(currentUser, repairs[idx])) { showToast('คุณไม่มีสิทธิ์ตรวจสอบรายการนี้ (No permission to review)', 'warning'); return; }
 
+            // Must run BEFORE any embellishment collection/write-back below — see
+            // findAmbiguousPartGroups' comment. Two different bundles sharing a blank Part
+            // code would otherwise silently merge into one reviewed card and get the same
+            // decision stamped onto both.
+            if (decision === 'Approved' && findAmbiguousPartGroups(repairs[idx].parts).length) {
+                showToast('พบชิ้นส่วนชื่อเดียวกันมากกว่า 1 มัด/CW ที่ยังไม่ได้ระบุพาร์ทแยกจากกัน — กรุณาแก้ไขรายการและใส่พาร์ทให้แต่ละมัดแตกต่างกันก่อนตรวจสอบ (Found more than one bundle/CW sharing the same part name with no distinguishing Part code — please edit the record and give each bundle its own Part before reviewing)', 'warning');
+                return;
+            }
+
             const po = document.getElementById('approvalPO').value.trim();
             const itemField = document.getElementById('approvalItemField').value.trim();
             const jobField = document.getElementById('approvalJobField').value.trim();
 
-            if (decision === 'Approved' && (!po || !itemField || !jobField)) {
+            if (decision === 'Approved' && (!isFilled(po) || !isFilled(itemField) || !isFilled(jobField))) {
                 showToast('กรุณากรอกข้อมูล PO No., Item และ Job No. ให้ครบก่อนอนุมัติ (Please complete PO/Item/Job No. before approving)', 'warning');
                 return;
             }
@@ -7676,6 +7750,18 @@
                     const g = embByKey[key];
                     return g ? { ...p, part: g.part, embellishment: g.embellishment, embNone: g.embNone } : p;
                 });
+            }
+            // BUG FIX: collectApprovalEmb only validates one CARD per distinct (name,part) key
+            // — a stray/blank part row (e.g. an accidentally-added row via "+ เพิ่ม" that was
+            // never filled in, or one sharing a blank name+part key with another row) has no
+            // card of its own and so was never checked, letting BU approve and forward a record
+            // PM/FM's own stricter per-ROW guard (below, in submitFMApproval) would then reject
+            // — leaving the record stuck with no clear way for BU to see what's wrong. Per "Bu
+            // ไม่ใส่ Part หรือกดไปโดนเพิ่มรายการแต่ไม่มีรายละเอียด...Buแอพได้ไปถึง PM แอพไม่ได้",
+            // re-check every raw row here too, at the point BU can still fix it.
+            if (decision === 'Approved' && repairs[idx].parts.some(p => !isFilled(p.part) || !isFilled(p.name))) {
+                showToast('พบชิ้นส่วนที่ไม่มี พาร์ท (Part) หรือ ชื่อชิ้นส่วน — กรุณาแก้ไขรายการให้ครบทุกชิ้นส่วนก่อนอนุมัติ (Found a part with no Part code or name — please edit the record and complete every piece before approving)', 'warning');
+                return;
             }
 
             const attachment = null; // attachment upload removed
@@ -7727,8 +7813,16 @@
             if (idx === -1) return;
             if (!canFMApprove(currentUser)) { showToast('คุณไม่มีสิทธิ์อนุมัติรายการนี้ (เฉพาะ Factory Manager / Production Manager)', 'warning'); return; }
 
+            // Defense-in-depth copy of submitApproval's guard — a SupplierCutReplace record
+            // skips BU entirely and lands here directly, so that guard alone wouldn't catch it
+            // for this request type. See findAmbiguousPartGroups' comment for the full scenario.
+            if (decision === 'Approved' && findAmbiguousPartGroups(repairs[idx].parts).length) {
+                showToast('พบชิ้นส่วนชื่อเดียวกันมากกว่า 1 มัด/CW ที่ยังไม่ได้ระบุพาร์ทแยกจากกัน — กรุณาแก้ไขรายการและใส่พาร์ทให้แต่ละมัดแตกต่างกันก่อนอนุมัติ (Found more than one bundle/CW sharing the same part name with no distinguishing Part code — please edit the record and give each bundle its own Part before approving)', 'warning');
+                return;
+            }
+
             const remark = document.getElementById('fmApprovalRemark').value.trim();
-            if (decision === 'FMRejected' && !remark) {
+            if (decision === 'FMRejected' && !isFilled(remark)) {
                 showToast('กรุณาระบุ Remark เหตุผลที่ไม่อนุมัติ (Please provide a reject reason)', 'warning');
                 return;
             }
@@ -7737,7 +7831,7 @@
             // record skips BU entirely and lands directly here, so nothing ever enforced it for
             // that request type. Catch it here instead of letting a record proceed through the
             // whole pipeline with blank part codes on every piece.
-            if (decision === 'Approved' && repairs[idx].parts.some(p => !p.part)) {
+            if (decision === 'Approved' && repairs[idx].parts.some(p => !isFilled(p.part))) {
                 showToast('กรุณาแก้ไขรายการและระบุ พาร์ท (Part) ให้ครบทุกชิ้นส่วนก่อนอนุมัติ (Please edit the record and fill in Part for every piece before approving)', 'warning');
                 return;
             }
@@ -8478,7 +8572,20 @@
             (list || []).forEach(backfillCuttingQc);
             (list || []).forEach(stripBogusCuttingQc);
             restoreLegacyMergedRecords(list);
+            (list || []).forEach(reconcileAccDoneAdvancement);
             return list;
+        }
+        // Re-checks whether ACC's exemption rules (see embNeedsAcc — print types,
+        // SupplierCutReplace, outsourced embellishment) now free up a record that was already
+        // sitting at CuttingSent waiting ONLY on accSend. hasAccContent()/accActionable() are
+        // re-evaluated live every render, so a record whose accActionable flips from true to
+        // false AFTER it was saved (e.g. these rules were broadened later, or the record's
+        // requestType/source was edited) has its own ACC buttons vanish — accSend can then
+        // never be set — while checkAdvanceToSupermarket only ever runs on live user actions
+        // (cutting send, QC send, stage send), never automatically for an already-saved record.
+        // Runs once per load; a no-op for any record not genuinely eligible right now.
+        function reconcileAccDoneAdvancement(r) {
+            if (r.status === 'CuttingSent') checkAdvanceToSupermarket(r);
         }
         // Which of the still-remaining types can actually be SENT OUT right now — a type is
         // blocked if any part it's ticked on ALSO has an earlier-ordered (per that part's own
@@ -8496,7 +8603,18 @@
         // other supporting items, so this must not become a blanket "outsource skips ACC" rule.
         function embNeedsAcc(item, e) {
             if (PRINT_TYPES.includes(e.type)) return false;
-            if (item.requestType === 'SupplierCutReplace' && e.source === 'outsource') return false;
+            // Originally scoped to `&& e.source === 'outsource'`, but real records showed this
+            // never actually skipped ACC — a SupplierCutReplace record's embellishment often has
+            // no `source` set at all (BU, who normally fills it in, is skipped entirely for this
+            // request type — see submitFMApproval's Part-required comment). The supplier is
+            // ALWAYS the one doing this work by definition of the request type itself, so gate
+            // on requestType alone instead of a field that may never get populated.
+            if (item.requestType === 'SupplierCutReplace') return false;
+            // Confirmed live via CR-000014: any embellishment entry outsourced to a vendor never
+            // needs ACC to dispense supporting items either, regardless of request type — the
+            // vendor supplies their own materials. Per "ให้ปักที่เป็น Outsource ข้าม ACC ไปเลย
+            // ไม่ว่า request type ไหน".
+            if (e.source === 'outsource') return false;
             return true;
         }
         // Whether ANY embellishment entry of type t on this item still needs ACC — used to gate
@@ -8805,7 +8923,12 @@
                 // a Heat-transfer worker silently wipe ACC's already-sent delivery.
                 const kickbackTargets = ['acc', ...applicableEmbTypes(item)].filter(s => {
                     if (s === forcedStage || s === returnQcType) return false;
-                    if (s === 'acc') return !item.accSend;
+                    // Never offer ACC once it has nothing left to do (print/outsourced/
+                    // SupplierCutReplace embellishment, see embNeedsAcc) — its receive button
+                    // is gated on accActionable() too, so a kickback here could never actually
+                    // be received, leaving the "pending" badge stuck forever with no way to
+                    // clear it.
+                    if (s === 'acc') return hasAccContent(item) && !item.accSend;
                     return !(item.embStages && item.embStages[s] && item.embStages[s].send);
                 });
                 const targetLabel = (s) => s === 'acc' ? (PARALLEL_STAGE_TITLE.acc || 'ACC') : (EMB_LABELS[s] || s);
@@ -10180,14 +10303,14 @@
                                         <span class="w-1/4 truncate text-slate-500">${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}${p.part ? ' (' + escapeHtml(p.part) + ')' : ''} — ${escapeHtml(p.size)} (${parseInt(p.qty) || 0} ชิ้น)</span>
                                         <input type="text" class="stageFabricItemInput flex-1 text-xs min-w-[100px]" value="${escapeHtml(p.fabricItem || '')}" placeholder="เลขที่ Item ผ้า (ถ้ามี)">
                                         <select class="stageFabricAvailState text-[10px] bg-white">
-                                            <option value="full">มีครบ</option>
-                                            <option value="partial">มีไม่พอ</option>
-                                            <option value="none">ไม่มี</option>
+                                            <option value="full" ${availState === 'full' ? 'selected' : ''}>มีครบ</option>
+                                            <option value="partial" ${availState === 'partial' ? 'selected' : ''}>มีไม่พอ</option>
+                                            <option value="none" ${availState === 'none' ? 'selected' : ''}>ไม่มี</option>
                                         </select>
-                                        <span class="stageFabricShortageFields hidden items-center gap-1">
-                                            <input type="number" min="0" class="stageFabricHaveQty w-14 text-[10px]" placeholder="มี" value="0">
+                                        <span class="stageFabricShortageFields ${availState === 'full' ? 'hidden' : 'flex'} items-center gap-1">
+                                            <input type="number" min="0" class="stageFabricHaveQty w-14 text-[10px]" placeholder="มี" value="${p.fabricHaveQty != null ? parseInt(p.fabricHaveQty) || 0 : 0}">
                                             <span class="text-slate-400">/</span>
-                                            <input type="number" min="0" class="stageFabricNeedQty w-14 text-[10px]" placeholder="ขาดอีก" value="${parseInt(p.qty) || 0}">
+                                            <input type="number" min="0" class="stageFabricNeedQty w-14 text-[10px]" placeholder="ขาดอีก" value="${p.fabricNeedQty != null ? parseInt(p.fabricNeedQty) || 0 : (parseInt(p.qty) || 0)}">
                                             <span class="text-slate-400">ชิ้น</span>
                                         </span>
                                     </div>
@@ -10588,6 +10711,10 @@
                                 key: row.dataset.partKey, idx: i, haveQty, needQty,
                                 label: p ? `${PART_NAME_LABELS[p.name] || p.name}${p.part ? ' (' + p.part + ')' : ''} — ${p.size}` : row.dataset.partKey,
                             });
+                            // Persisted so reopening this modal (e.g. after a kickback) restores
+                            // the previously-entered have/need quantities instead of resetting to
+                            // 0/full-qty — see stageExtraFieldsHtmlRest's fabricCheck render.
+                            if (p) { p.fabricHaveQty = haveQty; p.fabricNeedQty = needQty; }
                         }
                         if (item.parts[i]) item.parts[i].fabricAvailState = state;
                     });
@@ -10609,12 +10736,20 @@
                     extra.fabricSource = partSources.length && partSources.every(s => s.fabricSource === 'cuttingTable') ? 'cuttingTable' : (partSources.length ? 'stock' : undefined);
                     extra.fabricJobSource = partSources.some(s => s.fabricJobSource === 'other') ? 'other' : (partSources.length ? 'same' : undefined);
                     extra.sourceJobNo = [...new Set(partSources.filter(s => s.fabricJobSource === 'other' && s.sourceJobNo).map(s => s.sourceJobNo))].join(', ') || undefined;
-                    // Parts left unticked get pulled into their own small procurement track
-                    // instead of holding up the parts that already have fabric — per "เพิ่มติ๊ก
-                    // ต่อชิ้น ส่งแยกเข้า PPC เฉพาะชิ้นที่ขาด". A record where EVERY part is
-                    // unticked doesn't need this (extra.available='no' already routes the whole
-                    // thing to PPC Fabric normally via the existing nextStatus logic below).
-                    if (shortageItems.length && shortageItems.length < fabricAvailRows.length) {
+                    // Parts left unticked (or short) get pulled into their own small
+                    // procurement track instead of holding up the parts that already have
+                    // fabric — per "เพิ่มติ๊กต่อชิ้น ส่งแยกเข้า PPC เฉพาะชิ้นที่ขาด". A record
+                    // where EVERY part is "ไม่มี" doesn't need this (extra.available='no'
+                    // already routes the WHOLE thing to PPC Fabric via nextStatus below).
+                    // BUG FIX: this used to also require shortageItems.length < fabricAvailRows.length,
+                    // which meant a record where EVERY row was "มีไม่พอ" (partial — not "ไม่มี")
+                    // had shortageItems.length === fabricAvailRows.length, silently NULLING OUT
+                    // the whole shortage record while anyFabricAvailable stayed true and sent
+                    // the record straight to Stock Fabric/Cutting as if fabric were fully
+                    // available — losing the shortage with no PPC follow-up at all. The correct
+                    // condition is simply "there's a shortage, and it's not the all-'ไม่มี' case
+                    // that already routes everything to PPC on its own".
+                    if (shortageItems.length && anyFabricAvailable) {
                         item.fabricPartialPpc = { items: shortageItems, by: currentUser.username, name: currentUser.name, ts, resolved: false };
                     } else {
                         item.fabricPartialPpc = null;
@@ -11182,7 +11317,7 @@
 
                 <div>
                     <h4 class="text-xs font-black text-slate-700 uppercase mb-2">รายการชิ้นส่วน</h4>
-                    <div class="overflow-x-auto">${buildPartsRatioTable(item.parts, item.color)}</div>
+                    <div class="overflow-x-auto">${buildPartsRatioTable(item.parts, item.color, true)}</div>
                 </div>
 
                 ${(item.accRequestList && item.accRequestList.length) ? `
@@ -12054,6 +12189,7 @@
             BU: 'BU', LineLeader: 'หัวหน้าไลน์', MarkerHead: 'หัวหน้า Marker', CuttingSheetHead: 'หัวหน้าใบปูตัด',
             FabricCheckHead: 'หัวหน้าเช็คผ้า', PPCFabricHead: 'หัวหน้า PPC Fabric', StockFabricHead: 'หัวหน้าสต็อคผ้า',
             CuttingHead: 'หัวหน้าแผนกตัด', ACCHead: 'หัวหน้า ACC', EmbellishmentHead: 'หัวหน้าแผนก Embellishment',
+            EmbHead: 'หัวหน้าห้องปัก', PadPrintHead: 'หัวหน้าแพดปริ้น', ScreenPrintHead: 'หัวหน้าพิมพ์', HeatTransferHead: 'หัวหน้าฮีททรานเฟอร์',
             QCHead: 'หัวหน้า QC', SupermarketHead: 'หัวหน้าซุปเปอร์มาร์เก็ต', FactoryManager: 'Factory Manager', ProductionManager: 'Production Manager'
         };
 
