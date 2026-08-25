@@ -2188,10 +2188,20 @@
                     <div id="mCuttingChecklist" class="overflow-x-auto border rounded-lg"></div>
                 </div>
 
+                <!-- Same-piece embellishment ORDER — per "ถ้าเป็นชิ้นเดียวกันก็อาจจะต้องให้แผนก
+                     ต้นทางที่ส่งงานให้ระบุไปว่าจะส่งให้แผนกไหนก่อน": only shown for a part with
+                     2+ ticked types where sequencing actually matters (see reorderablePartsFor).
+                     Changing this live re-filters the checklist below via refreshEmbChecklist(). -->
+                <div id="mEmbOrderField" class="hidden">
+                    <label class="text-[10px] font-black text-amber-600 uppercase mb-1 block">ลำดับการทำงาน — ชิ้นเดียวกันมีมากกว่า 1 ประเภท <span class="font-normal normal-case opacity-70">(Work order — same piece, multiple types)</span></label>
+                    <div id="mEmbOrderRows" class="space-y-1.5"></div>
+                    <p class="text-[9px] text-slate-400 mt-1">ค่าเริ่มต้นตามลำดับที่ติ๊กไว้ตอนอนุมัติ — เปลี่ยนได้ก่อนส่งงาน (Defaults to the order ticked at approval — adjustable here before sending)</p>
+                </div>
+
                 <div id="mNextEmbStageField" class="hidden">
                     <label class="text-[10px] font-black text-indigo-600 uppercase mb-1 block">ส่งต่อไปยังแผนก Embellishment ใดก่อน <span class="font-normal normal-case opacity-70">(Send to Embellishment — tick as many as apply)</span> *</label>
                     <div id="mNextEmbStageChecklist" class="space-y-1"></div>
-                    <p class="text-[9px] text-slate-400 mt-1">ชิ้นส่วนคนละชิ้นกันติ๊กส่งพร้อมกันได้เลย ไม่ต้องรอกัน — แต่ถ้าเป็นชิ้นเดียวกันต้องทำตามลำดับที่ระบุไว้ตอนอนุมัติก่อน ระบบจะซ่อนตัวเลือกที่ยังไม่ถึงลำดับให้อัตโนมัติ <span class="opacity-70">(Different pieces can go out together — same piece must follow its approved order)</span></p>
+                    <p class="text-[9px] text-slate-400 mt-1">ชิ้นส่วนคนละชิ้นกันติ๊กส่งพร้อมกันได้เลย ไม่ต้องรอกัน — แต่ถ้าเป็นชิ้นเดียวกันต้องทำตามลำดับที่ระบุไว้ด้านบนก่อน ระบบจะซ่อนตัวเลือกที่ยังไม่ถึงลำดับให้อัตโนมัติ <span class="opacity-70">(Different pieces can go out together — same piece must follow the order above)</span></p>
                 </div>
 
                 <div id="mEmbSourceField" class="hidden space-y-2">
@@ -3847,7 +3857,20 @@
             if (accActionable(item) && hasRole(currentUser, 'ACC')) {
                 return `รอ ACC รับงาน (Ready for ACC — waiting since FM approval): ${docLabel(item)}`;
             }
-            const notifEmbType = (item.activeDeptTypes || []).find(t => hasRole(currentUser, t));
+            // Don't notify a department "ready to receive" while it's still actually locked
+            // waiting on ACC to hand over supporting materials first (see renderTable's 🔒 "รอ
+            // ACC ส่งของก่อน" gate) — per "ต้องให้มีสถานะไปให้แผนกอื่นทำงาน...แสดงให้หน่วยงาน
+            // ถัดไปทำงานในการจัดการเลย": the notification should fire once the type is
+            // GENUINELY actionable, i.e. right when ACC finishes (accSend), not the moment
+            // Cutting ticks it into activeDeptTypes while ACC may still be working.
+            const notifEmbType = (item.activeDeptTypes || []).find(t => {
+                if (!hasRole(currentUser, t)) return false;
+                const done = embTypeDone(item, t);
+                const received = !!(item.embStages && item.embStages[t] && item.embStages[t].receive);
+                const waitsOnAcc = !PRINT_TYPES.includes(t);
+                if (!done && !received && accActionable(item) && waitsOnAcc) return false;
+                return true;
+            });
             if (notifEmbType) {
                 return `รอ${EMB_LABELS[notifEmbType] || notifEmbType}รับงาน (Ready for ${EMB_LABELS[notifEmbType] || notifEmbType}): ${docLabel(item)}`;
             }
@@ -5480,6 +5503,9 @@
                 if (item.cuttingPending && !item.cuttingPending.resolved && canCuttingAct(currentUser)) {
                     utilityRow += utilityBtn('✂️', 'ดำเนินการตัดคงค้างต่อ', `openCuttingPendingModal('${item.id}')`, 'bg-slate-50 text-amber-600 hover:bg-amber-50');
                 }
+                if (item.fabricPartialPpc && !item.fabricPartialPpc.resolved && canPPCFabricAct(currentUser)) {
+                    utilityRow += utilityBtn('🧵', 'จัดหาผ้าที่ขาดต่อ', `openFabricPartialModal('${item.id}')`, 'bg-slate-50 text-amber-600 hover:bg-amber-50');
+                }
                 if (item.qcNotifyVendor && !item.qcNotifyVendor.resolved && canResolveQcNotifyVendor(currentUser)) {
                     utilityRow += utilityBtn('📨', 'แจ้ง Vendor แล้ว', `resolveQcNotifyVendor('${item.id}')`, 'bg-slate-50 text-red-500 hover:bg-red-50');
                 }
@@ -5560,6 +5586,7 @@
                             ${item.qcCutReplace && !item.qcCutReplace.resolved ? `<div class="text-[9px] font-bold text-red-600 mt-1 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 inline-block">✂️ รอ QC แจ้งตัดเปลี่ยนใหม่ (${escapeHtml((item.qcCutReplace.types || []).map(t => EMB_LABELS[t] || t).join(', '))})<span class="block font-normal normal-case">Pending cut-replace notice</span></div>` : ''}
                             ${item.qcNotifyVendor && !item.qcNotifyVendor.resolved ? `<div class="text-[9px] font-bold text-red-500 mt-1 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 inline-block">📨 รอ QC แจ้ง Vendor (${escapeHtml((item.qcNotifyVendor.types || []).map(t => EMB_LABELS[t] || t).join(', '))})<span class="block font-normal normal-case">Pending vendor notice</span></div>` : ''}
                             ${item.cuttingPending && !item.cuttingPending.resolved ? `<div class="text-[9px] font-bold text-orange-600 mt-1 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 inline-block">✂️ ค้างตัด (${(item.cuttingPending.keys || []).length} ชิ้นส่วน)<span class="block font-normal normal-case">Cutting backlog pending</span></div>` : ''}
+                            ${item.fabricPartialPpc && !item.fabricPartialPpc.resolved ? `<div class="text-[9px] font-bold text-orange-600 mt-1 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 inline-block">🧵 ผ้าขาดบางรายการ (${(item.fabricPartialPpc.items || []).length} ชิ้นส่วน)<span class="block font-normal normal-case">Fabric shortage pending</span></div>` : ''}
                             <!-- BUG FIX: this used to check only item.currentEmbStage (a single
                                  legacy "which type happened to be active first" snapshot), so a
                                  repair kickback on any OTHER concurrently-active type (now common
@@ -5616,6 +5643,7 @@
             anyRejected: { label: 'ถูกตีกลับ (Rejected)', test: r => r.status === 'Rejected' || r.status === 'FMRejected' },
             cuttingIssue: { label: 'ปัญหาการตัด (Cutting Issue)', test: r => r.cuttingIssue },
             cuttingPending: { label: 'รายการตัดคงค้าง', test: r => r.cuttingPending && !r.cuttingPending.resolved },
+            fabricPartialPpc: { label: 'ผ้าขาดบางรายการ (รอ PPC จัดหา)', test: r => r.fabricPartialPpc && !r.fabricPartialPpc.resolved },
             qcRepairPending: { label: 'QC ตีกลับให้ซ่อม (คงค้าง)', test: r => r.qcRepairRequests && (r.activeDeptTypes || []).some(t => r.qcRepairRequests[t]) },
             qcRejectChain: { label: 'สร้างจาก QC Reject', test: r => r.sourceQcRejectId },
             mergedDocs: { label: 'เอกสารที่มีการรวม (Merged Documents)', test: r => (r.mergedFrom || []).length > 0 || !!r.mergedInto },
@@ -5872,6 +5900,7 @@
                 const matchSearch = asText(r.style).toLowerCase().includes(search) ||
                                     asText(r.job).toLowerCase().includes(search) ||
                                     asText(r.id).toLowerCase().includes(search) ||
+                                    asText(r.docNo).toLowerCase().includes(search) ||
                                     asText(r.color).toLowerCase().includes(search) ||
                                     asText(r.po).toLowerCase().includes(search);
                 const matchRequestType = requestType === 'all' || (r.requestType || 'CutReplace') === requestType;
@@ -6762,6 +6791,7 @@
                     cuttingSend: null,
                     cuttingCutParts: null,
                     cuttingPending: null,
+                    embSendOrder: null,
                     kickbackInfo: null,
                     accReceive: null,
                     accSend: null,
@@ -6816,6 +6846,26 @@
                 <td class="py-1 pr-2 font-bold text-slate-500 align-top whitespace-nowrap w-[38%]">${label}</td>
                 <td class="py-1 align-top ${valueClass || ''}">${valueHtml}</td>
             </tr>`;
+        }
+
+        // "ผ้ามาจากไหน" / "ผ้าที่ใช้เป็นของ Job ไหน" per part, for display (info block + print
+        // ticket) — falls back to the old single combined line for a legacy record saved before
+        // this was tracked per part (see saveStageAction's fabricCheck send handling).
+        function fabricSourceJobLines(item) {
+            const withSource = (item.parts || []).filter(p => p.fabricSource);
+            if (!withSource.length) {
+                return item.fabricCheckSend && item.fabricCheckSend.fabricSource ? [
+                    `${item.fabricCheckSend.fabricSource === 'cuttingTable' ? 'ผ้าจากโต๊ะตัด (Cutting Table)' : 'ผ้าสต็อค (Stock Fabric)'}` +
+                    (item.fabricCheckSend.fabricJobSource ? ' — ' + (item.fabricCheckSend.fabricJobSource === 'other'
+                        ? `ยืมจาก Job อื่น: <b>${escapeHtml(item.fabricCheckSend.sourceJobNo || '')}</b>` : 'ผ้าใน Job นี้') : ''),
+                ] : [];
+            }
+            return withSource.map(p => {
+                const name = `${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}${p.part ? ' (' + escapeHtml(p.part) + ')' : ''}`;
+                const src = p.fabricSource === 'cuttingTable' ? 'ผ้าจากโต๊ะตัด' : 'ผ้าสต็อค';
+                const job = p.fabricJobSource === 'other' ? `ยืมจาก Job อื่น: <b>${escapeHtml(p.sourceJobNo || '')}</b>` : 'ผ้าใน Job นี้';
+                return `${name}: ${src} — ${job}`;
+            });
         }
 
         // Groups item.parts (one row per name+part+size) into a Part x Size ratio matrix
@@ -6915,10 +6965,9 @@
                 ...allSizesUsed.filter(s => !SIZE_OPTIONS.includes(s)),
             ];
             const grandTotal = groups.reduce((sum, g) => sum + Object.values(g.sizes).reduce((a, b) => a + b, 0), 0);
-            // Positions is now the part's real quantity (see positionCount fix below), so the
-            // grand total counts each part's quantity once — not per embellishment type, which
-            // would otherwise double-count a part with both ฮีท and ปัก against the same pieces.
-            const grandPositions = groups.reduce((sum, g) => sum + (g.embEntries.length ? Object.values(g.sizes).reduce((a, b) => a + b, 0) : 0), 0);
+            // Grand total of real embellishment positions across every part+type — matches the
+            // per-row positionsCol logic below (e.items.length, falling back to e.count).
+            const grandPositions = groups.reduce((sum, g) => sum + g.embEntries.reduce((s, e) => s + ((e.items && e.items.length) ? e.items.length : (e.count || 0)), 0), 0);
             return `
                 <table class="w-full text-[10px] border-collapse">
                     <thead>
@@ -7006,14 +7055,17 @@
                                         const sourceLabel = e.source ? (e.source === 'inhouse' ? 'In-house' : ('Outsource' + (e.vendor ? ' (' + escapeHtml(e.vendor) + ')' : ''))) : '';
                                         typeCol = typeFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1 whitespace-nowrap" rowspan="${typeRowSpan}">${escapeHtml(EMB_LABELS[e.type] || e.type)}${sourceLabel ? `<span class="block text-[9px] text-slate-400 font-normal">${sourceLabel}</span>` : ''}</td>` : '';
                                         itemCol = `<td class="border-2 border-slate-300 px-1.5 py-1">${posItem ? escapeHtml(posItem) : '<span class="text-slate-300">-</span>'}</td>`;
-                                        // จำนวนตำแหน่ง = the part's real total quantity (same value
-                                        // as the Total column), NOT the BU-typed e.count/e.items.length
-                                        // — per "เป็น 'จำนวนชิ้นที่มีจริง' ตามไซซ์": a manually-typed
-                                        // count could say "11" while only one size actually has real
-                                        // qty, which misled readers. Each type row already belongs to
-                                        // its own part group, so ปัก vs พิมพ์ on different parts stay
-                                        // naturally distinct.
-                                        positionsCol = typeFirstRow ? `<td class="border-2 border-slate-300 px-0.5 py-1 text-center font-bold" rowspan="${typeRowSpan}">${total}</td>` : '';
+                                        // จำนวนตำแหน่ง = the real number of embellishment positions
+                                        // per piece (e.g. อกซ้าย+แขน = 2), NOT the part's piece
+                                        // quantity — per "จำนวนปักมี 2 ตำแหน่ง ดังนั้นในตารางจะต้อง
+                                        // มี 2 ไม่ใช่ 5". This used to be forced to the part's total
+                                        // qty instead, which was itself a fix for BU typos at data
+                                        // ENTRY time — that's now guarded separately by
+                                        // pEmbCountWarn's "looks like a piece count" warning, so
+                                        // this display no longer needs to override real data with
+                                        // the piece total. Matches embWorkSummaryHtml's own
+                                        // positionsCol logic for consistency between the two tables.
+                                        positionsCol = typeFirstRow ? `<td class="border-2 border-slate-300 px-0.5 py-1 text-center font-bold" rowspan="${typeRowSpan}">${(e.items && e.items.length) ? e.items.length : (e.count || 0)}</td>` : '';
                                     }
                                     const remarkCol = partFirstRow ? `<td class="border-2 border-slate-300 px-1.5 py-1 min-w-[280px]" rowspan="${partRowSpan}">${badges}</td>` : '';
                                     partFirstRow = false;
@@ -7263,8 +7315,7 @@
                         <tbody>
                             ${item.originFabricType ? infoRow('ต้นทางผ้า <span class="font-normal opacity-70">(Fabric Origin)</span>', item.originFabricType === 'matched' ? 'ผ้าลาย (Pattern-matched)' : item.originFabricType === 'mixed' ? 'ทั้งผ้าลายและผ้าพื้น (Mixed)' : 'ผ้าพื้น (Non-directional)') : ''}
                             ${item.markerSend && item.markerSend.markerLaid !== undefined ? infoRow('วางมาร์ค <span class="font-normal opacity-70">(Marker Laid)</span>', item.markerSend.markerLaid ? 'วางมาร์คแล้ว (Laid out)' : 'ไม่วางมาร์ค (Not laid out)') : ''}
-                            ${item.fabricCheckSend && item.fabricCheckSend.fabricSource ? infoRow('ผ้ามาจากไหน <span class="font-normal opacity-70">(Fabric Source)</span>', item.fabricCheckSend.fabricSource === 'cuttingTable' ? 'ผ้าจากโต๊ะตัด (Cutting Table)' : 'ผ้าสต็อค (Stock Fabric)') : ''}
-                            ${item.fabricCheckSend && item.fabricCheckSend.fabricJobSource ? infoRow('ผ้าที่ใช้เป็นของ Job <span class="font-normal opacity-70">(Fabric Job Source)</span>', item.fabricCheckSend.fabricJobSource === 'other' ? `ยืมจาก Job อื่น (Borrowed from another Job): <b>${escapeHtml(item.fabricCheckSend.sourceJobNo || '')}</b>` : 'ผ้าใน Job นี้ (This Job\'s own fabric)') : ''}
+                            ${fabricSourceJobLines(item).length ? infoRow('ผ้ามาจากไหน / Job <span class="font-normal opacity-70">(Fabric Source / Job — per part)</span>', fabricSourceJobLines(item).join('<br>')) : ''}
                             ${item.ppcFabric && item.ppcFabric.source ? infoRow('จองผ้าจาก <span class="font-normal opacity-70">(Fabric Reserved From)</span>', escapeHtml(item.ppcFabric.source)) : ''}
                             ${item.ppcFabric && item.ppcFabric.prNo ? infoRow('PR No.', escapeHtml(item.ppcFabric.prNo)) : ''}
                         </tbody>
@@ -7781,10 +7832,12 @@
 
             const nextEmbField = document.getElementById('mNextEmbStageField');
             const checklistField = document.getElementById('mCuttingChecklistField');
+            const orderField = document.getElementById('mEmbOrderField');
             if (actionMode === 'receive') {
                 title.innerText = 'รับงานตัดเปลี่ยน (Receive Cutting Work)';
                 finishDateField.classList.add('hidden');
                 nextEmbField.classList.add('hidden');
+                orderField.classList.add('hidden');
                 checklistField.classList.add('hidden');
                 saveBtn.innerText = 'รับงานตัด (Receive)';
             } else {
@@ -7797,25 +7850,30 @@
                 const alreadyCut = new Set(item.cuttingCutParts || []);
                 checklistField.classList.remove('hidden');
                 document.getElementById('mCuttingChecklist').innerHTML = buildCuttingCheckableTable(item, alreadyCut);
-                // Cutting dept ticks which ticked Embellishment type(s) go out NOW — types on
-                // completely different pieces can go together with nothing to wait on, per
-                // "เป็นคนละชิ้นกับปักหรือกระบวนการอื่น...สามารถส่งแยกไปดำเนินการได้โดยไม่ต้องรอ".
-                // sendableEmbTypesNow() already excludes any type still blocked behind an
-                // earlier-ordered type on the SAME piece (per "ชิ้นเดียวกันอาจจะต้องเลือกลำดับ
-                // การส่งงานก่อนหลัง" — that order is whatever was ticked first at approval).
-                const embTypes = sendableEmbTypesNow(item);
-                if (embTypes.length) {
-                    document.getElementById('mNextEmbStageChecklist').innerHTML = embTypes.map(t => `
-                        <label class="flex items-center gap-2 text-xs bg-white border rounded-lg px-2 py-1.5">
-                            <input type="checkbox" class="mNextEmbStageCheck sq-radio" value="${t}" checked>
-                            <span class="font-bold">${EMB_LABELS[t] || t}</span>
-                        </label>`).join('');
-                    renderEmbSourceRowsForChecked();
-                    nextEmbField.classList.remove('hidden');
+                // Same-piece work order — reorderablePartsFor() only returns parts where
+                // sequencing genuinely matters (2+ types, not just a Print/Pad pair).
+                const reorderable = reorderablePartsFor(item);
+                if (reorderable.length) {
+                    document.getElementById('mEmbOrderRows').innerHTML = reorderable.map(p => {
+                        const key = (p.name || '') + '||' + (p.part || '');
+                        const order = partEmbOrder(item, p);
+                        return `
+                        <div class="mEmbOrderRow flex items-center gap-2 text-xs bg-white border rounded-lg px-2 py-1.5 flex-wrap" data-part-key="${escapeHtml(key)}">
+                            <span class="font-bold text-slate-600 w-1/4 truncate">${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}${p.part ? ' (' + escapeHtml(p.part) + ')' : ''}</span>
+                            ${order.map(t => `
+                                <span class="flex items-center gap-1">
+                                    <span class="text-slate-500">${EMB_LABELS[t] || t}</span>
+                                    <select class="mEmbOrderSelect text-[10px]" data-type="${t}">
+                                        ${order.map((_, i) => `<option value="${i + 1}" ${order.indexOf(t) === i ? 'selected' : ''}>${i + 1}</option>`).join('')}
+                                    </select>
+                                </span>`).join('')}
+                        </div>`;
+                    }).join('');
+                    orderField.classList.remove('hidden');
                 } else {
-                    nextEmbField.classList.add('hidden');
-                    document.getElementById('mEmbSourceField').classList.add('hidden');
+                    orderField.classList.add('hidden');
                 }
+                refreshEmbChecklist();
             }
 
             document.getElementById('cuttingIssuePanel').classList.add('hidden');
@@ -7828,6 +7886,44 @@
             document.getElementById('actionModal').classList.replace('hidden', 'flex');
         }
 
+        // Reads the order picker's current (not-yet-saved) selections into the same shape
+        // sendableEmbTypesNow/partEmbOrder expect — {partKey: [type,...]} sorted by chosen rank.
+        function currentEmbOrderOverrides() {
+            const overrides = {};
+            document.querySelectorAll('#mEmbOrderRows .mEmbOrderRow').forEach(row => {
+                const key = row.dataset.partKey;
+                const ranked = Array.from(row.querySelectorAll('.mEmbOrderSelect'))
+                    .map(sel => ({ type: sel.dataset.type, rank: parseInt(sel.value) || 0 }))
+                    .sort((a, b) => a.rank - b.rank)
+                    .map(r => r.type);
+                overrides[key] = ranked;
+            });
+            return overrides;
+        }
+        // Recomputes which Embellishment types are sendable right now, using whatever order the
+        // picker currently shows (even before it's saved) — called on open and whenever the
+        // order picker changes, since reordering can unblock/block different types.
+        function refreshEmbChecklist() {
+            const item = repairs.find(r => r.id === activeActionId);
+            if (!item) return;
+            const nextEmbField = document.getElementById('mNextEmbStageField');
+            const embTypes = sendableEmbTypesNow(item, currentEmbOrderOverrides());
+            if (embTypes.length) {
+                document.getElementById('mNextEmbStageChecklist').innerHTML = embTypes.map(t => `
+                    <label class="flex items-center gap-2 text-xs bg-white border rounded-lg px-2 py-1.5">
+                        <input type="checkbox" class="mNextEmbStageCheck sq-radio" value="${t}" checked>
+                        <span class="font-bold">${EMB_LABELS[t] || t}</span>
+                    </label>`).join('');
+                renderEmbSourceRowsForChecked();
+                nextEmbField.classList.remove('hidden');
+            } else {
+                nextEmbField.classList.add('hidden');
+                document.getElementById('mEmbSourceField').classList.add('hidden');
+            }
+        }
+        document.getElementById('mEmbOrderRows').addEventListener('change', (e) => {
+            if (e.target.classList.contains('mEmbOrderSelect')) refreshEmbChecklist();
+        });
         // In-house/Outsource must be confirmed for every type actually being sent NOW (not
         // every applicable type) — regenerated whenever the checklist above changes, per
         // "ต้องระบุก่อนส่งงานต่อให้แผนกถัดไปทุกครั้ง".
@@ -7881,19 +7977,34 @@
         // is re-rendered into #stageExtraFields each time the modal opens, so delegate from
         // that persistent parent instead.
         document.getElementById('stageExtraFields').addEventListener('change', (e) => {
-            // Fabric Check: the "where's it from" question only makes sense once fabric is
-            // actually available — hidden entirely for "ไม่มี" instead of just disabled.
-            if (e.target.name === 'stageFabricAvailable') {
-                const field = document.getElementById('stageFabricSourceField');
-                if (field) field.classList.toggle('hidden', e.target.value !== 'yes');
-                const jobField = document.getElementById('stageFabricJobField');
-                if (jobField) jobField.classList.toggle('hidden', e.target.value !== 'yes');
-            }
             // "ผ้าใน Job นี้ / ผ้าจาก Job อื่น" — the Job No. field only makes sense once
             // "Job อื่น" is picked, per "ถ้าใช้ผ้า job อื่นให้มีช่องสำหรับใส่เลข Job ที่ใช้ผ้า".
-            if (e.target.name === 'stageFabricJobSource') {
-                const otherJobField = document.getElementById('stageFabricOtherJobField');
-                if (otherJobField) otherJobField.classList.toggle('hidden', e.target.value !== 'other');
+            // Now per-part (see stageFabricSourceJobWrap), so toggle just this row's own input.
+            if (e.target.classList.contains('stageFabricJobSourceRadio')) {
+                const wrap = e.target.closest('.stageFabricSourceJobWrap');
+                const otherJobInput = wrap && wrap.querySelector('.stageFabricOtherJobNo');
+                if (otherJobInput) otherJobInput.classList.toggle('hidden', e.target.value !== 'other');
+            }
+            // Fabric Check's per-part "มีครบ/มีไม่พอ/ไม่มี" — the have/need quantity fields
+            // only make sense once the row isn't simply "มีครบ", per "เลือกได้ว่ามีผ้าเท่าไหร่
+            // ต้องขอเพิ่มอีกเท่าไหร่". Defaults: "ไม่มี" assumes 0 on hand / the full part qty
+            // still needed; "มีไม่พอ" starts the same way but both numbers are meant to be
+            // corrected to whatever's actually on hand.
+            if (e.target.classList.contains('stageFabricAvailState')) {
+                const row = e.target.closest('.stageFabricPartRow');
+                const fields = row.querySelector('.stageFabricShortageFields');
+                const isFull = e.target.value === 'full';
+                fields.classList.toggle('hidden', isFull);
+                fields.classList.toggle('flex', !isFull);
+                if (!isFull) {
+                    const qty = parseInt(row.dataset.partQty) || 0;
+                    row.querySelector('.stageFabricHaveQty').value = 0;
+                    row.querySelector('.stageFabricNeedQty').value = qty;
+                }
+                // "ไม่มี" → nothing to source for this piece, so its source/Job fields are
+                // moot; anything else ("มีครบ"/"มีไม่พอ") still needs both answered.
+                const sourceJobWrap = row.querySelector('.stageFabricSourceJobWrap');
+                if (sourceJobWrap) sourceJobWrap.classList.toggle('hidden', e.target.value === 'none');
             }
             if (e.target.classList.contains('qcEmbSourceSelect')) {
                 const row = e.target.closest('[data-emb-source-type]');
@@ -8120,10 +8231,17 @@
             } else {
                 const finishDate = document.getElementById('mFinishDate').value;
                 if (!finishDate) { showToast('กรุณาระบุวันที่ตัดงานเสร็จ (Please specify the cutting-done date)', 'warning'); return; }
+                // Persist whatever work order Cutting picked (or the default) BEFORE computing
+                // sendableTypes, so this save and every later re-check (QC completing a type,
+                // etc.) agree on the same order going forward.
+                if (document.querySelectorAll('#mEmbOrderRows .mEmbOrderRow').length) {
+                    repairs[idx].embSendOrder = { ...(repairs[idx].embSendOrder || {}), ...currentEmbOrderOverrides() };
+                }
                 // Cutting ticks as many sendable types at once as it wants — types on
                 // disjoint pieces go out together, per "เป็นคนละชิ้น...สามารถส่งแยกไปดำเนินการ
                 // ได้โดยไม่ต้องรอ". sendableEmbTypesNow() already excludes anything still
-                // blocked behind an earlier-ordered type sharing a piece.
+                // blocked behind an earlier-ordered type sharing a piece (order per
+                // item.embSendOrder if Cutting set one, else the approval tick order).
                 const sendableTypes = sendableEmbTypesNow(repairs[idx]);
                 let nextEmbStages = [];
                 if (sendableTypes.length) {
@@ -8356,24 +8474,49 @@
         // single physical piece can't be worked by two departments out of order. Types on
         // completely disjoint pieces are never blocked by each other, per "เป็นคนละชิ้น...
         // สามารถส่งแยกไปดำเนินการได้โดยไม่ต้องรอ ยกเว้นกรณีชิ้นเดียวกัน...เลือกลำดับการส่งงาน".
-        function sendableEmbTypesNow(item) {
+        const PRINT_TYPES = ['PadPrint', 'ScreenPrint'];
+        // Which order a single physical piece's embellishment types get worked in — defaults to
+        // however they happened to be ticked at BU approval, but the department actually
+        // SENDING the piece on (Cutting today) can override it explicitly per "ถ้าเป็นชิ้น
+        // เดียวกันก็อาจจะต้องให้แผนกต้นทางที่ส่งงานให้ระบุไปว่าจะส่งให้แผนกไหนก่อน" — see
+        // item.embSendOrder, set from the Cutting send modal's order picker. `overrides` lets
+        // the picker preview a not-yet-saved order live (see refreshEmbChecklist) without
+        // mutating the record until Cutting actually saves.
+        function partEmbOrder(item, p, overrides) {
+            const key = (p.name || '') + '||' + (p.part || '');
+            const tickOrder = (p.embellishment || []).map(e => e.type);
+            const custom = (overrides && overrides[key]) || (item.embSendOrder && item.embSendOrder[key]);
+            if (!custom) return tickOrder;
+            const valid = custom.filter(t => tickOrder.includes(t));
+            const missing = tickOrder.filter(t => !valid.includes(t));
+            return [...valid, ...missing];
+        }
+        function sendableEmbTypesNow(item, overrides) {
             const remaining = remainingEmbTypes(item);
             // PadPrint and ScreenPrint never block each other, even ticked on the same piece —
             // both are printing work with no ordering dependency between the two, per "แพดกับ
             // พิมพ์...ให้ติ๊กว่ามีพิมพ์ด้วย" (Cutting's send checklist was offering only
             // whichever one happened to be listed first on that piece, silently withholding
             // the other until the first was sent, even though nothing actually requires that).
-            const PRINT_TYPES = ['PadPrint', 'ScreenPrint'];
             return remaining.filter(t => {
                 const partsForT = item.parts.filter(p => (p.embellishment || []).some(e => e.type === t));
                 return partsForT.every(p => {
-                    const order = (p.embellishment || []).map(e => e.type);
+                    const order = partEmbOrder(item, p, overrides);
                     const idxT = order.indexOf(t);
                     return !order.slice(0, idxT).some(earlier => {
                         if (PRINT_TYPES.includes(t) && PRINT_TYPES.includes(earlier)) return false;
                         return remaining.includes(earlier);
                     });
                 });
+            });
+        }
+        // Parts genuinely worth showing an order picker for — 2+ ticked types where sequencing
+        // actually matters (a part ticked only with PadPrint+ScreenPrint has no real ordering
+        // dependency between them, so no picker needed there).
+        function reorderablePartsFor(item) {
+            return item.parts.filter(p => {
+                const types = (p.embellishment || []).map(e => e.type);
+                return types.length >= 2 && !types.every(t => PRINT_TYPES.includes(t));
             });
         }
         // Which type(s) THIS QC visit actually concerns — normally just the one type whose
@@ -8432,9 +8575,14 @@
         // line, or at least one part with embellishment ticked (which needs ACC-supplied
         // materials/items) — per "มีกดแจ้งขอแค่ส่วนของรายการชิ้นส่วนไม่ได้กดขอของ ACC แต่พบว่ามี
         // รายการให้รับ ACC ต้องการกำหนดให้ไม่แสดงส่วนของที่ไม่ได้เลือก".
+        // Print work (PadPrint/ScreenPrint) never needs ACC to dispense supporting items — per
+        // "งานพิมพ์กับแพดปริ้น...ไม่มีจ่ายในการเบิกอุปกรณ์" — so a part ticked with ONLY print
+        // types must not make the record ACC-actionable at all, and (see
+        // accFulfillmentChecklistHtml below) a print type on an otherwise ACC-actionable part
+        // must not get its own dispensing row either.
         function hasAccContent(item) {
             if ((item.accRequestList || []).length > 0) return true;
-            return (item.parts || []).some(p => (p.embellishment || []).length > 0);
+            return (item.parts || []).some(p => (p.embellishment || []).some(e => !PRINT_TYPES.includes(e.type)));
         }
         function accActionable(item) {
             return !!(item.fmApproval && item.fmApproval.decision === 'Approved') && !item.accSend && hasAccContent(item);
@@ -8548,7 +8696,17 @@
                 // Actual arrival date is optional now — PPC Fabric can save the reservation
                 // and hold in "รอผ้า" (waiting for fabric) without forwarding; once the fabric
                 // actually arrives they come back, fill the date in, and THEN it forwards.
-                validate: () => null,
+                // Must not be a future date — a future "actual arrival" is really just the
+                // appointment/ETA (which has its own field), and letting it through here was
+                // wrongly forwarding the record straight to Stock Fabric before the fabric
+                // physically existed, per "ผ้าจอง64 จะมาวันที่ 28/8 กดส่งต่อแล้ว ทำไมไม่เข้าไป
+                // อยู่ในสถานะรอผ้าเข้า แต่ไปอยู่ที่รอสต็อกรับงานแทน".
+                validate: (extra) => {
+                    if (extra.actualArrivalDate && extra.actualArrivalDate > toLocalDateInputValue()) {
+                        return 'วันผ้าเข้าจริงต้องไม่เป็นวันที่ในอนาคต (ยังไม่มาถึง ให้ใช้ช่อง "วันนัดผ้า" แทน แล้วค่อยกลับมากรอกวันจริงเมื่อผ้าเข้าแล้ว)';
+                    }
+                    return null;
+                },
                 nextStatus: (item) => item.ppcFabric.actualArrivalDate ? 'StockFabricPending' : null,
             },
             stockFabric: {
@@ -9102,21 +9260,29 @@
             // Only parts that actually have embellishment ticked need ACC to dispense
             // anything — a plain cut-replace part (no embellishment) has nothing for ACC to
             // receive/pay, so it must not show up as an outstanding ACC line at all.
+            // BUG FIX: this used to combine every embellishment type on one part into a
+            // SINGLE fulfillment row (ปัก/ฮีท/แพดปริ้น all stacked in one cell), sharing one
+            // จ่าย/จำนวนจ่าย/PO control between all of them — so ACC couldn't mark ปัก as paid
+            // while leaving ฮีท outstanding. Per "แยกรายการตามตารางด้านล่างคนละแถวได้ไหม", each
+            // type on a part now gets its OWN independent row. Keyed by a virtual index
+            // (partIdx*10 + typeIdx, safe since there are only 6 embellishment types total) so
+            // collectAccFulfillment()'s existing idx-based lookup keeps working unchanged.
+            // Print types (PadPrint/ScreenPrint) are filtered out here too — ACC has nothing to
+            // dispense for them, per "งานพิมพ์กับแพดปริ้น...ไม่มีจ่ายในการเบิกอุปกรณ์" — so they
+            // never get their own จ่าย/ไม่ต้องจ่าย row, even on a part that otherwise has real
+            // ACC content (e.g. ปัก+ฮีท+แพดปริ้น on the same piece only shows rows for ปัก/ฮีท).
             const partRows = item.parts
                 .map((p, idx) => ({ p, idx }))
-                .filter(({ p }) => (p.embellishment || []).length > 0)
-                .map(({ p, idx }) => {
-                    // One line per embellishment TYPE, index-aligned with its own item
-                    // number(s) on the same line index in the Item column — per "ต้องการให้แยก
-                    // กันคนละบรรทัด และถ้ามีหลายไอเทมก็จะต้องเรียงกันคนละบรรทัดลงมาเรื่อยๆ".
-                    // Previously the type names were joined into one comma-separated line while
-                    // items were stacked separately, so a multi-type part had no visible link
-                    // between which type went with which item number.
-                    const embEntries = p.embellishment || [];
-                    const typeLines = embEntries.map(e => escapeHtml(EMB_LABELS[e.type] || e.type));
-                    const itemLines = embEntries.map(e => (e.items && e.items.length) ? e.items.join(', ') : '-');
+                .filter(({ p }) => (p.embellishment || []).some(e => !PRINT_TYPES.includes(e.type)))
+                .flatMap(({ p, idx }) => {
+                    const embEntries = (p.embellishment || []).filter(e => !PRINT_TYPES.includes(e.type));
                     const partName = `${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}${p.part ? ' (' + escapeHtml(p.part) + ')' : ''}`;
-                    return accFulfillmentRowHtml('parts', idx, partName, typeLines, itemLines, p.size, p.qty, partMap[idx]);
+                    return embEntries.map((e, typeIdx) => {
+                        const virtualIdx = idx * 10 + typeIdx;
+                        const typeLabel = escapeHtml(EMB_LABELS[e.type] || e.type);
+                        const itemLabel = (e.items && e.items.length) ? e.items.join(', ') : '-';
+                        return accFulfillmentRowHtml('parts', virtualIdx, partName, typeLabel, itemLabel, p.size, p.qty, partMap[virtualIdx]);
+                    });
                 }).join('');
             const accRows = (item.accRequestList || []).map((a, idx) => {
                 // No specific fabric part for an additional ACC requisition line, per "และให้มี
@@ -9376,6 +9542,45 @@
             repairs[idx].accFulfillment = collectAccFulfillment();
             logAction('AccFulfillmentUpdate', repairs[idx].id, `${currentUser.name} อัปเดตรายการจ่าย ACC (${hasOutstandingAcc(repairs[idx]) ? 'ยังมีรายการคงค้าง' : 'ครบทุกรายการ'})`);
             showToast('บันทึกรายการจ่าย ACC เรียบร้อย (Saved)', 'success');
+            autoSave(repairs[idx].id);
+            renderTable();
+            closeModal('stageModal');
+        }
+
+        // Reopens PPC Fabric's own modal purely to resolve the parts left without fabric at
+        // Fabric Check (item.fabricPartialPpc) — safe to call any time, even after the main
+        // record's own status has already moved on to Stock Fabric, per "เพิ่มติ๊กต่อชิ้น ส่งแยก
+        // เข้า PPC เฉพาะชิ้นที่ขาด" (the parts with fabric shouldn't be held up waiting on the
+        // few that aren't).
+        function openFabricPartialModal(id) {
+            const item = repairs.find(r => r.id === id);
+            if (!item) return;
+            if (!item.fabricPartialPpc || item.fabricPartialPpc.resolved) return;
+            if (!canPPCFabricAct(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
+            activeActionId = id;
+            stageActionInfo = { stage: 'fabricPartialPpcOnly' };
+            document.getElementById('stageItemInfo').innerHTML = buildInfoBlock(item) + deptRemarksBlockHtml(item, 'stageItemInfo');
+            document.getElementById('stageActionName').innerText = `${currentUser.name} (${currentUser.username})`;
+            document.getElementById('stageModalTitle').innerText = 'จัดหาผ้าที่ขาด (บางชิ้นส่วน)';
+            const shortageRows = (item.fabricPartialPpc.items || []).map(s => `<li>${escapeHtml(s.label)} — มี ${s.haveQty} / ขาดอีก ${s.needQty} ชิ้น</li>`).join('');
+            document.getElementById('stageExtraFields').innerHTML = `
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs space-y-2">
+                    <p class="font-bold text-amber-700">ชิ้นส่วนที่ผ้าไม่พอ/ไม่มี ต้องจัดหาเพิ่มเติม:</p>
+                    <ul class="list-disc list-inside text-amber-800">${shortageRows}</ul>
+                    <p class="text-[10px] text-amber-500">แจ้งค้างไว้โดย ${escapeHtml(item.fabricPartialPpc.name || '')} เมื่อ ${new Date(item.fabricPartialPpc.ts).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })}</p>
+                </div>`;
+            document.getElementById('btnStageSave').innerText = 'จัดหาผ้าครบแล้ว (Resolved)';
+            document.getElementById('stageIssueSection').innerHTML = '';
+            document.getElementById('stageIssueSection').classList.add('hidden');
+            document.getElementById('stageModal').classList.replace('hidden', 'flex');
+        }
+        function resolveFabricPartialPpc() {
+            const idx = repairs.findIndex(r => r.id === activeActionId);
+            if (idx === -1) return;
+            if (!canPPCFabricAct(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
+            repairs[idx].fabricPartialPpc = { ...repairs[idx].fabricPartialPpc, resolved: true, resolvedBy: currentUser.username, resolvedName: currentUser.name, resolvedTs: getLocalTime() };
+            logAction('FabricPartialPpcResolved', repairs[idx].id, `${currentUser.name} จัดหาผ้าที่ขาดครบแล้ว (${(repairs[idx].fabricPartialPpc.items || []).length} ชิ้นส่วน)`);
+            showToast('บันทึกจัดหาผ้าครบแล้ว (Saved)', 'success');
             autoSave(repairs[idx].id);
             renderTable();
             closeModal('stageModal');
@@ -9889,45 +10094,58 @@
                 // fabric item number must be filled in by the time it sends onward — the field
                 // itself has been open/editable since record creation for whoever knows it, but
                 // this is the hard gate, per "เช็คผ้าจะเป็นส่วนสุดท้ายที่จำเป็นต้องมีก่อนส่งงาน".
+                // "มีผ้าหรือไม่" is now ticked PER PART instead of one answer for the whole
+                // record — per "ผ้าพื้น ผ้า A มีผ้า และผ้า G ถุงกระเป๋าไม่มีผ้า ต้องทำยังไง":
+                // some small accessory pieces genuinely have no fabric item of their own while
+                // the main pieces do, in the same request. A part left unticked here is flagged
+                // into item.fabricPartialPpc for PPC Fabric to source separately, WITHOUT
+                // holding up the pieces that already have fabric.
+                // "ผ้ามาจากไหน" / "ผ้าที่ใช้เป็นของ Job ไหน" are now ticked PER PART instead of
+                // one shared answer for the whole record — per "จากภาพจะย้ายปุ่ม ผ้ามาจากไหน
+                // และ ผ้าที่ใช้เป็นของ Job ไหน มาให้ติ๊กแต่ละไอเทม/รายการ", since different
+                // pieces on the same request can genuinely come from different sources (one
+                // already at the cutting table, another needing stock). Hidden entirely for a
+                // row ticked "ไม่มี" (nothing to source for that piece).
                 const fabricItemRows = `
                     <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">Item ผ้า ของแต่ละชิ้นส่วน <span class="font-normal normal-case opacity-70">(Fabric Item — required before sending)</span> *</label>
+                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">Item ผ้า, มีผ้าหรือไม่, ที่มาผ้า และ Job ของแต่ละชิ้นส่วน <span class="font-normal normal-case opacity-70">(Fabric Item / Availability / Source / Job — per part) *</span></label>
                         <div id="stageFabricItemRows" class="space-y-1.5">
-                            ${item.parts.map((p, i) => `
-                                <div class="flex items-center gap-2 text-xs" data-part-idx="${i}">
-                                    <span class="w-2/5 truncate text-slate-500">${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}${p.part ? ' (' + escapeHtml(p.part) + ')' : ''} — ${escapeHtml(p.size)}</span>
-                                    <input type="text" class="stageFabricItemInput flex-1 text-xs" value="${escapeHtml(p.fabricItem || '')}" placeholder="เลขที่ Item ผ้า">
-                                </div>`).join('')}
+                            ${item.parts.map((p, i) => {
+                                const availState = p.fabricAvailState || 'full';
+                                return `
+                                <div class="stageFabricPartRow bg-slate-50 border rounded-lg px-2 py-1.5" data-part-idx="${i}" data-part-key="${escapeHtml((p.name || '') + '||' + (p.part || ''))}" data-part-qty="${parseInt(p.qty) || 0}">
+                                    <div class="flex items-center gap-2 text-xs flex-wrap">
+                                        <span class="w-1/4 truncate text-slate-500">${escapeHtml(PART_NAME_LABELS[p.name] || p.name)}${p.part ? ' (' + escapeHtml(p.part) + ')' : ''} — ${escapeHtml(p.size)} (${parseInt(p.qty) || 0} ชิ้น)</span>
+                                        <input type="text" class="stageFabricItemInput flex-1 text-xs min-w-[100px]" value="${escapeHtml(p.fabricItem || '')}" placeholder="เลขที่ Item ผ้า (ถ้ามี)">
+                                        <select class="stageFabricAvailState text-[10px] bg-white">
+                                            <option value="full">มีครบ</option>
+                                            <option value="partial">มีไม่พอ</option>
+                                            <option value="none">ไม่มี</option>
+                                        </select>
+                                        <span class="stageFabricShortageFields hidden items-center gap-1">
+                                            <input type="number" min="0" class="stageFabricHaveQty w-14 text-[10px]" placeholder="มี" value="0">
+                                            <span class="text-slate-400">/</span>
+                                            <input type="number" min="0" class="stageFabricNeedQty w-14 text-[10px]" placeholder="ขาดอีก" value="${parseInt(p.qty) || 0}">
+                                            <span class="text-slate-400">ชิ้น</span>
+                                        </span>
+                                    </div>
+                                    <div class="stageFabricSourceJobWrap ${availState === 'none' ? 'hidden' : ''} flex flex-wrap items-center gap-3 mt-1.5 pl-1 pt-1.5 border-t border-slate-200 text-[10px]">
+                                        <span class="flex items-center gap-1.5"><span class="text-slate-400">ผ้ามาจาก:</span>
+                                            <label class="flex items-center gap-0.5"><input type="radio" name="stageFabricSource_${i}" class="stageFabricSourceRadio" value="stock" ${p.fabricSource === 'stock' ? 'checked' : ''}> สต็อค</label>
+                                            <label class="flex items-center gap-0.5"><input type="radio" name="stageFabricSource_${i}" class="stageFabricSourceRadio" value="cuttingTable" ${p.fabricSource === 'cuttingTable' ? 'checked' : ''}> โต๊ะตัด</label>
+                                        </span>
+                                        <span class="flex items-center gap-1.5"><span class="text-slate-400">Job:</span>
+                                            <label class="flex items-center gap-0.5"><input type="radio" name="stageFabricJobSource_${i}" class="stageFabricJobSourceRadio" value="same" ${p.fabricJobSource === 'same' ? 'checked' : ''}> Job นี้</label>
+                                            <label class="flex items-center gap-0.5"><input type="radio" name="stageFabricJobSource_${i}" class="stageFabricJobSourceRadio" value="other" ${p.fabricJobSource === 'other' ? 'checked' : ''}> Job อื่น</label>
+                                        </span>
+                                        <input type="text" class="stageFabricOtherJobNo ${p.fabricJobSource === 'other' ? '' : 'hidden'} w-20 text-[10px] border-amber-200" placeholder="เลข Job เช่น J-002" value="${escapeHtml(p.sourceJobNo || '')}">
+                                    </div>
+                                </div>`;
+                            }).join('')}
                         </div>
+                        <p class="text-[9px] text-slate-400 mt-1">"มีไม่พอ" หรือ "ไม่มี" → ระบุจำนวนที่มีและจำนวนที่ขาด แล้วชิ้นนั้นจะถูกส่งแยกไปให้ PPC Fabric จัดหาส่วนที่ขาดต่างหาก โดยไม่ต้องรอชิ้นอื่นที่มีผ้าครบแล้ว | ผ้าสต็อค → ไปต่อที่สต็อคผ้า, ผ้าจากโต๊ะตัด → ข้ามสต็อคผ้า</p>
                     </div>`;
-                return fabricItemRows + `
-                    <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">มีผ้าหรือไม่ <span class="font-normal normal-case opacity-70">(Fabric Available?)</span> *</label>
-                        <div class="flex gap-4 text-xs bg-slate-50 p-2.5 rounded-lg border">
-                            <label class="flex items-center gap-1"><input type="radio" name="stageFabricAvailable" value="yes"> มี <span class="opacity-70">(Yes)</span></label>
-                            <label class="flex items-center gap-1"><input type="radio" name="stageFabricAvailable" value="no"> ไม่มี <span class="opacity-70">(No)</span></label>
-                        </div>
-                        <p class="text-[9px] text-slate-400 mt-1">มี → ระบุแหล่งที่มาผ้าด้านล่าง | ไม่มี → ส่งไปให้ PPC Fabric จองผ้า</p>
-                    </div>
-                    <div id="stageFabricSourceField" class="hidden">
-                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ผ้ามาจากไหน <span class="font-normal normal-case opacity-70">(Fabric Source)</span> *</label>
-                        <div class="flex gap-4 text-xs bg-slate-50 p-2.5 rounded-lg border">
-                            <label class="flex items-center gap-1"><input type="radio" name="stageFabricSource" value="stock"> ผ้าสต็อค <span class="opacity-70">(Stock Fabric)</span></label>
-                            <label class="flex items-center gap-1"><input type="radio" name="stageFabricSource" value="cuttingTable"> ผ้าจากโต๊ะตัด <span class="opacity-70">(Cutting Table)</span></label>
-                        </div>
-                        <p class="text-[9px] text-slate-400 mt-1">ผ้าสต็อค → ไปต่อที่สต็อคผ้า | ผ้าจากโต๊ะตัด → ข้ามสต็อคผ้า ไปที่แผนกตัดทันที</p>
-                    </div>
-                    <div id="stageFabricJobField" class="hidden">
-                        <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block">ผ้าที่ใช้เป็นของ Job ไหน <span class="font-normal normal-case opacity-70">(Which Job's fabric?)</span> *</label>
-                        <div class="flex gap-4 text-xs bg-slate-50 p-2.5 rounded-lg border">
-                            <label class="flex items-center gap-1"><input type="radio" name="stageFabricJobSource" value="same"> ผ้าใน Job นี้ <span class="opacity-70">(This job's own fabric)</span></label>
-                            <label class="flex items-center gap-1"><input type="radio" name="stageFabricJobSource" value="other"> ผ้าจาก Job อื่น <span class="opacity-70">(Borrowed from another job)</span></label>
-                        </div>
-                        <div id="stageFabricOtherJobField" class="hidden mt-2">
-                            <label class="text-[9px] font-bold text-amber-600 block mb-1">เลข Job ที่ใช้ผ้า <span class="opacity-70">(Source Job No.)</span> *</label>
-                            <input type="text" id="stageFabricOtherJobNo" class="w-full text-xs border-amber-200" placeholder="เช่น J-002">
-                        </div>
-                    </div>`;
+                return fabricItemRows;
             }
             if (stage === 'ppcFabric') {
                 const p = item.ppcFabric || {};
@@ -10038,6 +10256,7 @@
             const idx = repairs.findIndex(r => r.id === activeActionId);
             if (idx === -1 || !stageActionInfo) return;
             if (stageActionInfo.stage === 'accFulfillmentOnly') { saveAccFulfillmentOnly(); return; }
+            if (stageActionInfo.stage === 'fabricPartialPpcOnly') { resolveFabricPartialPpc(); return; }
             if (!stageActionInfo.perm || !stageActionInfo.perm(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
             const item = repairs[idx];
             const { stage, mode, qcType } = stageActionInfo;
@@ -10250,25 +10469,94 @@
                     const checked = el.querySelector('.markerLaidRadio:checked');
                     markerLaidByPart[el.dataset.key] = checked ? checked.value === 'yes' : false;
                 });
+                // "มีผ้าหรือไม่" is now ticked per part (see stageFabricAvailPart below) rather
+                // than one radio for the whole record — available here just means "at least
+                // one part has fabric", which is enough to decide whether this record's MAIN
+                // status still proceeds to Stock Fabric at all (the specific parts lacking
+                // fabric are pulled out separately into item.fabricPartialPpc regardless).
+                const fabricAvailRows = Array.from(document.querySelectorAll('#stageFabricItemRows > .stageFabricPartRow'));
+                const anyFabricAvailable = fabricAvailRows.some(row => {
+                    const sel = row.querySelector('.stageFabricAvailState');
+                    return sel && sel.value !== 'none';
+                });
                 const extra = {
                     markerLaidByPart,
-                    available: (document.querySelector('input[name="stageFabricAvailable"]:checked') || {}).value,
-                    fabricSource: (document.querySelector('input[name="stageFabricSource"]:checked') || {}).value,
-                    fabricJobSource: (document.querySelector('input[name="stageFabricJobSource"]:checked') || {}).value,
-                    sourceJobNo: document.getElementById('stageFabricOtherJobNo') ? document.getElementById('stageFabricOtherJobNo').value.trim() : undefined,
+                    available: fabricAvailRows.length ? (anyFabricAvailable ? 'yes' : 'no') : undefined,
+                    // fabricSource/fabricJobSource/sourceJobNo are now derived per-part below
+                    // (see the fabricCheck block) instead of read from one shared radio group.
                     source: document.getElementById('stagePPCSource') ? document.getElementById('stagePPCSource').value : undefined,
                     prNo: document.getElementById('stagePPCPRNo') ? document.getElementById('stagePPCPRNo').value : undefined,
                     appointmentDate: document.getElementById('stagePPCAppointment') ? document.getElementById('stagePPCAppointment').value : undefined,
                     actualArrivalDate: document.getElementById('stagePPCActual') ? document.getElementById('stagePPCActual').value : undefined,
                 };
                 if (stage === 'fabricCheck') {
-                    const fabricItemInputs = Array.from(document.querySelectorAll('.stageFabricItemInput'));
-                    const fabricItemValues = fabricItemInputs.map(inp => inp.value.trim());
-                    if (fabricItemValues.some(v => !v)) {
-                        showToast('กรุณาระบุ Item ผ้า ให้ครบทุกชิ้นส่วนก่อนส่งต่อ (Please fill in the fabric item for every part before sending)', 'warning');
+                    // Only parts actually ticked "มีผ้า" need a real Item ผ้า number — a part
+                    // ticked off (no fabric) no longer needs one typed in just to satisfy this
+                    // gate, per "บางชิ้นเล็กๆ...ไม่มีผ้าจริงๆ ทำให้ต้องใส่ '-' หลอกๆ".
+                    let missingItemRow = false;
+                    let missingSourceRow = false;
+                    const shortageItems = [];
+                    const partSources = []; // {fabricSource, fabricJobSource} for every row with some fabric — drives the record-level routing below
+                    fabricAvailRows.forEach((row, i) => {
+                        const state = row.querySelector('.stageFabricAvailState').value;
+                        const input = row.querySelector('.stageFabricItemInput');
+                        if (state !== 'none') {
+                            const v = input.value.trim();
+                            if (!v) missingItemRow = true;
+                            if (item.parts[i]) item.parts[i].fabricItem = v;
+                            const srcRadio = row.querySelector('.stageFabricSourceRadio:checked');
+                            const jobRadio = row.querySelector('.stageFabricJobSourceRadio:checked');
+                            const otherJobNo = row.querySelector('.stageFabricOtherJobNo');
+                            const fabricSource = srcRadio ? srcRadio.value : undefined;
+                            const fabricJobSource = jobRadio ? jobRadio.value : undefined;
+                            const sourceJobNo = (fabricJobSource === 'other' && otherJobNo) ? otherJobNo.value.trim() : undefined;
+                            if (!fabricSource || !fabricJobSource || (fabricJobSource === 'other' && !sourceJobNo)) missingSourceRow = true;
+                            if (item.parts[i]) {
+                                item.parts[i].fabricSource = fabricSource;
+                                item.parts[i].fabricJobSource = fabricJobSource;
+                                item.parts[i].sourceJobNo = sourceJobNo;
+                            }
+                            partSources.push({ fabricSource, fabricJobSource, sourceJobNo });
+                        }
+                        if (state !== 'full') {
+                            const haveQty = parseInt(row.querySelector('.stageFabricHaveQty').value) || 0;
+                            const needQty = parseInt(row.querySelector('.stageFabricNeedQty').value) || 0;
+                            const p = item.parts[i];
+                            shortageItems.push({
+                                key: row.dataset.partKey, idx: i, haveQty, needQty,
+                                label: p ? `${PART_NAME_LABELS[p.name] || p.name}${p.part ? ' (' + p.part + ')' : ''} — ${p.size}` : row.dataset.partKey,
+                            });
+                        }
+                        if (item.parts[i]) item.parts[i].fabricAvailState = state;
+                    });
+                    if (missingItemRow) {
+                        showToast('กรุณาระบุ Item ผ้า ให้ครบทุกชิ้นส่วนที่มีผ้าอยู่บ้างก่อนส่งต่อ (Please fill in the fabric item for every part with some fabric on hand before sending)', 'warning');
                         return;
                     }
-                    fabricItemValues.forEach((v, i) => { if (item.parts[i]) item.parts[i].fabricItem = v; });
+                    if (missingSourceRow) {
+                        showToast('กรุณาระบุที่มาของผ้าและ Job ที่ใช้ ให้ครบทุกชิ้นส่วนที่มีผ้าอยู่บ้างก่อนส่งต่อ (Please fill in fabric source and job for every part with some fabric on hand before sending)', 'warning');
+                        return;
+                    }
+                    // Record-level routing: as long as ANY piece still needs Stock Fabric, the
+                    // whole record must still visit that department before Cutting — only skip
+                    // straight to Cutting when EVERY piece with fabric is already at the cutting
+                    // table. Job source: "other" if any piece borrows from another job, carrying
+                    // every distinct borrowed Job No. along (kept as one combined field for
+                    // backward-compat with older reports/exports — the authoritative per-part
+                    // detail now lives on item.parts[i] itself).
+                    extra.fabricSource = partSources.length && partSources.every(s => s.fabricSource === 'cuttingTable') ? 'cuttingTable' : (partSources.length ? 'stock' : undefined);
+                    extra.fabricJobSource = partSources.some(s => s.fabricJobSource === 'other') ? 'other' : (partSources.length ? 'same' : undefined);
+                    extra.sourceJobNo = [...new Set(partSources.filter(s => s.fabricJobSource === 'other' && s.sourceJobNo).map(s => s.sourceJobNo))].join(', ') || undefined;
+                    // Parts left unticked get pulled into their own small procurement track
+                    // instead of holding up the parts that already have fabric — per "เพิ่มติ๊ก
+                    // ต่อชิ้น ส่งแยกเข้า PPC เฉพาะชิ้นที่ขาด". A record where EVERY part is
+                    // unticked doesn't need this (extra.available='no' already routes the whole
+                    // thing to PPC Fabric normally via the existing nextStatus logic below).
+                    if (shortageItems.length && shortageItems.length < fabricAvailRows.length) {
+                        item.fabricPartialPpc = { items: shortageItems, by: currentUser.username, name: currentUser.name, ts, resolved: false };
+                    } else {
+                        item.fabricPartialPpc = null;
+                    }
                 }
                 const err = cfg.validate(extra, item);
                 if (err) { showToast(err, 'warning'); return; }
@@ -10825,8 +11113,7 @@
                     <h4 class="text-xs font-black text-sky-700 uppercase mb-1">ข้อมูลผ้า <span class="font-normal opacity-70">(Fabric Info)</span></h4>
                     ${item.originFabricType ? `<div><b>ต้นทางผ้า:</b> ${item.originFabricType === 'matched' ? 'ผ้าลาย (Pattern-matched)' : item.originFabricType === 'mixed' ? 'ทั้งผ้าลายและผ้าพื้น (Mixed)' : 'ผ้าพื้น (Non-directional)'}</div>` : ''}
                     ${item.markerSend && item.markerSend.markerLaid !== undefined ? `<div><b>วางมาร์ค:</b> ${item.markerSend.markerLaid ? 'วางมาร์คแล้ว (Laid out)' : 'ไม่วางมาร์ค (Not laid out)'}</div>` : ''}
-                    ${item.fabricCheckSend && item.fabricCheckSend.fabricSource ? `<div><b>ผ้ามาจากไหน:</b> ${item.fabricCheckSend.fabricSource === 'cuttingTable' ? 'ผ้าจากโต๊ะตัด (Cutting Table)' : 'ผ้าสต็อค (Stock Fabric)'}</div>` : ''}
-                    ${item.fabricCheckSend && item.fabricCheckSend.fabricJobSource ? `<div><b>ผ้าที่ใช้เป็นของ Job:</b> ${item.fabricCheckSend.fabricJobSource === 'other' ? `ยืมจาก Job อื่น: <b>${escapeHtml(item.fabricCheckSend.sourceJobNo || '')}</b>` : 'ผ้าใน Job นี้'}</div>` : ''}
+                    ${fabricSourceJobLines(item).map(l => `<div>${l}</div>`).join('')}
                     ${item.ppcFabric && item.ppcFabric.source ? `<div><b>จองผ้าจาก:</b> ${escapeHtml(item.ppcFabric.source)}</div>` : ''}
                     ${item.ppcFabric && item.ppcFabric.prNo ? `<div><b>PR No.:</b> ${escapeHtml(item.ppcFabric.prNo)}</div>` : ''}
                 </div>` : ''}
