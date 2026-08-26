@@ -1988,6 +1988,14 @@
                         <datalist id="poList"></datalist>
                         <p class="text-[9px] text-slate-400 mt-1">ถ้ายังไม่ทราบ ผู้ตรวจสอบ (BU) จะเป็นผู้กรอก/ยืนยัน PO, Item และ Job No. ก่อนส่งต่อให้ Factory Manager อนุมัติ</p>
                     </div>
+                    <!-- Only meaningful for "แจ้งตัดงานซ่อม (ซัพพลายเออร์)" — which supplier's
+                         defect caused this — per "เพิ่มให้สามารถระบุชื่อซัพพลายเออร์ได้". Hidden
+                         for every other request type in onRequestTypeChange(). -->
+                    <div id="fSupplierNameField" class="hidden">
+                        <label class="text-[10px] font-extrabold text-slate-600 block mb-1">ชื่อซัพพลายเออร์ <span class="font-normal opacity-70">(Supplier Name)</span> *</label>
+                        <input type="text" id="fSupplierName" list="supplierNameList" placeholder="เช่น ABC Textile Co.,Ltd." class="w-full text-xs bg-white">
+                        <datalist id="supplierNameList"></datalist>
+                    </div>
                     <datalist id="vendorList"></datalist>
                     <datalist id="sizeList"></datalist>
                 </div>
@@ -2786,19 +2794,44 @@
         function businessHoursBetween(start, end) { return businessMsBetween(start, end) / 36e5; }
         function businessDaysBetween(start, end) { return businessHoursBetween(start, end) / WORK_HOURS_PER_DAY; }
 
+        // A single transient blip (a dropped packet, a slow Apps Script cold start, Google
+        // briefly serving an interstitial instead of the actual response) used to surface
+        // immediately as "บันทึกล้มเหลว" with zero retry — per "พบปัญหาบ่อยเกิดจากอะไร", this
+        // was the single biggest amplifier of how often that badge showed up. Retries a couple
+        // of times with a short backoff before actually giving up. Also gives a distinct error
+        // when the response isn't valid JSON at all (e.g. Google served an auth/quota page
+        // instead of the API's real output) instead of lumping it in with a network failure —
+        // those have different causes and the console message should say so.
+        async function fetchJsonWithRetry(url, options, attempts = 3) {
+            let lastErr;
+            for (let i = 0; i < attempts; i++) {
+                try {
+                    const res = await fetch(url, options);
+                    let data;
+                    try {
+                        data = await res.json();
+                    } catch (parseErr) {
+                        throw new Error(`Apps Script returned a non-JSON response (HTTP ${res.status}) — likely a Google auth/quota interstitial, not a real network failure`);
+                    }
+                    return data;
+                } catch (err) {
+                    lastErr = err;
+                    if (i < attempts - 1) await new Promise(r => setTimeout(r, 500 * (i + 1)));
+                }
+            }
+            throw lastErr;
+        }
         async function apiGetAll(sheetName) {
-            const res = await fetch(`${API_BASE_URL}?sheet=${encodeURIComponent(sheetName)}`);
-            const data = await res.json();
+            const data = await fetchJsonWithRetry(`${API_BASE_URL}?sheet=${encodeURIComponent(sheetName)}`);
             if (!data.ok) throw new Error(data.error || `API error loading ${sheetName}`);
             return data.rows;
         }
         async function apiPost(body) {
-            const res = await fetch(API_BASE_URL, {
+            const data = await fetchJsonWithRetry(API_BASE_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight; Apps Script has no doOptions
                 body: JSON.stringify(body)
             });
-            const data = await res.json();
             if (!data.ok) throw new Error(data.error || 'API error');
             return data;
         }
@@ -4222,6 +4255,9 @@
         function onRequestTypeChange() {
             const type = currentRequestType();
             const isAccOnly = type === 'ACCOnly';
+            const isSupplierCutReplace = type === 'SupplierCutReplace';
+            document.getElementById('fSupplierNameField').classList.toggle('hidden', !isSupplierCutReplace);
+            document.getElementById('fSupplierName').required = isSupplierCutReplace;
             // ACC-only requests have no fabric parts at all — remove the whole Parts to
             // Repair section from the form instead of just making it optional, per "ให้หน้าต่าง
             // ฟอร์มตัดส่วนของ รายการชิ้นส่วนที่ต้องตัดซ่อม (Parts to Repair) ออก...แต่ถ้าเป็น
@@ -4318,6 +4354,7 @@
             };
             setDl('customerList', [...new Set(repairs.map(r => r.customer).filter(Boolean))]);
             setDl('seasonList', [...new Set(repairs.map(r => r.season).filter(Boolean))]);
+            setDl('supplierNameList', [...new Set(repairs.map(r => r.supplierName).filter(Boolean))]);
             setDl('styleList', [...new Set(repairs.map(r => r.style).filter(Boolean))]);
             setDl('jobList', [...new Set(repairs.map(r => r.job).filter(Boolean))]);
             setDl('itemList', [...new Set(repairs.map(r => r.item).filter(Boolean))]);
@@ -6628,6 +6665,7 @@
             document.getElementById('fLine').value = item.line;
             document.getElementById('fCustomer').value = item.customer || '';
             document.getElementById('fSeason').value = item.season || '';
+            document.getElementById('fSupplierName').value = item.supplierName || '';
             document.getElementById('fStyle').value = item.style;
             document.getElementById('fJob').value = item.job;
             document.getElementById('fItem').value = item.item;
@@ -6794,6 +6832,7 @@
                     dept, line, heatTransferType, originFabricType,
                     customer: document.getElementById('fCustomer').value,
                     season: document.getElementById('fSeason').value,
+                    supplierName: requestType === 'SupplierCutReplace' ? document.getElementById('fSupplierName').value.trim() : '',
                     style: document.getElementById('fStyle').value,
                     job: document.getElementById('fJob').value,
                     item: document.getElementById('fItem').value,
@@ -6835,6 +6874,7 @@
                     dept, line, heatTransferType, originFabricType,
                     customer: document.getElementById('fCustomer').value,
                     season: document.getElementById('fSeason').value,
+                    supplierName: requestType === 'SupplierCutReplace' ? document.getElementById('fSupplierName').value.trim() : '',
                     style: document.getElementById('fStyle').value,
                     job: document.getElementById('fJob').value,
                     item: document.getElementById('fItem').value,
@@ -7382,6 +7422,7 @@
                     <tbody>
                         ${item.customer ? infoRow('Customer', escapeHtml(item.customer)) : ''}
                         ${item.season ? infoRow('Season', escapeHtml(item.season)) : ''}
+                        ${item.supplierName ? infoRow('ซัพพลายเออร์ <span class="font-normal opacity-70">(Supplier)</span>', escapeHtml(item.supplierName)) : ''}
                         ${infoRow('PO No.', item.po ? escapeHtml(item.po) : '<span class="text-amber-600 font-bold">ยังไม่ระบุ</span>')}
                         ${infoRow('Job No.', escapeHtml(item.job))}
                         ${infoRow('Item', escapeHtml(item.item))}
@@ -11120,6 +11161,7 @@
                     <div class="grid grid-cols-2 gap-2 text-[11px]">
                         ${item.customer ? `<div><b>Customer:</b> ${escapeHtml(item.customer)}</div>` : ''}
                         ${item.season ? `<div><b>Season:</b> ${escapeHtml(item.season)}</div>` : ''}
+                        ${item.supplierName ? `<div class="col-span-2"><b>ซัพพลายเออร์ (Supplier):</b> ${escapeHtml(item.supplierName)}</div>` : ''}
                         <div><b>PO No.:</b> ${item.po ? escapeHtml(item.po) : 'ยังไม่ระบุ'}</div>
                         <div><b>Job No:</b> ${escapeHtml(item.job)}</div>
                         <div><b>Item:</b> ${escapeHtml(item.item)}</div>
