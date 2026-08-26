@@ -4289,7 +4289,17 @@
             const scopes = scopesOf(user);
             const allowedDepts = new Set(scopes.map(s => s.startsWith('Line') ? 'Sewing' : s));
             Array.from(deptSelect.options).forEach(opt => { opt.hidden = !allowedDepts.has(opt.value); });
-            if (!allowedDepts.has(deptSelect.value)) {
+            // BUG FIX: a user scoped to BOTH a Sewing line AND a specific dept (e.g. an
+            // Embellishment-room head whose scope still has an old Line ticked too) always
+            // defaulted to Sewing here — 'Sewing' is simply the first <option> in the HTML, so
+            // it stays selected after form.reset() and this only reassigned when the CURRENT
+            // value was actually disallowed, which it never was for these users. A dedicated
+            // dept scope is the more specific/deliberate assignment, so prefer it over the
+            // Sewing default whenever one exists, per "พอระบุขอบเขตเป็นปัก...มันขึ้นเป็นแผนกเย็บ".
+            const nonSewingAllowed = Array.from(deptSelect.options).find(o => !o.hidden && o.value !== 'Sewing');
+            if (nonSewingAllowed) {
+                deptSelect.value = nonSewingAllowed.value;
+            } else if (!allowedDepts.has(deptSelect.value)) {
                 const firstAllowed = Array.from(deptSelect.options).find(o => !o.hidden);
                 if (firstAllowed) deptSelect.value = firstAllowed.value;
             }
