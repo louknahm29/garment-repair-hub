@@ -8620,7 +8620,22 @@
         // (cutting send, QC send, stage send), never automatically for an already-saved record.
         // Runs once per load; a no-op for any record not genuinely eligible right now.
         function reconcileAccDoneAdvancement(r) {
-            if (r.status === 'CuttingSent') checkAdvanceToSupermarket(r);
+            // ACC's own exemption rules (embNeedsAcc — print types, SupplierCutReplace,
+            // outsourced embellishment) can flip hasAccContent() from true to false for an
+            // ALREADY-SAVED record (e.g. these rules were broadened after ACC had already
+            // clicked "รับงาน") — stranding it with accReceive set but no accSend, since the
+            // "ส่งต่อ" button (renderTable, gated on accActionable()) never appears once
+            // hasAccContent() is false, no matter what accReceive already says. Confirmed live
+            // via CR-000109 ("เคยกดรับงานแล้ว แต่พอจะกดส่งไม่มีขึ้นให้กดส่งงาน"). Auto-close it —
+            // there's genuinely nothing left to dispense, so no real send action is needed.
+            if (r.accReceive && !r.accSend && !hasAccContent(r)) {
+                r.accSend = { by: 'system', name: 'ระบบ (ไม่มีรายการที่ต้องจ่าย)', ts: r.accReceive.ts };
+            }
+            // Not scoped to CuttingSent — safe to call regardless of current status, since
+            // checkAdvanceToSupermarket only actually advances when mainPipelineDone() is ALSO
+            // true, so a record still mid-pipeline (like CR-000109, still at CuttingReceived)
+            // is correctly left untouched by this call.
+            checkAdvanceToSupermarket(r);
         }
         // Which of the still-remaining types can actually be SENT OUT right now — a type is
         // blocked if any part it's ticked on ALSO has an earlier-ordered (per that part's own
