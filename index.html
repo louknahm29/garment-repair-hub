@@ -4147,8 +4147,15 @@
         // the fLine dropdown and for the user-scope checkbox grid.
         const ALL_SEWING_LINES = Array.from({ length: 24 }, (_, i) => `Line ${String(i + 1).padStart(2, '0')}`).concat(['SML01', 'SML02']);
         // Non-Sewing departments that can also be assigned as a user's scope (scopeKeyOf()
-        // returns the dept name itself for these, instead of a line code).
-        const NON_SEWING_SCOPE_DEPTS = ['QC', 'Finishing', 'BU', 'Embellishment', 'HeatTransfer', 'Cutting', 'Supermarket'];
+        // returns the dept name itself for these, instead of a line code) — kept in exact sync
+        // with #fDept's own option values (minus 'Sewing', which uses line codes instead), so
+        // every real dept a record can be filed under has a matching scope checkbox.
+        // BUG FIX: this used to offer one generic "Embellishment" checkbox and no "ACC" at all
+        // — but #fDept's real values are the granular 'Emb'/'PadPrint'/'ScreenPrint'/'Bonding'/
+        // 'Laser' (each its own department), so "Embellishment" never matched scopeKeyOf(item)
+        // for ANY real record — a user scoped to it could never actually act on anything. Per
+        // "ขาดขอบเขตของห้องปักกับแพดปริ้น ช่วยเพิ่ม".
+        const NON_SEWING_SCOPE_DEPTS = ['QC', 'BU', 'ACC', 'Emb', 'PadPrint', 'ScreenPrint', 'Bonding', 'Laser', 'HeatTransfer', 'Cutting', 'Supermarket'];
         const ALL_SCOPE_VALUES = ALL_SEWING_LINES.concat(NON_SEWING_SCOPE_DEPTS);
 
         function populateLines() {
@@ -4157,13 +4164,21 @@
                 ALL_SEWING_LINES.map(val => `<option value="${val}">${val}</option>`).join('');
         }
 
+        // Friendly labels for the non-Sewing scope checkboxes — same Thai names as #fDept's own
+        // options, so "Emb"/"PadPrint" etc. don't show as bare English codes in the scope grid.
+        const SCOPE_DEPT_LABELS = {
+            QC: 'แผนก QC/QA', BU: 'แผนก BU', ACC: 'แผนก ACC', Emb: 'แผนกปัก (Embroidery)',
+            PadPrint: 'แผนกแพดปริ้น (Pad Print)', ScreenPrint: 'แผนกพิมพ์สกรีน (Screen Print)',
+            Bonding: 'แผนกบอนด์ดิ้ง (Bonding)', Laser: 'แผนกเลเซอร์ (Laser)', HeatTransfer: 'แผนกฮีท (Heat Transfer)',
+            Cutting: 'แผนกตัด (Cutting)', Supermarket: 'ซุปเปอร์มาร์เก็ต (Supermarket)',
+        };
         function renderScopeCheckboxes(selectedLines) {
             const container = document.getElementById('uLinesCheckboxes');
             const selected = new Set(selectedLines || []);
             container.innerHTML = ALL_SCOPE_VALUES.map(val => `
                 <label class="flex items-center gap-1 text-[10px] text-slate-600">
                     <input type="checkbox" class="uLineScope" value="${val}" ${selected.has(val) ? 'checked' : ''}>
-                    ${val}
+                    ${escapeHtml(SCOPE_DEPT_LABELS[val] || val)}
                 </label>`).join('');
         }
 
