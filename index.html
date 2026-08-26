@@ -4559,19 +4559,30 @@
             const sizeQtys = sizes || {};
             const entries = embEntries || [];
             const entryByType = Object.fromEntries(entries.map(e => [e.type, e]));
-            // Read-only summary of whatever Embellishment/ACC BU already ticked for this part —
-            // this form never lets anyone edit that (see the comment on `embellishment` in the
-            // submit handler below — it's BU's own approval-screen job), but until now nothing
-            // showed it here either, so re-opening a record to edit gave zero indication of
-            // what was actually requested. Per "ต้องการให้มีแสดงในหน้าแก้ไขหรือรายละเอียด
-            // จะได้รู้ว่าคือรายการอะไรที่ติ๊กขอมา".
-            const embSummaryHtml = entries.length ? `
+            // Lets whoever creates/edits the request tick which Embellishment types apply to
+            // this piece and roughly how many POSITIONS each needs — per "หน้าของใบขอตัดซ่อม
+            // ไม่มีให้ระบุว่าเป็นงานที่มี ปัก พิมพ์ ฮีท แพดปริ้น หรือ เลเซอร์ตรงไหนเท่าไหร่" and
+            // "จากภาพมีปักหลายตำแหน่งมาก โดยที่ไม่รู้เป็น item หรือรายการอะไร": the person who
+            // actually knows the defect (not BU, later) is in the best position to say how many
+            // positions there really are, instead of BU guessing/typing a placeholder for every
+            // slot. Deliberately does NOT collect source/vendor/item numbers here — that stays
+            // BU's job on the approval screen (renderApprovalEmbGroups), which already pre-fills
+            // from whatever count is ticked here via the same (type→entry) matching.
+            const embQuickTicksHtml = `
                 <div class="col-span-full bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-2">
-                    <div class="text-[9px] font-bold text-indigo-600 uppercase mb-1">Embellishment ที่ขอไว้ <span class="font-normal normal-case text-indigo-400">(ระบุแล้วโดย BU — แก้ไขได้ที่หน้าตรวจสอบเท่านั้น)</span></div>
-                    <div class="flex flex-wrap gap-1.5">
-                        ${entries.map(e => `<span class="inline-block bg-white border border-indigo-200 rounded px-2 py-1 text-[10px] text-indigo-700 whitespace-nowrap">${escapeHtml(EMB_LABELS[e.type] || e.type)} × ${(e.items && e.items.length) ? e.items.length : (e.count || 0)}${e.source ? ' — ' + (e.source === 'inhouse' ? 'In-house' : ('Outsource' + (e.vendor ? ' (' + escapeHtml(e.vendor) + ')' : ''))) : ''}</span>`).join('')}
+                    <div class="text-[9px] font-bold text-indigo-600 uppercase mb-1">Embellishment ที่ต้องการ <span class="font-normal normal-case text-indigo-400">(ติ๊กประเภทและระบุจำนวนตำแหน่งที่รู้ — รายละเอียดอื่น (In-house/Outsource, เลข Item) ให้ BU กรอกต่อตอนตรวจสอบ)</span></div>
+                    <div class="flex flex-wrap gap-2.5">
+                        ${EMBELLISHMENT_OPTIONS.map(o => { const e = entryByType[o.value]; const checked = !!e; return `
+                        <label class="pQuickEmbType flex items-center gap-1 text-[10px] bg-white border rounded-lg px-2 py-1" data-type="${o.value}">
+                            <input type="checkbox" class="pQuickEmbCheck" ${checked ? 'checked' : ''}>
+                            <span class="font-bold">${o.label}</span>
+                            <span class="pQuickEmbCountWrap flex items-center gap-1 ${checked ? '' : 'hidden'}">
+                                <span class="text-slate-400">×</span>
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" class="pQuickEmbCount w-10 text-[10px]" placeholder="0" value="${checked ? (e.count || '') : ''}">
+                            </span>
+                        </label>`; }).join('')}
                     </div>
-                </div>` : '';
+                </div>`;
             const reasonOpts = currentReasonOptions();
             const isOtherPart = !!part && !PART_LETTER_OPTIONS.includes(part);
             const isOtherReason = !!reason && !reasonOpts.some(r => r.value === reason);
@@ -4583,6 +4594,7 @@
                 <div class="sm:col-span-2">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">Item ผ้า <span class="opacity-70">(Fabric Item)</span></label>
                     <input type="text" class="pFabricItem w-full text-xs" value="${escapeHtml(fabricItem)}" placeholder="เลขที่ Item ผ้า">
+                    <p class="text-[9px] text-slate-400 mt-1">ไม่ทราบปล่อยว่างได้ — BU กรอกแทน</p>
                 </div>
                 <div class="sm:col-span-3">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">ชื่อชิ้นส่วน * <span class="font-normal opacity-70">(พิมพ์เพื่อค้นหา / Type to search)</span></label>
@@ -4614,12 +4626,14 @@
                     </div>
                 </div>
                 <div class="sm:col-span-2">
-                    <label class="text-[9px] font-bold text-slate-400 block mb-1">สี <span class="opacity-70">(Color)</span></label>
-                    <input type="text" class="pCW w-full text-xs" value="${escapeHtml(cw)}" placeholder="ระบุ CW.">
+                    <label class="text-[9px] font-bold text-slate-400 block mb-1">CW <span class="opacity-70">(ต่อชิ้นนี้ — ไม่บังคับ)</span></label>
+                    <input type="text" class="pCW w-full text-xs" value="${escapeHtml(cw)}" placeholder="ระบุเฉพาะถ้าต่างจาก CW ด้านบน (ไม่บังคับ)">
+                    <p class="text-[9px] text-slate-400 mt-1">ไม่ทราบหรือเหมือน CW ด้านบน ปล่อยว่างไว้ได้</p>
                 </div>
                 <div class="sm:col-span-2">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">มัดที่ <span class="opacity-70">(Bundle No.)</span></label>
                     <input type="text" class="pBundleNo w-full text-xs" value="${escapeHtml(bundleNo)}" placeholder="ระบุมัดที่">
+                    <p class="text-[9px] text-slate-400 mt-1">ไม่ทราบปล่อยว่างได้ — BU กรอกแทน</p>
                 </div>
                 <div class="sm:col-span-2 flex items-center justify-center h-[34px] border rounded-lg bg-white px-2">
                     <label class="pSampleLabel flex items-center gap-1.5 cursor-pointer">
@@ -4627,7 +4641,7 @@
                         <span class="text-[9px] font-bold text-slate-600 uppercase">มีชิ้นงานเสียแนบ</span>
                     </label>
                 </div>
-                ${embSummaryHtml}
+                ${embQuickTicksHtml}
                 <div class="sm:col-span-12">
                     <label class="text-[9px] font-bold text-slate-400 block mb-1">ระบุจำนวนแต่ละไซส์ (Size Ratio) <span class="font-normal normal-case opacity-70">— เหมือนที่จะส่งให้มาร์คเกอร์</span> *</label>
                     <div class="pSizeRatioBox flex flex-wrap gap-1.5 bg-white border rounded-lg p-2">
@@ -4720,6 +4734,13 @@
                 vendorInput.classList.toggle('hidden', !isOutsource);
                 vendorInput.disabled = !isOutsource;
                 if (isOutsource) vendorInput.focus(); else vendorInput.value = '';
+            }
+            if (e.target.classList.contains('pQuickEmbCheck')) {
+                const label = e.target.closest('.pQuickEmbType');
+                const wrap = label.querySelector('.pQuickEmbCountWrap');
+                wrap.classList.toggle('hidden', !e.target.checked);
+                const countInput = wrap.querySelector('.pQuickEmbCount');
+                if (e.target.checked) countInput.focus(); else countInput.value = '';
             }
             if (e.target.classList.contains('pReason')) {
                 const row = e.target.closest('#partsContainer > div');
@@ -6261,13 +6282,13 @@
                                 <span class="font-normal text-slate-400">— แจ้ง ${escapeHtml(fmtDT(r.date))} โดย ${escapeHtml(userDisplayName(r.requesterUser) || r.requesterUser || '-')}</span>
                                 ${r.id === primary.id ? '<span class="text-indigo-600 font-bold text-[9px]">(ใบหลัก)</span>' : ''}
                             </div>
-                            <div class="overflow-x-auto">${buildPartsRatioTable(r.parts, r.color)}</div>
+                            <div class="overflow-x-auto">${buildPartsRatioTable(r.parts, r.color, true)}</div>
                             ${(r.accRequestList || []).length ? `<div class="overflow-x-auto mt-1">${buildAccRequestTable(r)}</div>` : ''}
                         </div>`).join('')}
                     <p class="text-[10px] font-black text-emerald-700 uppercase">ผลลัพธ์หลังรวมเข้าใบหลัก <span class="font-normal normal-case opacity-70">(Combined result after merge)</span></p>
                     <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2">
                         <div class="text-[11px] font-bold text-slate-700 mb-1">${escapeHtml(docLabel(primary))} <span class="font-normal text-slate-400">— รวมทั้งหมด ${selected.length} ใบ</span></div>
-                        <div class="overflow-x-auto">${buildPartsRatioTable(combinedParts, primary.color)}</div>
+                        <div class="overflow-x-auto">${buildPartsRatioTable(combinedParts, primary.color, true)}</div>
                         ${combinedAcc.length ? `<div class="overflow-x-auto mt-1">${buildAccRequestTable({ accRequestList: combinedAcc })}</div>` : ''}
                     </div>
                     <button type="button" onclick="mergeSelectedGroup(${groupIdx})" class="btn-primary text-xs w-full py-2">✅ ยืนยันการรวมข้อมูล <span class="text-[9px] font-normal opacity-70">(Confirm Merge)</span></button>
@@ -6632,7 +6653,6 @@
             const partRows = document.querySelectorAll('#partsContainer > div');
             let zeroRatioRow = false;
             let missingReasonRow = false;
-            let missingMandatoryRow = false;
             // Each row is one part with a full size-ratio grid (same shape shown to Marker) —
             // expand it into one flat parts[] entry per non-empty size, so every other part
             // of the app (review table, queue summary, CSV, totals) keeps working on the
@@ -6659,13 +6679,12 @@
                 const fabricItem = row.querySelector('.pFabricItem').value.trim();
                 const cw = row.querySelector('.pCW').value.trim();
                 const bundleNo = row.querySelector('.pBundleNo').value.trim();
-                // มัดที่/CW must be filled in before this can go on to PM/FM approval, per
-                // "ต้องการบังคับกรอก...ก่อนส่งต่อให้ PM/FM อนุมัติ" — checked here at
-                // creation/edit so nothing without them ever gets that far in the first place.
-                // พาร์ท (Part) is deliberately NOT required here — per "หัวหน้าไลน์ไม่รู้พาท
-                // ให้ BU ใส่แทน", the line leader creating the request often doesn't know the
-                // part code; BU fills it in later during their own review instead.
-                if (!bundleNo || !cw) missingMandatoryRow = true;
+                // BUG FIX: มัดที่/CW/Item ผ้า used to be REQUIRED right here at creation — but
+                // per "เคสของหัวหน้าไลน์...หัวหน้าไลน์อาจจะไม่บังคับแต่ไปบังคับที่ BU", the line
+                // leader creating the request often doesn't know these yet either (same reason
+                // พาร์ท isn't required here). Moved to a required-before-approve check in
+                // submitApproval instead, exactly like Part already works — the line leader can
+                // leave all three blank, and BU fills them in during review.
                 // Embellishment is entered separately by BU during approval review (see the
                 // approvalModal embellishment section), not on this form — so a brand-new part
                 // always starts with none. But when EDITING an existing record, a part the BU
@@ -6676,7 +6695,26 @@
                 const existingPart = editIndex >= 0 && repairs[editIndex]
                     ? repairs[editIndex].parts.find(pp => (pp.name || '') + '||' + (pp.part || '') === name + '||' + part)
                     : null;
-                const embellishment = existingPart ? (existingPart.embellishment || []) : [];
+                // Type + position-COUNT can now be ticked right here at intake/edit — per
+                // "หน้าของใบขอตัดซ่อมไม่มีให้ระบุว่าเป็นงานที่มี...ตรงไหนเท่าไหร่" — but
+                // source/vendor/item numbers still stay BU's job on the approval screen (which
+                // pre-fills from whatever's ticked here). Merge conservatively: a type BU has
+                // already detailed (source set) is never removed just by unticking it here —
+                // only the count updates — so this can never silently wipe BU's approved work;
+                // a type with no BU detail yet is added/removed/recounted freely.
+                const existingByType = Object.fromEntries((existingPart ? existingPart.embellishment || [] : []).map(e => [e.type, e]));
+                const embellishment = [];
+                row.querySelectorAll('.pQuickEmbType').forEach(typeRow => {
+                    const type = typeRow.dataset.type;
+                    const ticked = typeRow.querySelector('.pQuickEmbCheck').checked;
+                    const existing = existingByType[type];
+                    if (ticked) {
+                        const count = parseInt(typeRow.querySelector('.pQuickEmbCount').value) || 0;
+                        embellishment.push(existing ? { ...existing, count } : { type, count, items: [] });
+                    } else if (existing && existing.source) {
+                        embellishment.push(existing);
+                    }
+                });
                 const sizeEntries = Array.from(row.querySelectorAll('.pSizeQty'))
                     .map(inp => ({ size: inp.dataset.size, qty: parseInt(inp.value) || 0 }))
                     .filter(s => s.qty > 0);
@@ -6692,11 +6730,6 @@
                 showToast('กรุณาระบุสาเหตุการสั่งซ่อมเมื่อเลือก "อื่นๆ" (Please specify the reason when choosing "Other")', 'warning');
                 return;
             }
-            if (missingMandatoryRow && !isAccOnlyRequest) {
-                showToast('กรุณาระบุ มัดที่ และ CW. ให้ครบทุกรายการชิ้นส่วน (Please fill in Bundle No. and CW. for every part)', 'warning');
-                return;
-            }
-
             const accRequestList = collectAccRequestList();
             // Every ticked ACC requisition line must have a real quantity before this can go
             // out to the next department for review — per "ต้องการให้ระบุจำนวนทุกครั้งในตอนที่
@@ -7353,7 +7386,7 @@
                 </div>` : ''}
                 <div class="border-t border-slate-200 pt-1.5 mt-1.5">
                     <div class="font-bold text-slate-600 mb-1">รายการชิ้นส่วนที่ต้องตรวจสอบ <span class="font-normal opacity-70">(Parts to Review)</span>:</div>
-                    <div class="overflow-x-auto">${buildPartsRatioTable(item.parts, item.color)}</div>
+                    <div class="overflow-x-auto">${buildPartsRatioTable(item.parts, item.color, true)}</div>
                 </div>
                 ${(item.accRequestList && item.accRequestList.length) ? `
                 <div class="border-t border-slate-200 pt-1.5 mt-1.5">
@@ -7763,6 +7796,9 @@
                 showToast('พบชิ้นส่วนที่ไม่มี พาร์ท (Part) หรือ ชื่อชิ้นส่วน — กรุณาแก้ไขรายการให้ครบทุกชิ้นส่วนก่อนอนุมัติ (Found a part with no Part code or name — please edit the record and complete every piece before approving)', 'warning');
                 return;
             }
+            // มัดที่/CW/Item ผ้า are NOT required anywhere in the pipeline — per "cw ไม่บังคับ
+            // กรอก จนถึง BU ก็ไม่ต้องบังคับแล้ว" (superseding an earlier attempt to require them
+            // at BU instead of intake — turns out neither stage should force it).
 
             const attachment = null; // attachment upload removed
             repairs[idx].po = po;
@@ -7835,7 +7871,6 @@
                 showToast('กรุณาแก้ไขรายการและระบุ พาร์ท (Part) ให้ครบทุกชิ้นส่วนก่อนอนุมัติ (Please edit the record and fill in Part for every piece before approving)', 'warning');
                 return;
             }
-
             const attachment = null; // attachment upload removed
             // A Heat Transfer request for ACC items isn't fabric being cut — skip the whole
             // Marker → Cutting Sheet → Fabric Check → PPC Fabric → Stock Fabric → Cutting
@@ -11062,8 +11097,11 @@
                         <!-- Same table as the magnifying-glass detail view (buildPartsRatioTable)
                              — per "ต้องการให้ทุกหน้าแสดงเหมือนกันทั้งปริ้นและรีวิวที่แว่นขยาย" —
                              instead of this ticket's own simplified table, which was missing the
-                             fabric Item/color/Embellishment columns shown there. -->
-                        <div class="overflow-x-auto">${buildPartsRatioTable(item.parts, item.color)}</div>
+                             fabric Item/color/Embellishment columns shown there. collapsePositions
+                             (3rd arg) keeps it to one row per part+type — per "ยังคงพบปัญหาเดิม
+                             ที่มีช่องจำนวนแถวเยอะ": this print view was the one remaining call
+                             site still exploding into one row per recorded position. -->
+                        <div class="overflow-x-auto">${buildPartsRatioTable(item.parts, item.color, true)}</div>
                     </div>
 
                     ${(item.accRequestList && item.accRequestList.length) ? `
@@ -12260,6 +12298,14 @@
             const roles = Array.from(document.querySelectorAll('.uRole:checked')).map(cb => cb.value);
             const lines = Array.from(document.querySelectorAll('.uLineScope:checked')).map(cb => cb.value);
             const position = document.getElementById('uPosition').value;
+            // Picking a department-head Position carries its real work permission along —
+            // per "ขอบเขต ของหัวหน้าห้องปัก กับแพดปริ้น...ให้สามารถทำการขอบเขตหน้าที่การทำงานได้"
+            // (ติดกับสิทธิ์ทำงานจริง) — no need to separately tick the matching role checkbox
+            // too. Only ADDS the role; never removes one the admin already ticked directly.
+            const POSITION_GRANTS_ROLE = { EmbHead: 'Emb', PadPrintHead: 'PadPrint', ScreenPrintHead: 'ScreenPrint', HeatTransferHead: 'Heat' };
+            if (POSITION_GRANTS_ROLE[position] && !roles.includes(POSITION_GRANTS_ROLE[position])) {
+                roles.push(POSITION_GRANTS_ROLE[position]);
+            }
 
             if (roles.length === 0) { showToast('กรุณาเลือกบทบาทอย่างน้อย 1 อย่าง (Select at least 1 role)', 'warning'); return; }
             if (!editUsername && users.some(u => u.username === username)) { showToast('Username นี้มีอยู่แล้ว', 'warning'); return; }
@@ -12278,6 +12324,16 @@
             renderUsersTable();
             closeModal('userModal');
         };
+        // Visibly ticks the matching role checkbox the moment a department-head Position is
+        // picked, so the admin can see the real permission it carries BEFORE saving — the
+        // actual grant (in case they untick it again, or picked the position via some other
+        // path) is still enforced independently at save time above.
+        document.getElementById('uPosition').addEventListener('change', (e) => {
+            const grant = { EmbHead: 'Emb', PadPrintHead: 'PadPrint', ScreenPrintHead: 'ScreenPrint', HeatTransferHead: 'Heat' }[e.target.value];
+            if (!grant) return;
+            const cb = document.querySelector(`.uRole[value="${grant}"]`);
+            if (cb) cb.checked = true;
+        });
 
         function deleteUser(username) {
             if (username === currentUser.username) { showToast('ไม่สามารถลบผู้ใช้ที่กำลังใช้งานอยู่ได้ (Cannot delete the current user)', 'warning'); return; }
