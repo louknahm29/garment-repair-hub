@@ -2862,6 +2862,9 @@
             { key: 'nbaPantsPlus2', label: 'NBA กางเกง — +2', sizes: ['30+2', '32+2', '34+2', '36+2', '38+2', '40+2', '42+2', '44+2', '46+2', '48+2'] },
             { key: 'nbaAuthentic', label: 'NBA AUTHENTIC', sizes: ['40', '44', '48', '52', '56', '58'] },
         ];
+        // Full universe of sizes a part could ever carry (standard grid + every optional size
+        // group), for pickers that have no live Parts rows to draw from — see accSizeOptionsHtml.
+        const ALL_SIZE_OPTIONS = SIZE_OPTIONS.concat(...SIZE_GROUPS.map(g => g.sizes));
         const PART_NAME_OPTIONS = [
             { value: 'Front', label: 'ชิ้นหน้า (Front)' },
             { value: 'LowerFront', label: 'ชิ้นหน้าล่าง (Lower Front)' },
@@ -2988,11 +2991,13 @@
             return sizes;
         }
         // ACCOnly requests have no Parts section to draw from at all (it's hidden/optional for
-        // that request type) — fall back to the standard size list in that case instead of
-        // leaving the field with nothing to offer.
+        // that request type) — fall back to the FULL size universe (standard grid + every
+        // optional size group, e.g. NBA/SET-T) in that case, per "size ของรายการ acc ต้องการให้
+        // มีให้เลือกเหมือนชิ้นส่วนงาน" — same breadth of choice as picking a part's size, since
+        // there's no live Parts qty to narrow it down to.
         function accSizeOptionsHtml(selected) {
             const sizes = currentFormPartSizes();
-            const options = sizes.length ? sizes : SIZE_OPTIONS;
+            const options = sizes.length ? sizes : ALL_SIZE_OPTIONS;
             const list = options.includes(selected) || !selected ? options : [...options, selected];
             return `<option value="">-- ไซส์ --</option>` + list.map(s => `<option value="${escapeHtml(s)}" ${s === selected ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('');
         }
