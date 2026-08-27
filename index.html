@@ -1124,6 +1124,7 @@
                     <p class="text-xs font-bold text-indigo-600 uppercase">ยอดรวมชิ้นส่วนงานเสียสะสม <span class="font-normal normal-case opacity-70">(Total Defect Pcs)</span></p>
                     <h3 id="anaTotalPcs" class="text-3xl font-black text-slate-800 mt-2">0 <span class="text-sm font-normal text-slate-500">ชิ้น</span></h3>
                     <p class="text-[11px] text-slate-500 mt-1">จากรายการสั่งซ่อมทั้งหมดในระบบ <span class="opacity-70">(From all repair records)</span></p>
+                    <p id="anaTotalPcsBreakdown" class="text-[10px] font-bold text-indigo-500 mt-1.5 pt-1.5 border-t border-indigo-100"></p>
                 </div>
                 <div id="anaTopReasonCard" class="card p-5 bg-gradient-to-br from-rose-50 to-white cursor-pointer hover:shadow-md transition-shadow">
                     <p class="text-xs font-bold text-rose-600 uppercase">สาเหตุยอดนิยมอันดับ 1 <span class="font-normal normal-case opacity-70">(Top Reason — click to view)</span></p>
@@ -1143,16 +1144,19 @@
                     <p class="text-xs font-bold text-slate-500 uppercase">งานที่กำลังดำเนินการทั้งหมด <span class="font-normal normal-case opacity-70">(All Active Jobs)</span></p>
                     <h3 id="anaActiveCount" class="text-3xl font-black text-slate-800 mt-2">0</h3>
                     <p class="text-[11px] text-slate-500 mt-1">คลิกเพื่อไปที่คิวงานซ่อม <span class="opacity-70">(Click to view Queue)</span></p>
+                    <p id="anaActiveCountBreakdown" class="text-[10px] font-bold text-slate-500 mt-1.5 pt-1.5 border-t border-slate-200"></p>
                 </div>
                 <div onclick="filterByKpi('overdue')" class="card p-5 bg-gradient-to-br from-red-50 to-white cursor-pointer hover:shadow-md transition-shadow">
                     <p class="text-xs font-bold text-red-600 uppercase">🚨 รายการที่เกินกำหนด (Alert)</p>
                     <h3 id="anaAlertCount" class="text-3xl font-black text-red-600 mt-2">0</h3>
                     <p class="text-[11px] text-slate-500 mt-1">เกิน Leadtime 2 วันทำการ (จ.-ส. 08:00-17:00) หรือเกินวันที่ต้องการของ <span class="opacity-70">(Overdue 2 business days or past need date)</span></p>
+                    <p id="anaAlertCountBreakdown" class="text-[10px] font-bold text-red-500 mt-1.5 pt-1.5 border-t border-red-100"></p>
                 </div>
                 <div onclick="goToCompletedHistory()" class="card p-5 bg-gradient-to-br from-emerald-50 to-white cursor-pointer hover:shadow-md transition-shadow">
                     <p class="text-xs font-bold text-emerald-600 uppercase">งานเสร็จสมบูรณ์สะสม <span class="font-normal normal-case opacity-70">(Total Completed)</span></p>
                     <h3 id="anaCompletedCount" class="text-3xl font-black text-emerald-600 mt-2">0</h3>
                     <p class="text-[11px] text-slate-500 mt-1">คลิกเพื่อดูประวัติงานที่เสร็จสมบูรณ์ <span class="opacity-70">(Click to view Completed History)</span></p>
+                    <p id="anaCompletedCountBreakdown" class="text-[10px] font-bold text-emerald-500 mt-1.5 pt-1.5 border-t border-emerald-100"></p>
                 </div>
             </div>
 
@@ -2856,6 +2860,7 @@
             { key: 'nbaPantsRegular', label: 'NBA กางเกง — REGULAR', sizes: ['30R', '32R', '34R', '36R', '38R', '40R', '42R', '44R', '46R', '48R'] },
             { key: 'nbaPantsPlus1', label: 'NBA กางเกง — +1', sizes: ['30+1', '32+1', '34+1', '36+1', '38+1', '40+1', '42+1', '44+1', '46+1', '48+1'] },
             { key: 'nbaPantsPlus2', label: 'NBA กางเกง — +2', sizes: ['30+2', '32+2', '34+2', '36+2', '38+2', '40+2', '42+2', '44+2', '46+2', '48+2'] },
+            { key: 'nbaAuthentic', label: 'NBA AUTHENTIC', sizes: ['40', '44', '48', '52', '56', '58'] },
         ];
         const PART_NAME_OPTIONS = [
             { value: 'Front', label: 'ชิ้นหน้า (Front)' },
@@ -11831,6 +11836,17 @@
             });
 
             document.getElementById('anaTotalPcs').innerHTML = `${totalPcs} <span class="text-sm font-normal text-slate-500">ชิ้น</span>`;
+            // Per "ให้แบ่งส่วนด้วยว่าจาก ตัดเปลี่ยน / acc / ซัพพลายเออร์" — every top KPI count
+            // also breaks out by request type. Any legacy record with no requestType saved
+            // falls back to CutReplace, since that was the sole/default type before this field
+            // existed.
+            const reqTypeOf = r => (r.requestType === 'ACCOnly' || r.requestType === 'SupplierCutReplace') ? r.requestType : 'CutReplace';
+            const breakdownText = (list, pcsFn) => {
+                const buckets = { CutReplace: 0, ACCOnly: 0, SupplierCutReplace: 0 };
+                list.forEach(r => { buckets[reqTypeOf(r)] += pcsFn ? pcsFn(r) : 1; });
+                return `ตัดเปลี่ยน ${buckets.CutReplace} · ACC ${buckets.ACCOnly} · ซัพพลายเออร์ ${buckets.SupplierCutReplace}`;
+            };
+            document.getElementById('anaTotalPcsBreakdown').innerText = breakdownText(repairs, r => r.parts.reduce((sum, p) => sum + parseInt(p.qty || 0), 0));
             const topReason = Object.entries(reasonMap).sort((a, b) => b[1] - a[1])[0];
             topReasonKey = topReason ? topReason[0] : null;
             document.getElementById('anaTopReason').innerText = topReason ? `${REASON_LABELS[topReason[0]] || topReason[0]} (${topReason[1]} ชิ้น)` : '-';
@@ -11841,9 +11857,15 @@
             document.getElementById('anaTopDept').innerText = topDept ? `${topDept[0]} (${topDept[1]} ชิ้น)` : '-';
             document.getElementById('anaTopDeptCard').onclick = () => { if (topDeptKey) goToDept(topDeptKey); };
 
-            document.getElementById('anaActiveCount').innerText = repairs.filter(r => !r.archived).length;
-            document.getElementById('anaAlertCount').innerText = repairs.filter(r => !r.archived && alertInfo(r)).length;
-            document.getElementById('anaCompletedCount').innerText = repairs.filter(r => r.status === 'Received').length;
+            const activeList = repairs.filter(r => !r.archived);
+            const alertList = repairs.filter(r => !r.archived && alertInfo(r));
+            const completedList = repairs.filter(r => r.status === 'Received');
+            document.getElementById('anaActiveCount').innerText = activeList.length;
+            document.getElementById('anaAlertCount').innerText = alertList.length;
+            document.getElementById('anaCompletedCount').innerText = completedList.length;
+            document.getElementById('anaActiveCountBreakdown').innerText = breakdownText(activeList);
+            document.getElementById('anaAlertCountBreakdown').innerText = breakdownText(alertList);
+            document.getElementById('anaCompletedCountBreakdown').innerText = breakdownText(completedList);
             const activeForHealth = repairs.filter(r => !r.archived);
             document.getElementById('anaQcRepairCount').innerText = activeForHealth.filter(r => r.qcRepairRequests && (r.activeDeptTypes || []).some(t => r.qcRepairRequests[t])).length;
             document.getElementById('anaCuttingPendingCount').innerText = activeForHealth.filter(r => r.cuttingPending && !r.cuttingPending.resolved).length;
