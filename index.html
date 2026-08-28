@@ -1487,9 +1487,12 @@
 
             <!-- Completed / Archived history -->
             <div class="card overflow-hidden">
-                <div class="p-4 border-b bg-slate-50">
-                    <h3 class="text-sm font-black text-slate-800">ประวัติงานที่เสร็จสมบูรณ์ <span class="font-normal normal-case text-slate-400 text-xs">(Completed History)</span> (ต้นทางรับงานแล้ว)</h3>
-                    <p class="text-[10px] text-slate-400">รายการที่ผ่านครบทุกขั้นตอนเรียบร้อยแล้ว (คลิกแถวเพื่อดูรายละเอียด) <span class="opacity-70">(fully completed records — click a row for details)</span></p>
+                <div class="p-4 border-b bg-slate-50 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div>
+                        <h3 class="text-sm font-black text-slate-800">ประวัติงานที่เสร็จสมบูรณ์ <span class="font-normal normal-case text-slate-400 text-xs">(Completed History)</span> (ต้นทางรับงานแล้ว)</h3>
+                        <p class="text-[10px] text-slate-400">รายการที่ผ่านครบทุกขั้นตอนเรียบร้อยแล้ว (คลิกแถวเพื่อดูรายละเอียด) <span class="opacity-70">(fully completed records — click a row for details)</span></p>
+                    </div>
+                    <input type="text" id="completedHistorySearch" oninput="renderCompletedHistory()" placeholder="ค้นหา รหัส / Style / Job / แผนก-ไลน์ (Search)" class="text-xs w-full md:w-64 bg-white">
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 text-left">
@@ -1520,9 +1523,12 @@
                  tab but pointed at completedHistoryBody, which only ever shows status==='Received',
                  so a cancelled record was invisible everywhere. This table is their actual home. -->
             <div class="card overflow-hidden">
-                <div class="p-4 border-b bg-slate-50">
-                    <h3 class="text-sm font-black text-slate-800">รายการที่ถูกยกเลิก <span class="font-normal normal-case text-slate-400 text-xs">(Cancelled Requests)</span></h3>
-                    <p class="text-[10px] text-slate-400">รายการที่ถูกยกเลิกไม่ดำเนินการต่อ พร้อมเหตุผลและสถานะ ณ ตอนที่ยกเลิก (คลิกแถวเพื่อดูรายละเอียด) <span class="opacity-70">(Cancelled records, with the reason and the status they were cancelled from — click a row for details)</span></p>
+                <div class="p-4 border-b bg-slate-50 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div>
+                        <h3 class="text-sm font-black text-slate-800">รายการที่ถูกยกเลิก <span class="font-normal normal-case text-slate-400 text-xs">(Cancelled Requests)</span></h3>
+                        <p class="text-[10px] text-slate-400">รายการที่ถูกยกเลิกไม่ดำเนินการต่อ พร้อมเหตุผลและสถานะ ณ ตอนที่ยกเลิก (คลิกแถวเพื่อดูรายละเอียด) <span class="opacity-70">(Cancelled records, with the reason and the status they were cancelled from — click a row for details)</span></p>
+                    </div>
+                    <input type="text" id="cancelledHistorySearch" oninput="renderCancelledHistory()" placeholder="ค้นหา รหัส / Style / Job / แผนก-ไลน์ (Search)" class="text-xs w-full md:w-64 bg-white">
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 text-left">
@@ -5069,6 +5075,20 @@
             const r = repairs.find(x => x.id === id);
             return (r && r.docNo) || id;
         }
+        // BUG FIX: a bare random 4-digit id (1000-9999, only 9,000 possible values) collides
+        // often enough to actually happen once there are hundreds of records — two unrelated
+        // new records could get the exact same id and end up permanently sharing one sheet row
+        // (every future edit to either one updates whichever row upsertRow's findRowIndexByKey
+        // happens to find first). Re-rolling against every id already loaded in `repairs` closes
+        // that off for anything created in a normal session; combined with the server's new
+        // LockService serialization (see doPost), same-instant concurrent creates are also safe.
+        function generateUniqueRecordId() {
+            let id;
+            do {
+                id = "R-" + Math.floor(1000 + Math.random() * 9000);
+            } while (repairs.some(r => r.id === id));
+            return id;
+        }
         function generateDocNo(requestType) {
             const prefix = requestType === 'ACCOnly' ? 'ACC' : (requestType === 'SupplierCutReplace' ? 'SP' : 'CR');
             const maxNum = repairs.reduce((max, r) => {
@@ -6875,7 +6895,7 @@
                 savedId = existing.id;
             } else {
                 const newItem = {
-                    id: "R-" + Math.floor(1000 + Math.random() * 9000),
+                    id: generateUniqueRecordId(),
                     docNo: generateDocNo(requestType),
                     date: dateVal,
                     needDate,
@@ -8958,9 +8978,11 @@
             },
             fabricCheck: {
                 field: 'fabricCheckSend',
-                // If fabric is available, Fabric Check must also say where it's coming from —
-                // stock fabric continues on to Stock Fabric as before, but fabric already at
-                // the cutting table skips Stock Fabric entirely and goes straight to Cutting.
+                // Fabric Check still records where the fabric came from (stock vs. already at
+                // the cutting table) for the Fabric Source / Job history shown elsewhere, but
+                // per "ข้ามแผนกสต็อคผ้าเลยเมื่อผ้าพอ ทุกกรณี" that source no longer changes the
+                // ROUTING — any time fabric is confirmed available it skips Stock Fabric
+                // entirely and goes straight to Cutting, regardless of which source it's from.
                 buildExtra: (extra) => ({
                     available: extra.available === 'yes',
                     fabricSource: extra.available === 'yes' ? extra.fabricSource : undefined,
@@ -8976,7 +8998,7 @@
                 },
                 nextStatus: (item) => {
                     if (!item.fabricCheckSend.available) return 'PPCFabricPending';
-                    return item.fabricCheckSend.fabricSource === 'cuttingTable' ? 'StockFabricSent' : 'StockFabricPending';
+                    return 'StockFabricSent';
                 },
             },
             ppcFabric: {
@@ -8996,7 +9018,10 @@
                     }
                     return null;
                 },
-                nextStatus: (item) => item.ppcFabric.actualArrivalDate ? 'StockFabricPending' : null,
+                // Fabric physically arriving via PPC makes it available too — per "ข้ามแผนก
+                // สต็อคผ้าเลยเมื่อผ้าพอ ทุกกรณี" this also skips Stock Fabric straight to
+                // Cutting, same as a Fabric Check that found enough fabric from the start.
+                nextStatus: (item) => item.ppcFabric.actualArrivalDate ? 'StockFabricSent' : null,
             },
             stockFabric: {
                 field: 'stockFabricSend',
@@ -10120,7 +10145,7 @@
             // ใช้เป็นแจ้งตัดงานซ่อม (ซัพพลายเออร์)" — in-house defects still use the plain type.
             const newRequestType = anyOutsource ? 'SupplierCutReplace' : 'CutReplace';
             const newItem = {
-                id: "R-" + Math.floor(1000 + Math.random() * 9000),
+                id: generateUniqueRecordId(),
                 docNo: generateDocNo(newRequestType),
                 date: ts, needDate: item.needDate || '', shipOutDate: '',
                 dept: item.dept, line: item.line, heatTransferType: null, originFabricType: item.originFabricType,
@@ -12254,14 +12279,25 @@
             }).join('') || `<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400 text-xs">ยังไม่มีข้อมูลวันหยุด</td></tr>`;
         }
 
+        // Matches a search term against the same fields a user would recognize a record by —
+        // doc no./id, style, job, dept, line — per "ต้องการให้มีช่องสำหรับค้นหาด้วยในหน้าสรุป".
+        function historyRowMatchesSearch(item, term) {
+            if (!term) return true;
+            const haystack = [docLabel(item), item.id, item.style, item.job, item.dept, item.line]
+                .filter(Boolean).join(' ').toLowerCase();
+            return haystack.includes(term);
+        }
+
         function renderCompletedHistory() {
             const tbody = document.getElementById('completedHistoryBody');
             if (!tbody) return;
+            const searchEl = document.getElementById('completedHistorySearch');
+            const term = searchEl ? searchEl.value.trim().toLowerCase() : '';
             // This table is titled "ต้นทางรับงานแล้ว" (origin has received) — Cancelled records
             // also set archived:true but were never actually received, so they don't belong here.
-            const archivedItems = repairs.filter(r => r.status === 'Received');
+            const archivedItems = repairs.filter(r => r.status === 'Received' && historyRowMatchesSearch(r, term));
             if (archivedItems.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-8 text-center text-slate-400 text-xs">ยังไม่มีรายการที่เสร็จสมบูรณ์</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-8 text-center text-slate-400 text-xs">${term ? 'ไม่พบรายการที่ตรงกับคำค้นหา' : 'ยังไม่มีรายการที่เสร็จสมบูรณ์'}</td></tr>`;
                 return;
             }
             const canManage = isPrimaryAdmin(currentUser);
@@ -12293,9 +12329,11 @@
         function renderCancelledHistory() {
             const tbody = document.getElementById('cancelledHistoryBody');
             if (!tbody) return;
-            const cancelledItems = repairs.filter(r => r.status === 'Cancelled');
+            const searchEl = document.getElementById('cancelledHistorySearch');
+            const term = searchEl ? searchEl.value.trim().toLowerCase() : '';
+            const cancelledItems = repairs.filter(r => r.status === 'Cancelled' && historyRowMatchesSearch(r, term));
             if (cancelledItems.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 text-xs">ยังไม่มีรายการที่ถูกยกเลิก</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 text-xs">${term ? 'ไม่พบรายการที่ตรงกับคำค้นหา' : 'ยังไม่มีรายการที่ถูกยกเลิก'}</td></tr>`;
                 return;
             }
             const canManage = isPrimaryAdmin(currentUser);
