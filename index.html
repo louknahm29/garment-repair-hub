@@ -2880,6 +2880,18 @@
                     } catch (parseErr) {
                         throw new Error(`Apps Script returned a non-JSON response (HTTP ${res.status}) — likely a Google auth/quota interstitial, not a real network failure`);
                     }
+                    // BUG FIX: a well-formed {ok:false} response — e.g. the LockService "Server
+                    // busy, please try again (lock timeout)" doPost can return when several
+                    // writes contend at once — returns successfully from fetch()'s own
+                    // perspective, so it skipped this retry loop entirely and surfaced as an
+                    // immediate, permanent "บันทึกล้มเหลว (ตรวจสอบการเชื่อมต่อ)" even though the
+                    // exact same request would very likely succeed moments later once the lock
+                    // frees up. Retry on that specific known-transient signal only — any other
+                    // ok:false (a real validation error, etc.) still returns immediately, since
+                    // retrying an actual error can't fix it and would just delay reporting it.
+                    if (data && data.ok === false && /server busy/i.test(data.error || '')) {
+                        throw new Error(data.error);
+                    }
                     return data;
                 } catch (err) {
                     lastErr = err;
@@ -2894,11 +2906,14 @@
             return data.rows;
         }
         async function apiPost(body) {
+            // 5 attempts (vs the default 3) — writes matter more than reads for not losing
+            // data, and the lock-busy retry above needs a bit more headroom to actually outlast
+            // contention from other concurrent saves instead of giving up too early.
             const data = await fetchJsonWithRetry(API_BASE_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight; Apps Script has no doOptions
                 body: JSON.stringify(body)
-            });
+            }, 5);
             if (!data.ok) throw new Error(data.error || 'API error');
             return data;
         }
@@ -3388,12 +3403,21 @@
                 if (rows && rows.length) {
                     users = rows;
                 } else {
+                    // BUG FIX: same class of bug as loadFromStorage's Repairs branch (see its
+                    // comment) — an empty `rows` array isn't proof the Users sheet is genuinely
+                    // brand-new; it could be a transient Apps Script hiccup. This used to call
+                    // saveUsers() immediately, which is apiReplaceAll('Users', ...) — silently
+                    // overwriting EVERY real account (including every real password) with the
+                    // hardcoded sample list on nothing more than one empty response. That's
+                    // worse than losing Repairs data: it can lock every real user out at once.
+                    // Show the sample list locally only; never auto-write it back.
                     users = JSON.parse(JSON.stringify(defaultUsers));
-                    await saveUsers();
+                    showToast('Google Sheet ไม่มีข้อมูลผู้ใช้งาน (หรือโหลดไม่สำเร็จ) กำลังแสดงข้อมูลตัวอย่าง — ยังไม่ได้บันทึกทับชีทจริง (Users sheet returned no data — showing sample users locally only, nothing written back)', 'warning');
                 }
             } catch (e) {
                 console.error("Failed to load users from Google Sheet", e);
                 users = JSON.parse(JSON.stringify(defaultUsers));
+                showToast('ไม่สามารถเชื่อมต่อ Google Sheet (ผู้ใช้งาน) ได้ กำลังใช้ข้อมูลตัวอย่าง (Cannot connect for user data - using sample users, offline mode)', 'warning');
             }
         }
         function saveUsers() {
@@ -3431,6 +3455,15 @@
             renderNotifPanel();
         }
 
+        // Plain-text summary of a record's part names — stamped onto the row at save time (see
+        // autoSave below) so browsing the raw Google Sheet directly shows something readable
+        // instead of just the `parts` JSON blob, per "ใน google sheet ไม่มีเก็บข้อมูลชื่อ
+        // ชิ้นส่วนงาน" — the part names were always saved (inside `parts`), just not visible as
+        // their own column. The app itself never reads this column back; it's for humans only.
+        function partNamesSummaryOf(item) {
+            const names = [...new Set((item.parts || []).map(p => PART_NAME_LABELS[p.name] || p.name).filter(Boolean))];
+            return names.join(', ');
+        }
         let saveTimeout = null;
         // Every action in this app used to call apiReplaceAll('Repairs', repairs) — sending
         // the ENTIRE array and overwriting the WHOLE sheet on every single save. With several
@@ -3459,12 +3492,12 @@
                 pendingSaveFullFallback = false;
                 try {
                     if (fullFallback || ids.length === 0) {
-                        await apiReplaceAll('Repairs', repairs);
+                        await apiReplaceAll('Repairs', repairs.map(r => ({ ...r, partNamesSummary: partNamesSummaryOf(r) })));
                     } else {
                         await Promise.all(ids.map(id => {
                             const record = repairs.find(r => r.id === id);
                             return record
-                                ? apiPost({ sheet: 'Repairs', action: 'upsert', row: record })
+                                ? apiPost({ sheet: 'Repairs', action: 'upsert', row: { ...record, partNamesSummary: partNamesSummaryOf(record) } })
                                 : apiPost({ sheet: 'Repairs', action: 'delete', id });
                         }));
                     }
@@ -12442,17 +12475,30 @@
         // open at a time (accordion), same convention as elsewhere in this tab.
         let periodSummaryGranularity = 'month';
         let expandedPeriodKey = null;
+        // Which single (type, issue) pair currently has its part-name breakdown open — one more
+        // accordion level below the issue rows, per "ต้องการเพิ่มข้อมูลแตกต่อจากปัญหาแตกออกมา
+        // เป็นชื่อชิ้นส่วนอีก". Only CutReplace/SupplierCutReplace issues have a partMap to
+        // expand (ACC's "issue" is already the requisition item itself, nothing to drill into).
+        let expandedIssueKey = null;
         function setPeriodGranularity(g) {
             periodSummaryGranularity = g;
             expandedPeriodKey = null;
+            expandedIssueKey = null;
             renderPeriodSummary();
         }
         function togglePeriodRow(key) {
             expandedPeriodKey = (expandedPeriodKey === key) ? null : key;
+            expandedIssueKey = null; // switching periods always clears whatever issue was drilled into
+            renderPeriodSummary();
+        }
+        function togglePeriodIssue(type, issue) {
+            const key = type + '::' + issue;
+            expandedIssueKey = (expandedIssueKey === key) ? null : key;
             renderPeriodSummary();
         }
         function onPeriodDateRangeChange() {
             expandedPeriodKey = null;
+            expandedIssueKey = null;
             renderPeriodSummary();
         }
         function clearPeriodDateRange() {
@@ -12486,9 +12532,10 @@
             };
             const bumpIssue = (bucket, type, issue, qty, isFirstForRecord) => {
                 const im = bucket.byType[type].issueMap;
-                const entry = im[issue] || (im[issue] = { qty: 0, count: 0 });
+                const entry = im[issue] || (im[issue] = { qty: 0, count: 0, partMap: {} });
                 entry.qty += qty;
                 if (isFirstForRecord) entry.count++;
+                return entry;
             };
             repairs.forEach(r => {
                 const recordDate = r.date ? parseLocalDateTime(r.date) : null;
@@ -12517,12 +12564,23 @@
                     });
                 } else {
                     const seen = new Set();
+                    // Per "ต้องการเพิ่มข้อมูลแตกต่อจากปัญหาแตกออกมาเป็นชื่อชิ้นส่วนอีก" — each
+                    // issue's own request count/qty stays as before, but now also tracks WHICH
+                    // part names contributed to it, ranked the same way, one level deeper.
+                    const seenPartPerReason = new Set(); // `${reason}||${partName}` — count each part name once per record per reason
                     (r.parts || []).forEach(p => {
                         if (!p.reason) return;
                         const qty = parseInt(p.qty) || 0;
                         const isFirst = !seen.has(p.reason);
                         seen.add(p.reason);
-                        bumpIssue(bucket, type, p.reason, qty, isFirst);
+                        const entry = bumpIssue(bucket, type, p.reason, qty, isFirst);
+                        const partName = PART_NAME_LABELS[p.name] || p.name || 'ไม่ระบุ';
+                        const partKey = p.reason + '||' + partName;
+                        const isFirstPart = !seenPartPerReason.has(partKey);
+                        seenPartPerReason.add(partKey);
+                        const partEntry = entry.partMap[partName] || (entry.partMap[partName] = { qty: 0, count: 0 });
+                        partEntry.qty += qty;
+                        if (isFirstPart) partEntry.count++;
                     });
                 }
             });
@@ -12548,11 +12606,40 @@
                 const entry = rankedByType[t][rowIndex];
                 if (!entry) return `<td class="px-3 py-1.5${borderCls}"></td><td class="px-3 py-1.5"></td><td class="px-3 py-1.5"></td>`;
                 const [issue, stats] = entry;
+                const hasParts = stats.partMap && Object.keys(stats.partMap).length > 0;
+                const issueKey = t + '::' + issue;
+                const isIssueExpanded = expandedIssueKey === issueKey;
+                const issueArrow = hasParts ? `<span class="inline-block w-2.5 transition-transform ${isIssueExpanded ? 'rotate-90' : ''}">▸</span> ` : '';
                 return `
-                    <td class="px-3 py-1.5 text-[10px] text-slate-500 whitespace-nowrap${borderCls}">${escapeHtml(issueLabelFor(t, issue))}</td>
+                    <td class="px-3 py-1.5 text-[10px] text-slate-500 whitespace-nowrap${borderCls} ${hasParts ? 'cursor-pointer hover:text-indigo-600 hover:underline' : ''}" ${hasParts ? `onclick="event.stopPropagation(); togglePeriodIssue('${t}', '${escapeHtml(issue).replace(/'/g, "\\'")}')"` : ''}>${issueArrow}${escapeHtml(issueLabelFor(t, issue))}</td>
                     <td class="px-3 py-1.5 text-[10px] text-slate-600 text-right font-semibold">${stats.count}</td>
                     <td class="px-3 py-1.5 text-[10px] text-slate-600 text-right font-semibold">${stats.qty}</td>`;
             }).join('');
+        }
+        // Part-name breakdown rows for ONE (type, issue) pair — only that type's own 3-column
+        // block gets filled in (label/ใบ/ชิ้น), the OTHER 2 types' blocks stay blank, since this
+        // drill-down is specific to a single type+issue combination, not a peer ranking like the
+        // issue rows above. Ranked highest-qty-first, same convention as everywhere else.
+        function periodPartRowsHtml(type, partMap) {
+            const typeIndex = PERIOD_SUMMARY_TYPES.indexOf(type);
+            const entries = Object.entries(partMap).sort((a, b) => b[1].qty - a[1].qty);
+            let out = '';
+            entries.forEach(([partName, stats], i) => {
+                const cells = PERIOD_SUMMARY_TYPES.map((t, idx) => {
+                    const borderCls = idx === 0 ? ' border-l border-slate-100' : '';
+                    if (idx !== typeIndex) return `<td class="px-3 py-1${borderCls}"></td><td class="px-3 py-1"></td><td class="px-3 py-1"></td>`;
+                    return `
+                        <td class="px-3 py-1 text-[10px] text-slate-400 whitespace-nowrap${borderCls}">${escapeHtml(partName)}</td>
+                        <td class="px-3 py-1 text-[10px] text-slate-500 text-right">${stats.count}</td>
+                        <td class="px-3 py-1 text-[10px] text-slate-500 text-right">${stats.qty}</td>`;
+                }).join('');
+                out += `
+                <tr class="bg-slate-50/50">
+                    <td class="px-4 py-1 text-[9px] text-slate-300" style="padding-left:48px">${i === 0 ? '↳' : ''}</td>
+                    ${cells}
+                </tr>`;
+            });
+            return out;
         }
         function periodSummaryRowHtml(key, data, hasIssues) {
             const label = wipTrendBucketLabel(key, periodSummaryGranularity);
@@ -12580,6 +12667,17 @@
                     <td class="px-4 py-1.5 text-[10px] text-slate-300" style="padding-left:32px">${i === 0 ? '↳' : ''}</td>
                     ${periodTypeCellsHtml(byType, i, rankedByType)}
                 </tr>`;
+                // Whichever (type, issue) is currently drilled into — if it's ranked at THIS
+                // row, its part-name breakdown goes immediately after, same "expand right below
+                // where you clicked" pattern as the period row itself.
+                PERIOD_SUMMARY_TYPES.forEach(t => {
+                    const entry = rankedByType[t][i];
+                    if (!entry) return;
+                    const [issue, stats] = entry;
+                    if (expandedIssueKey === (t + '::' + issue) && stats.partMap) {
+                        out += periodPartRowsHtml(t, stats.partMap);
+                    }
+                });
             }
             return out;
         }
