@@ -2003,8 +2003,8 @@
                          for every other request type in onRequestTypeChange(). -->
                     <div id="fSupplierNameField" class="hidden">
                         <label class="text-[10px] font-extrabold text-slate-600 block mb-1">ชื่อซัพพลายเออร์ <span class="font-normal opacity-70">(Supplier Name)</span> *</label>
-                        <input type="text" id="fSupplierName" list="supplierNameList" placeholder="เช่น ABC Textile Co.,Ltd." class="w-full text-xs bg-white">
-                        <datalist id="supplierNameList"></datalist>
+                        <select id="fSupplierName" class="w-full text-xs bg-white" onchange="toggleSupplierNameOther()"></select>
+                        <input type="text" id="fSupplierNameOther" class="w-full text-xs bg-white mt-1 hidden" placeholder="ระบุชื่อซัพพลายเออร์ เช่น ABC Textile Co.,Ltd." disabled>
                     </div>
                     <datalist id="vendorList"></datalist>
                     <datalist id="sizeList"></datalist>
@@ -4274,6 +4274,9 @@
             const isSupplierCutReplace = type === 'SupplierCutReplace';
             document.getElementById('fSupplierNameField').classList.toggle('hidden', !isSupplierCutReplace);
             document.getElementById('fSupplierName').required = isSupplierCutReplace;
+            // Refresh the option list (in case new suppliers were saved elsewhere since this
+            // form last rendered) while preserving whatever's already picked/typed.
+            if (isSupplierCutReplace) renderSupplierNameSelect(readSupplierNameValue());
             // ACC-only requests have no fabric parts at all — remove the whole Parts to
             // Repair section from the form instead of just making it optional, per "ให้หน้าต่าง
             // ฟอร์มตัดส่วนของ รายการชิ้นส่วนที่ต้องตัดซ่อม (Parts to Repair) ออก...แต่ถ้าเป็น
@@ -4370,7 +4373,10 @@
             };
             setDl('customerList', [...new Set(repairs.map(r => r.customer).filter(Boolean))]);
             setDl('seasonList', [...new Set(repairs.map(r => r.season).filter(Boolean))]);
-            setDl('supplierNameList', [...new Set(repairs.map(r => r.supplierName).filter(Boolean))]);
+            // Supplier Name is a real <select> (see renderSupplierNameSelect), not a datalist —
+            // refresh it here too so newly-loaded data's suppliers show up without losing
+            // whatever's currently picked/typed.
+            renderSupplierNameSelect(readSupplierNameValue());
             setDl('styleList', [...new Set(repairs.map(r => r.style).filter(Boolean))]);
             setDl('jobList', [...new Set(repairs.map(r => r.job).filter(Boolean))]);
             setDl('itemList', [...new Set(repairs.map(r => r.item).filter(Boolean))]);
@@ -4405,9 +4411,13 @@
         // Preset Outsource vendor choices per embellishment type — types not listed here
         // keep the free-text vendor field, since no fixed vendor list was given for them.
         const EMB_VENDOR_OPTIONS = {
-            Emb: ['99 การปัก', '107 การปัก'],
-            Heat: ['ซินเซียรี่'],
-            ScreenPrint: ['โรงพิมพ์ 70'],
+            Emb: ['91', 'MC', 'VT', '99', '107'],
+            // "ซินเซียรี่"/"รามัน" is one and the same vendor — settled on "ซินเซียรี่" as the
+            // one name to use everywhere (per "ให้ใช้คำเดียวเป็น ซินเซียรี่ แทน รามัน ทั้งหมด").
+            // Moved here under ScreenPrint (it's a print vendor, not Heat) — Heat now has no
+            // preset list at all, same as PadPrint/Bonding/Laser (falls back to the plain
+            // free-text vendor field below).
+            ScreenPrint: ['99', 'VT', '70', 'ชัยภูมิ 3', 'STT', 'PKT', 'ซินเซียรี่'],
         };
         // Every Outsource vendor name anyone has ever typed in, across all records — used to
         // build the vendor dropdown below (in addition to each type's own preset list).
@@ -4415,6 +4425,54 @@
             const vendors = new Set();
             repairs.forEach(r => (r.parts || []).forEach(p => (p.embellishment || []).forEach(e => { if (e.vendor) vendors.add(e.vendor); })));
             return [...vendors].sort();
+        }
+        // Every supplier name anyone has ever typed on a SupplierCutReplace request, PLUS the
+        // same งานปัก/งานพิมพ์ Outsource vendor presets (EMB_VENDOR_OPTIONS) — the factory's
+        // supplier list and its Outsource vendor list are the same real-world companies, so a
+        // defect from e.g. "99" or "ชัยภูมิ 3" should be selectable here too, per "ทำไมไม่มีลิส
+        // vendor ในรายการชื่อซัพพลายเออร์ ตามลิสรายการที่พิมพ์ให้ก่อนหน้านี้".
+        function knownSupplierNames() {
+            const fromRecords = repairs.map(r => r.supplierName).filter(Boolean);
+            const fromVendorPresets = Object.values(EMB_VENDOR_OPTIONS).flat();
+            return [...new Set([...fromVendorPresets, ...fromRecords])].sort();
+        }
+        // Supplier Name as a real dropdown (every known supplier) + "อื่นๆ (ระบุ)" escape hatch
+        // for a brand-new one, per "ช่องชื่อซัพพลายเออร์ให้ใส่ใน dropdown ด้วย". Re-run any time
+        // the field needs to (re)reflect a value — on request-type toggle, editOrder, and
+        // whenever populateDatalists() refreshes with newly-loaded data — so it stays in sync
+        // without wiping whatever the user already picked/typed.
+        function renderSupplierNameSelect(selected) {
+            const select = document.getElementById('fSupplierName');
+            const other = document.getElementById('fSupplierNameOther');
+            if (!select || !other) return;
+            const known = knownSupplierNames();
+            const isOther = !!selected && !known.includes(selected);
+            select.innerHTML = `
+                <option value="">-- เลือกซัพพลายเออร์ --</option>
+                ${known.map(v => `<option value="${escapeHtml(v)}" ${v === selected ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}
+                <option value="__other__" ${isOther ? 'selected' : ''}>อื่นๆ (ระบุ)</option>
+            `;
+            other.value = isOther ? selected : '';
+            other.classList.toggle('hidden', !isOther);
+            other.disabled = !isOther;
+        }
+        function toggleSupplierNameOther() {
+            const select = document.getElementById('fSupplierName');
+            const other = document.getElementById('fSupplierNameOther');
+            const isOther = select.value === '__other__';
+            other.classList.toggle('hidden', !isOther);
+            other.disabled = !isOther;
+            if (isOther) other.focus(); else other.value = '';
+        }
+        // Resolves the field's actual text value, whether it's a preset pick or "อื่นๆ (ระบุ)".
+        function readSupplierNameValue() {
+            const select = document.getElementById('fSupplierName');
+            if (!select) return '';
+            if (select.value === '__other__') {
+                const other = document.getElementById('fSupplierNameOther');
+                return other ? other.value.trim() : '';
+            }
+            return select.value.trim();
         }
         // Outsource vendor as a real dropdown (preset list + every known vendor), with an
         // "อื่นๆ (ระบุ)" escape hatch that reveals a free-text field — per "ส่วนของ outsource
@@ -4556,6 +4614,10 @@
             const items = (entry && entry.items) || [];
             const source = (entry && entry.source) || '';
             const vendor = (entry && entry.vendor) || '';
+            // A vendor saved before this type had a preset list, or one no longer in the
+            // preset, still needs to show up as "อื่นๆ (ระบุ)" pre-filled — not silently reset
+            // to blank — per "เพิ่มช่องอื่นๆ (ระบุ) ให้ด้วย".
+            const isOtherVendor = !!vendor && !!EMB_VENDOR_OPTIONS[opt.value] && !EMB_VENDOR_OPTIONS[opt.value].includes(vendor);
             return `
                 <div class="pEmbTypeRow border rounded-lg p-1.5 bg-white grid grid-cols-1 sm:grid-cols-2 gap-1.5" data-type="${opt.value}">
                     <div>
@@ -4581,10 +4643,26 @@
                         <select class="pEmbVendor w-full text-[8px] ${source === 'outsource' ? '' : 'hidden'}" ${source === 'outsource' ? '' : 'disabled'}>
                             <option value="">-- เลือก Outsource --</option>
                             ${EMB_VENDOR_OPTIONS[opt.value].map(v => `<option value="${escapeHtml(v)}" ${v === vendor ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}
-                        </select>` : `
+                            <option value="__other__" ${isOtherVendor ? 'selected' : ''}>อื่นๆ (ระบุ)</option>
+                        </select>
+                        <input type="text" class="pEmbVendorOther w-full text-[8px] ${source === 'outsource' ? '' : 'hidden'} ${isOtherVendor ? '' : 'opacity-40 bg-slate-100 cursor-not-allowed'}" placeholder="ระบุชื่อ Outsource" value="${escapeHtml(isOtherVendor ? vendor : '')}" ${isOtherVendor ? '' : 'disabled'}>` : `
                         <input type="text" class="pEmbVendor w-full text-[8px] ${source === 'outsource' ? '' : 'hidden'}" list="vendorList" placeholder="ชื่อ Outsource" value="${escapeHtml(vendor)}" ${source === 'outsource' ? '' : 'disabled'}>`}
                     </div>
                 </div>`;
+        }
+        // Resolves a .pEmbTypeRow's actual vendor text, whichever field it currently lives in:
+        // the plain-text fallback input (types with no preset list), the preset select's chosen
+        // value, or — when "__other__" is picked on a preset select — its adjacent free-text
+        // .pEmbVendorOther field. Centralizes this so every reader (BU approval, admin add-emb)
+        // stays correct without duplicating the three-way check.
+        function readEmbVendorFromRow(tr) {
+            const vendorEl = tr.querySelector('.pEmbVendor');
+            if (!vendorEl) return '';
+            if (vendorEl.tagName === 'SELECT' && vendorEl.value === '__other__') {
+                const other = tr.querySelector('.pEmbVendorOther');
+                return other ? other.value.trim() : '';
+            }
+            return vendorEl.value.trim();
         }
 
         // One labeled row for a single added size group — group name on the left, its size
@@ -4808,10 +4886,37 @@
             if (e.target.classList.contains('pEmbSource')) {
                 const typeRow = e.target.closest('.pEmbTypeRow');
                 const vendorInput = typeRow.querySelector('.pEmbVendor');
+                const vendorOther = typeRow.querySelector('.pEmbVendorOther');
                 const isOutsource = e.target.value === 'outsource';
                 vendorInput.classList.toggle('hidden', !isOutsource);
                 vendorInput.disabled = !isOutsource;
                 if (isOutsource) vendorInput.focus(); else vendorInput.value = '';
+                // Preset-list types (see EMB_VENDOR_OPTIONS) carry a second "อื่นๆ (ระบุ)" text
+                // field alongside the select — it hides/shows with Outsource same as the select,
+                // but stays disabled unless "__other__" is the select's actual current choice.
+                if (vendorOther) {
+                    vendorOther.classList.toggle('hidden', !isOutsource);
+                    const isOther = isOutsource && vendorInput.value === '__other__';
+                    vendorOther.disabled = !isOther;
+                    vendorOther.classList.toggle('opacity-40', !isOther);
+                    vendorOther.classList.toggle('bg-slate-100', !isOther);
+                    vendorOther.classList.toggle('cursor-not-allowed', !isOther);
+                    if (!isOutsource) vendorOther.value = '';
+                }
+            }
+            // "อื่นๆ (ระบุ)" picked on a preset vendor dropdown reveals its adjacent free-text
+            // field — same pattern as .pPart/.pPartOther above.
+            if (e.target.classList.contains('pEmbVendor') && e.target.tagName === 'SELECT') {
+                const typeRow = e.target.closest('.pEmbTypeRow');
+                const vendorOther = typeRow.querySelector('.pEmbVendorOther');
+                if (vendorOther) {
+                    const isOther = e.target.value === '__other__';
+                    vendorOther.classList.toggle('opacity-40', !isOther);
+                    vendorOther.classList.toggle('bg-slate-100', !isOther);
+                    vendorOther.classList.toggle('cursor-not-allowed', !isOther);
+                    vendorOther.disabled = !isOther;
+                    if (isOther) vendorOther.focus(); else vendorOther.value = '';
+                }
             }
             if (e.target.classList.contains('pQuickEmbCheck')) {
                 const label = e.target.closest('.pQuickEmbType');
@@ -6695,7 +6800,7 @@
             document.getElementById('fLine').value = item.line;
             document.getElementById('fCustomer').value = item.customer || '';
             document.getElementById('fSeason').value = item.season || '';
-            document.getElementById('fSupplierName').value = item.supplierName || '';
+            renderSupplierNameSelect(item.supplierName || '');
             document.getElementById('fStyle').value = item.style;
             document.getElementById('fJob').value = item.job;
             document.getElementById('fItem').value = item.item;
@@ -6740,6 +6845,14 @@
 
             if (editIndex < 0 && !canCreateFor(currentUser, scopeKey)) {
                 showToast('คุณไม่มีสิทธิ์สร้างใบสั่งซ่อมสำหรับไลน์/แผนกนี้ (No permission for this line/dept)', 'warning');
+                return;
+            }
+
+            // The <select>'s own `required` catches a blank selection, but not "อื่นๆ (ระบุ)"
+            // picked with nothing actually typed into its text field — HTML validation has no
+            // way to see that dependency, so it's checked explicitly here.
+            if (currentRequestType() === 'SupplierCutReplace' && !readSupplierNameValue()) {
+                showToast('กรุณาระบุชื่อซัพพลายเออร์ (Please enter the supplier name)', 'warning');
                 return;
             }
 
@@ -6862,7 +6975,7 @@
                     dept, line, heatTransferType, originFabricType,
                     customer: document.getElementById('fCustomer').value,
                     season: document.getElementById('fSeason').value,
-                    supplierName: requestType === 'SupplierCutReplace' ? document.getElementById('fSupplierName').value.trim() : '',
+                    supplierName: requestType === 'SupplierCutReplace' ? readSupplierNameValue() : '',
                     style: document.getElementById('fStyle').value,
                     job: document.getElementById('fJob').value,
                     item: document.getElementById('fItem').value,
@@ -6904,7 +7017,7 @@
                     dept, line, heatTransferType, originFabricType,
                     customer: document.getElementById('fCustomer').value,
                     season: document.getElementById('fSeason').value,
-                    supplierName: requestType === 'SupplierCutReplace' ? document.getElementById('fSupplierName').value.trim() : '',
+                    supplierName: requestType === 'SupplierCutReplace' ? readSupplierNameValue() : '',
                     style: document.getElementById('fStyle').value,
                     job: document.getElementById('fJob').value,
                     item: document.getElementById('fItem').value,
@@ -7743,7 +7856,7 @@
                             count,
                             items: Array.from(tr.querySelectorAll('.pEmbItemDetail')).map(i => i.value),
                             source: tr.querySelector('.pEmbSource').value,
-                            vendor: tr.querySelector('.pEmbVendor').value.trim(),
+                            vendor: readEmbVendorFromRow(tr),
                         };
                     });
                 if (requireComplete && !isFilled(part)) return null;
@@ -7796,7 +7909,7 @@
                         count: parseInt(tr.querySelector('.pEmbCount').value) || 0,
                         items: Array.from(tr.querySelectorAll('.pEmbItemDetail')).map(i => i.value),
                         source: tr.querySelector('.pEmbSource').value,
-                        vendor: tr.querySelector('.pEmbVendor').value.trim(),
+                        vendor: readEmbVendorFromRow(tr),
                     }));
                 if (newEntries.length) byKey[key] = newEntries;
             });
@@ -11963,8 +12076,12 @@
             renderVendorLeadtime();
             renderRepairRate();
 
-            const deptLabels = Object.keys(deptMap).length ? Object.keys(deptMap) : ['Sewing', 'QC', 'Finishing'];
-            const deptData = Object.keys(deptMap).length ? Object.values(deptMap) : [0, 0, 0];
+            // Ranked by piece count, highest first — per "การแสดงผลการสรุปต่างๆต้องการให้จัดเรียง
+            // ตามอันดับให้ด้วย" — same convention as anaTopDept/anaTopReason above instead of
+            // whatever order departments happened to first appear in.
+            const sortedDeptEntries = Object.entries(deptMap).sort((a, b) => b[1] - a[1]);
+            const deptLabels = sortedDeptEntries.length ? sortedDeptEntries.map(e => e[0]) : ['Sewing', 'QC', 'Finishing'];
+            const deptData = sortedDeptEntries.length ? sortedDeptEntries.map(e => e[1]) : [0, 0, 0];
             const deptCtx = document.getElementById('deptChart').getContext('2d');
             myCharts.deptChart = new Chart(deptCtx, {
                 type: 'bar',
@@ -11976,8 +12093,10 @@
             });
             renderChartDetailsList('deptChart', deptLabels, deptData);
 
-            const reasonLabels = Object.keys(reasonMap).length ? Object.keys(reasonMap).map(k => REASON_LABELS[k] || k) : ['Fabric Defect', 'Cutting Error', 'Sewing Error'];
-            const reasonData = Object.keys(reasonMap).length ? Object.values(reasonMap) : [1, 1, 1];
+            // Ranked highest-first too, same as deptChart above.
+            const sortedReasonEntries = Object.entries(reasonMap).sort((a, b) => b[1] - a[1]);
+            const reasonLabels = sortedReasonEntries.length ? sortedReasonEntries.map(e => REASON_LABELS[e[0]] || e[0]) : ['Fabric Defect', 'Cutting Error', 'Sewing Error'];
+            const reasonData = sortedReasonEntries.length ? sortedReasonEntries.map(e => e[1]) : [1, 1, 1];
             const reasonCtx = document.getElementById('reasonChart').getContext('2d');
             myCharts.reasonChart = new Chart(reasonCtx, {
                 type: 'doughnut',
@@ -12091,8 +12210,10 @@
                     });
                 });
             });
-            const qcDecisionLabels = Object.keys(qcDecisionMap).length ? Object.keys(qcDecisionMap) : ['-'];
-            const qcDecisionData = Object.keys(qcDecisionMap).length ? Object.values(qcDecisionMap) : [0];
+            // Ranked highest-first too, same as deptChart/reasonChart above.
+            const sortedQcDecisionEntries = Object.entries(qcDecisionMap).sort((a, b) => b[1] - a[1]);
+            const qcDecisionLabels = sortedQcDecisionEntries.length ? sortedQcDecisionEntries.map(e => e[0]) : ['-'];
+            const qcDecisionData = sortedQcDecisionEntries.length ? sortedQcDecisionEntries.map(e => e[1]) : [0];
             const qcDecisionCtx = document.getElementById('qcDecisionChart').getContext('2d');
             myCharts.qcDecisionChart = new Chart(qcDecisionCtx, {
                 type: 'doughnut',
