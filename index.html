@@ -4411,7 +4411,11 @@
         // Preset Outsource vendor choices per embellishment type — types not listed here
         // keep the free-text vendor field, since no fixed vendor list was given for them.
         const EMB_VENDOR_OPTIONS = {
-            Emb: ['91', 'MC', 'VT', '99', '107'],
+            // "99"/"107" removed from the preset — real historical data already uses "99
+            // การปัก"/"107 การปัก" (knownVendorNames() below surfaces those automatically), so
+            // keeping the bare-number presets too just duplicated the same vendor twice in the
+            // dropdown, per "ลบ 99 กับ 107 ออก เนื่องจากซ้ำกัน".
+            Emb: ['91', 'MC', 'VT'],
             // "ซินเซียรี่"/"รามัน" is one and the same vendor — settled on "ซินเซียรี่" as the
             // one name to use everywhere (per "ให้ใช้คำเดียวเป็น ซินเซียรี่ แทน รามัน ทั้งหมด").
             // Moved here under ScreenPrint (it's a print vendor, not Heat) — Heat now has no
@@ -4419,11 +4423,19 @@
             // free-text vendor field below).
             ScreenPrint: ['99', 'VT', '70', 'ชัยภูมิ 3', 'STT', 'PKT', 'ซินเซียรี่'],
         };
-        // Every Outsource vendor name anyone has ever typed in, across all records — used to
-        // build the vendor dropdown below (in addition to each type's own preset list).
-        function knownVendorNames() {
+        // Every Outsource vendor name anyone has ever typed in FOR THIS SPECIFIC embellishment
+        // type — used to build the vendor dropdown below (in addition to each type's own preset
+        // list). BUG FIX: this used to pool vendor names across ALL types regardless of which
+        // one they were actually used for, so e.g. "โรงพิมพ์ 70" (a งานพิมพ์/ScreenPrint vendor)
+        // leaked into the งานปัก/Emb dropdown at Cutting's confirm-source screen — per "ยังพบว่า
+        // มีรายการปนกันอยู่" (screenshot showed exactly this: ScreenPrint/legacy vendor names
+        // mixed into an Emb picker). Now scoped to `type` so cross-type leakage can't happen —
+        // a name can still show up here for its OWN type from history even if it's not in that
+        // type's current EMB_VENDOR_OPTIONS preset, which is correct (real past usage), just
+        // never for a DIFFERENT type.
+        function knownVendorNames(type) {
             const vendors = new Set();
-            repairs.forEach(r => (r.parts || []).forEach(p => (p.embellishment || []).forEach(e => { if (e.vendor) vendors.add(e.vendor); })));
+            repairs.forEach(r => (r.parts || []).forEach(p => (p.embellishment || []).forEach(e => { if (e.vendor && e.type === type) vendors.add(e.vendor); })));
             return [...vendors].sort();
         }
         // Every supplier name anyone has ever typed on a SupplierCutReplace request, PLUS the
@@ -4481,7 +4493,7 @@
         // confirm-source rows, QC's missing-source safety net, etc.) don't collide.
         function vendorSelectHtml(type, currentVendor, cssClass) {
             const preset = EMB_VENDOR_OPTIONS[type] || [];
-            const options = [...new Set([...preset, ...knownVendorNames()])];
+            const options = [...new Set([...preset, ...knownVendorNames(type)])];
             const isKnown = currentVendor && options.includes(currentVendor);
             return `
                 <select class="${cssClass}Select flex-1 text-xs">
