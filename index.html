@@ -13064,12 +13064,23 @@
         // CSV/Excel/PDF export paths so all three formats always carry the exact same columns,
         // per "เปลี่ยนคำว่าส่งออก CSV เป็น Export File และมี dropdown ให้เลือกว่าเป็น CSV, Excel, Pdf".
         function buildExportData() {
-            const headers = ["ID", "เลขที่เอกสาร (Doc No.)", "วันที่แจ้ง (Date Reported)", "วันที่ต้องการ (Need Date)", "วันส่งออก (Ship-Out Date)", "แผนก (Dept)", "ไลน์ผลิต (Line)", "ประเภทคำขอ (Heat Transfer)", "ประเภทคำขอ (Cut-Replace/ACC Only)", "อ้างอิง QC Reject", "ผู้ขอ (Requester)", "Customer", "Season", "Style", "Job", "Item", "CW", "PO No.", "สาเหตุ (Reasons — Per Part)", "Remark", "Alert", "สถานะ (Status)", "ผู้ตรวจสอบ (BU)", "วันที่ตรวจสอบ (BU)", "ผู้อนุมัติ (PM/FM)", "วันที่อนุมัติ (PM/FM)", "Remark (PM/FM)", "ผู้รับงาน (Marker)", "ประเภทผ้า (Marker)", "วางมาร์ค (Marker)", "ผู้รับงาน (ใบปูตัด)", "ผู้ส่งต่อ (ใบปูตัด)", "ผู้รับงาน (เช็คผ้า)", "มีผ้าหรือไม่ (เช็คผ้า)", "ผู้รับงาน (PPC Fabric)", "วันผ้าเข้าจริง (PPC Fabric)", "ผู้รับงาน (สต็อคผ้า)", "ผู้ส่งต่อ (สต็อคผ้า)", "ปัญหาแผนกตัด (Cutting Issue)", "ผู้รับงานตัด (Cutting Receiver)", "ผู้ตัดเสร็จ (Cutting Sender)", "ค้างตัด (Cutting Pending)", "ผู้รับงาน (ACC)", "คงค้างจ่าย (ACC)", "ประวัติปัญหา ACC (จำนวนรอบ)", "ผู้ส่งต่อ (ACC)",
+            // Per "ถ้าเปลี่ยนเป็นชื่อชิ้นส่วน,พาร์ท,จำนวนเรียงเป็น row ลงมาแทนคอลัม" — long
+            // format: one OUTPUT ROW PER PART instead of one row per record with part columns
+            // spreading sideways. Every other (record-level) column repeats identically across
+            // that record's part-rows — only the part name/code/qty/reason cells change per row.
+            // A record with zero parts (e.g. ACCOnly) still gets exactly one row, with those 4
+            // cells blank, so it isn't dropped from the export entirely.
+            const headers = ["ID", "เลขที่เอกสาร (Doc No.)", "วันที่แจ้ง (Date Reported)", "วันที่ต้องการ (Need Date)", "วันส่งออก (Ship-Out Date)", "แผนก (Dept)", "ไลน์ผลิต (Line)", "ประเภทคำขอ (Heat Transfer)", "ประเภทคำขอ (Cut-Replace/ACC Only)", "อ้างอิง QC Reject", "ผู้ขอ (Requester)", "Customer", "Season", "Style", "Job", "Item", "CW", "PO No.", "ชื่อชิ้นส่วน (Part Name)", "พาร์ท (Part Code)", "จำนวน (Qty)", "สาเหตุ (Reason)", "Remark", "Alert", "สถานะ (Status)", "ผู้ตรวจสอบ (BU)", "วันที่ตรวจสอบ (BU)", "ผู้อนุมัติ (PM/FM)", "วันที่อนุมัติ (PM/FM)", "Remark (PM/FM)", "ผู้รับงาน (Marker)", "ประเภทผ้า (Marker)", "วางมาร์ค (Marker)", "ผู้รับงาน (ใบปูตัด)", "ผู้ส่งต่อ (ใบปูตัด)", "ผู้รับงาน (เช็คผ้า)", "มีผ้าหรือไม่ (เช็คผ้า)", "ผู้รับงาน (PPC Fabric)", "วันผ้าเข้าจริง (PPC Fabric)", "ผู้รับงาน (สต็อคผ้า)", "ผู้ส่งต่อ (สต็อคผ้า)", "ปัญหาแผนกตัด (Cutting Issue)", "ผู้รับงานตัด (Cutting Receiver)", "ผู้ตัดเสร็จ (Cutting Sender)", "ค้างตัด (Cutting Pending)", "ผู้รับงาน (ACC)", "คงค้างจ่าย (ACC)", "ประวัติปัญหา ACC (จำนวนรอบ)", "ผู้ส่งต่อ (ACC)",
                 ...EMB_STAGE_TYPES.flatMap(t => [`ผู้รับงาน (${EMB_LABELS[t]})`, `ผู้ส่งต่อ (${EMB_LABELS[t]})`, `Vendor Outsource (${EMB_LABELS[t]})`]),
                 "ผู้รับงาน (QC)", "จำนวนตรวจรับ (QC)", "จำนวน Defect (QC)", "ผลตรวจ (QC)", "รอบส่งซ่อม QC (QC Repair Rounds)", "ผู้รับงาน (ซุปเปอร์มาร์เก็ต)", "ผู้ส่งงานเข้าไลน์ (ซุปเปอร์มาร์เก็ต)", "ผู้รับงานต้นทาง (Origin Receiver)",
                 "สาเหตุยกเลิก (Cancel Reason)", "ACC จ่ายไปแล้วก่อนยกเลิก (ACC Dispensed Before Cancel)", "ตีกลับล่าสุด (Latest Kickback)", "รวมจาก (Merged From)", "รวมเข้ากับ (Merged Into)", "Remark แต่ละส่วนงาน (Department Remarks)"];
-            const rows = repairs.map(r => {
-                const partReasons = [...new Set(r.parts.map(p => REASON_LABELS[p.reason] || p.reason).filter(Boolean))].join(' / ');
+            const rows = repairs.flatMap(r => {
+                const partsForRows = (r.parts && r.parts.length) ? r.parts : [null];
+                return partsForRows.map(part => {
+                const partNameCell = part ? (PART_NAME_LABELS[part.name] || part.name || 'ไม่ระบุ') : '';
+                const partCodeCell = part ? (part.part || '-') : '';
+                const partQtyCell = part ? (part.qty || 0) : '';
+                const partReasonCell = part ? (REASON_LABELS[part.reason] || part.reason || '') : '';
                 return [
                     r.id, r.docNo || '', r.date, r.needDate || '', r.shipOutDate || '', r.dept, r.line,
                     r.heatTransferType === 'acc' ? 'ขอ ACC' : (r.heatTransferType === 'fabric' ? 'ขอผ้า' : ''),
@@ -13078,7 +13089,7 @@
                     r.requesterUser || '',
                     r.customer || '', r.season || '',
                     r.style, r.job, r.item, r.color, r.po || '',
-                    partReasons, r.remark || '',
+                    partNameCell, partCodeCell, partQtyCell, partReasonCell, r.remark || '',
                     (alertInfo(r) || []).join(' / '),
                     r.status,
                     (r.approval && r.approval.name) || '', (r.approval && r.approval.ts) || '',
@@ -13144,6 +13155,7 @@
                     r.mergedInto ? (r.mergedIntoDocNo || docNoOf(r.mergedInto)) : '',
                     Object.entries(r.deptRemarks || {}).filter(([, v]) => v && v.text).map(([k, v]) => `${DEPT_REMARK_LABELS[k] || k}: ${v.text}`).join(' / ')
                 ];
+                });
             });
             return { headers, rows };
         }
