@@ -1485,6 +1485,63 @@
                 <div id="wipTrendChartDetails" class="hidden mt-3 text-xs text-slate-600 max-h-48 overflow-y-auto overflow-x-auto"></div>
             </div>
 
+            <!-- Period summary: pick a granularity (day/week/month/year) + optional date range,
+                 per "ช่วยออกแบบให้สามารถดูได้ง่ายหน่อย อาจจะเป็นแทบให้เลือกรายวันสัปดาห์เดือนปี
+                 แล้วอาจจะให้มีเรื่อง rangedate" — replaces the old always-nested month→week→day
+                 tree (which grew unreadably tall) with one flat table at whatever granularity is
+                 selected. ยอด/สั่ง แยกเป็น 3 กลุ่มคำขอ (ตัดเปลี่ยน / ตัดเปลี่ยน-ซัพพลายเออร์ /
+                 เบิก ACC), และแต่ละกลุ่มมีคอลัมน์ "รายการปัญหา" ของตัวเอง (นำหน้าใบ/ชิ้น) — ตัด
+                 เปลี่ยน/ตัดเปลี่ยน-ซัพ แยกตามสาเหตุ (p.reason), เบิก ACC แยกตามรายการที่เบิก
+                 (accRequestList label) เพราะ ACC ไม่มีแนวคิด "สาเหตุ" แบบเดียวกัน. คลิกแถว
+                 ช่วงเวลาเพื่อดูรายละเอียดปัญหาของช่วงนั้น (เปิดได้ทีละแถว). -->
+            <div class="card overflow-hidden">
+                <div class="p-4 border-b bg-slate-50 space-y-3">
+                    <div>
+                        <h3 class="text-sm font-black text-slate-800">สรุปยอดตามช่วงเวลา <span class="font-normal normal-case text-slate-400 text-xs">(Period Summary)</span></h3>
+                        <p class="text-[10px] text-slate-400">แถวตัวหนา = ยอดรวมของช่วงเวลานั้น คลิกแถวเพื่อดูรายละเอียดปัญหาของแต่ละประเภท (มากไปน้อย) <span class="opacity-70">(click a row to see its issue breakdown, highest first)</span></p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex rounded-lg border border-slate-200 overflow-hidden text-[11px] font-bold">
+                            <button id="periodGranDay" onclick="setPeriodGranularity('day')" class="px-3 py-1.5 hover:bg-slate-50">รายวัน</button>
+                            <button id="periodGranWeek" onclick="setPeriodGranularity('week')" class="px-3 py-1.5 hover:bg-slate-50 border-l border-slate-200">รายสัปดาห์</button>
+                            <button id="periodGranMonth" onclick="setPeriodGranularity('month')" class="px-3 py-1.5 hover:bg-slate-50 border-l border-slate-200">รายเดือน</button>
+                            <button id="periodGranYear" onclick="setPeriodGranularity('year')" class="px-3 py-1.5 hover:bg-slate-50 border-l border-slate-200">รายปี</button>
+                        </div>
+                        <div class="flex items-center gap-1.5 text-[11px] text-slate-500">
+                            <span>ตั้งแต่</span>
+                            <input type="date" id="periodDateFrom" onchange="onPeriodDateRangeChange()" class="text-xs py-1">
+                            <span>ถึง</span>
+                            <input type="date" id="periodDateTo" onchange="onPeriodDateRangeChange()" class="text-xs py-1">
+                            <button onclick="clearPeriodDateRange()" class="text-indigo-600 hover:underline font-bold ml-1">ล้าง</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-left">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th rowspan="2" class="px-4 py-3 text-[10px] font-extrabold text-slate-400 uppercase whitespace-nowrap align-bottom">ช่วงเวลา<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Period</span></th>
+                                <th colspan="3" class="px-4 py-2 text-[10px] font-extrabold text-indigo-600 uppercase whitespace-nowrap text-center border-l border-slate-200">ตัดเปลี่ยน<span class="block normal-case font-normal text-slate-400 text-[8px] mt-0.5">Cut-Replace</span></th>
+                                <th colspan="3" class="px-4 py-2 text-[10px] font-extrabold text-orange-600 uppercase whitespace-nowrap text-center border-l border-slate-200">ตัดเปลี่ยน-ซัพพลายเออร์<span class="block normal-case font-normal text-slate-400 text-[8px] mt-0.5">Supplier Cut-Replace</span></th>
+                                <th colspan="3" class="px-4 py-2 text-[10px] font-extrabold text-lime-600 uppercase whitespace-nowrap text-center border-l border-slate-200">เบิก ACC<span class="block normal-case font-normal text-slate-400 text-[8px] mt-0.5">ACC</span></th>
+                            </tr>
+                            <tr>
+                                <th class="px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase border-l border-slate-200">รายการปัญหา</th>
+                                <th class="px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase text-right">ใบ</th>
+                                <th class="px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase text-right">ชิ้น</th>
+                                <th class="px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase border-l border-slate-200">รายการปัญหา</th>
+                                <th class="px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase text-right">ใบ</th>
+                                <th class="px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase text-right">ชิ้น</th>
+                                <th class="px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase border-l border-slate-200">รายการปัญหา</th>
+                                <th class="px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase text-right">ใบ</th>
+                                <th class="px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase text-right">ชิ้น</th>
+                            </tr>
+                        </thead>
+                        <tbody id="periodSummaryBody" class="divide-y divide-slate-100 bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Completed / Archived history -->
             <div class="card overflow-hidden">
                 <div class="p-4 border-b bg-slate-50 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -3304,8 +3361,19 @@
                     repairs = migrateRepairsData(rows);
                     resolveDuplicateDocNos();
                 } else {
+                    // BUG FIX: an empty `rows` array used to be treated as "brand-new sheet,
+                    // safe to seed" and immediately WROTE the sample dataset back over the whole
+                    // Repairs sheet via autoSave(null, true) → apiReplaceAll. But apiGetAll
+                    // returning [] doesn't only mean "genuinely empty" — a transient Apps Script
+                    // hiccup, quota issue, or any bug that returns {ok:true, rows:[]} for a
+                    // NON-empty sheet would silently nuke every real record with sample data,
+                    // no confirmation asked. Per "ในระบบไม่มีรายการที่เสร็จจริงๆหรอทำไมมีแค่
+                    // ตัวอย่างข้อมูล" — show the sample data locally same as the network-failure
+                    // branch below, but NEVER auto-write it back. Seeding a genuinely fresh
+                    // sheet is the admin's explicit call via "Reset to Default Data", not this
+                    // silent path.
                     repairs = JSON.parse(JSON.stringify(defaultRepairs));
-                    await autoSave(null, true);
+                    showToast('Google Sheet ไม่มีข้อมูล (หรือโหลดไม่สำเร็จ) กำลังแสดงข้อมูลตัวอย่าง — ยังไม่ได้บันทึกทับชีทจริง (Sheet returned no data — showing sample data locally only, nothing written back)', 'warning');
                 }
             } catch (e) {
                 console.error("Failed to load repairs from Google Sheet", e);
@@ -5165,6 +5233,10 @@
         // R ทั้งหมด" — item.id itself stays the real lookup/upsert key everywhere else; this is
         // purely a display substitution.
         function docLabel(item) { return (item && (item.docNo || item.id)) || ''; }
+        // Shared across every "แบ่งตามประเภทคำขอ" breakdown (KPI cards, charts, period summary
+        // table) — any legacy record with no requestType saved falls back to CutReplace, since
+        // that was the sole/default type before this field existed.
+        function reqTypeOf(r) { return (r.requestType === 'ACCOnly' || r.requestType === 'SupplierCutReplace') ? r.requestType : 'CutReplace'; }
         // Compact inline reference badge for the main table row — shows which doc no.s a
         // "primary" merge target pulled parts FROM, or which doc a "source" record was merged
         // INTO, right in the row itself (not just inside the detail modal) — per "ต้องการให้มี
@@ -11992,10 +12064,7 @@
 
             document.getElementById('anaTotalPcs').innerHTML = `${totalPcs} <span class="text-sm font-normal text-slate-500">ชิ้น</span>`;
             // Per "ให้แบ่งส่วนด้วยว่าจาก ตัดเปลี่ยน / acc / ซัพพลายเออร์" — every top KPI count
-            // also breaks out by request type. Any legacy record with no requestType saved
-            // falls back to CutReplace, since that was the sole/default type before this field
-            // existed.
-            const reqTypeOf = r => (r.requestType === 'ACCOnly' || r.requestType === 'SupplierCutReplace') ? r.requestType : 'CutReplace';
+            // also breaks out by request type (see the shared reqTypeOf() helper below).
             const breakdownText = (list, pcsFn) => {
                 const buckets = { CutReplace: 0, ACCOnly: 0, SupplierCutReplace: 0 };
                 list.forEach(r => { buckets[reqTypeOf(r)] += pcsFn ? pcsFn(r) : 1; });
@@ -12282,6 +12351,7 @@
             renderChartDetailsList('requestTypeChart', requestTypeLabels, requestTypeData);
 
             renderWipTrendChart();
+            renderPeriodSummary();
         }
 
         // Cut-Replace vs ACC requisition trend — bucketed by day/week/month (toggle), across
@@ -12297,6 +12367,7 @@
             const p = getBangkokParts(d);
             if (period === 'day') return `${p.year}-${p.month}-${p.day}`;
             if (period === 'month') return `${p.year}-${p.month}`;
+            if (period === 'year') return `${p.year}`;
             // Week: key is that week's Monday date (UTC-anchored so the weekday calculation
             // doesn't drift with the browser's own local timezone).
             const utcDate = new Date(Date.UTC(parseInt(p.year, 10), parseInt(p.month, 10) - 1, parseInt(p.day, 10)));
@@ -12310,6 +12381,7 @@
                 const [y, m] = key.split('-');
                 return `${THAI_MONTHS_ABBR_WIP[parseInt(m, 10) - 1]} ${y}`;
             }
+            if (period === 'year') return key;
             if (period === 'day') {
                 const [y, m, d] = key.split('-');
                 return `${d}/${m}/${y}`;
@@ -12360,6 +12432,182 @@
                         <tbody>${keys.map(k => `<tr><td class="border-2 border-slate-300 px-1.5 py-1">${escapeHtml(wipTrendBucketLabel(k, wipTrendPeriod))}</td><td class="border-2 border-slate-300 px-1.5 py-1 text-center">${buckets[k].cutLines}</td><td class="border-2 border-slate-300 px-1.5 py-1 text-center">${buckets[k].cutQty}</td><td class="border-2 border-slate-300 px-1.5 py-1 text-center">${buckets[k].accLines}</td><td class="border-2 border-slate-300 px-1.5 py-1 text-center">${buckets[k].accQty}</td></tr>`).join('')}</tbody>
                     </table>`;
             }
+        }
+
+        // Period summary state — one flat table at whatever granularity is picked (day / week /
+        // month / year), optionally narrowed to a date range, per "อาจจะเป็นแทบให้เลือกรายวัน
+        // สัปดาห์เดือนปี แล้วอาจจะให้มีเรื่อง rangedate". Replaces the earlier always-nested
+        // month→week→day tree, which grew unreadably tall once real data was loaded (300+
+        // requests/month with 30+ distinct reasons each). Only one row's issue breakdown is
+        // open at a time (accordion), same convention as elsewhere in this tab.
+        let periodSummaryGranularity = 'month';
+        let expandedPeriodKey = null;
+        function setPeriodGranularity(g) {
+            periodSummaryGranularity = g;
+            expandedPeriodKey = null;
+            renderPeriodSummary();
+        }
+        function togglePeriodRow(key) {
+            expandedPeriodKey = (expandedPeriodKey === key) ? null : key;
+            renderPeriodSummary();
+        }
+        function onPeriodDateRangeChange() {
+            expandedPeriodKey = null;
+            renderPeriodSummary();
+        }
+        function clearPeriodDateRange() {
+            document.getElementById('periodDateFrom').value = '';
+            document.getElementById('periodDateTo').value = '';
+            onPeriodDateRangeChange();
+        }
+        const PERIOD_SUMMARY_TYPES = ['CutReplace', 'SupplierCutReplace', 'ACCOnly'];
+        // Which "issue" a record's pieces get attributed to, per type — CutReplace/Supplier use
+        // the part's defect reason; ACC has no such concept (it's a supply requisition, not a
+        // defect), so it's broken down by WHICH item was requested instead, per "เบิก ACC แยกตาม
+        // รายการที่เบิก" — same ACC_REQUEST_LABELS used on the requisition form itself.
+        function accItemCategoryLabel(a) { return a.label || ACC_REQUEST_LABELS[a.key] || a.key || 'อื่นๆ'; }
+        // One pass over every record at the CURRENTLY selected granularity only (day/week/month/
+        // year — not all four at once, unlike the old tree version), respecting the date-range
+        // filter inputs if set. byType[reqTypeOf(r)] carries count+pcs AND its own independent
+        // issueMap (issue -> {qty,count}) per "ให้มีคอลัมแสดงรายการปัญหาก่อนจำนวนรายการและจำนวน
+        // ชิ้น ของแต่ละหัวข้อประเภท" — each type's top issues are ranked and displayed separately.
+        function buildPeriodSummaryData() {
+            const buckets = {};
+            const fromEl = document.getElementById('periodDateFrom');
+            const toEl = document.getElementById('periodDateTo');
+            const fromDate = fromEl && fromEl.value ? parseLocalDateTime(fromEl.value + 'T00:00') : null;
+            const toDate = toEl && toEl.value ? parseLocalDateTime(toEl.value + 'T23:59') : null;
+            const ensure = key => {
+                if (!buckets[key]) {
+                    buckets[key] = { byType: {} };
+                    PERIOD_SUMMARY_TYPES.forEach(t => { buckets[key].byType[t] = { count: 0, pcs: 0, issueMap: {} }; });
+                }
+                return buckets[key];
+            };
+            const bumpIssue = (bucket, type, issue, qty, isFirstForRecord) => {
+                const im = bucket.byType[type].issueMap;
+                const entry = im[issue] || (im[issue] = { qty: 0, count: 0 });
+                entry.qty += qty;
+                if (isFirstForRecord) entry.count++;
+            };
+            repairs.forEach(r => {
+                const recordDate = r.date ? parseLocalDateTime(r.date) : null;
+                if (fromDate && (!recordDate || recordDate < fromDate)) return;
+                if (toDate && (!recordDate || recordDate > toDate)) return;
+                const key = wipTrendBucketKey(r.date, periodSummaryGranularity);
+                if (!key) return; // unparseable date — excluded, same as the other time-bucketed charts
+                const bucket = ensure(key);
+                const type = reqTypeOf(r);
+                const partsPcs = (r.parts || []).reduce((s, p) => s + (parseInt(p.qty) || 0), 0);
+                const accPcs = (r.accRequestList || []).reduce((s, a) => s + (parseInt(a.qty) || 0), 0);
+                const typePcs = type === 'ACCOnly' ? accPcs : partsPcs;
+                bucket.byType[type].count++;
+                bucket.byType[type].pcs += typePcs;
+                // Per issue: qty sums every line with that issue, but the request COUNT counts
+                // this record at most once per issue (2 parts sharing 1 reason = still 1
+                // request), per "แสดงจำนวนแต่ละรายการ".
+                if (type === 'ACCOnly') {
+                    const seen = new Set();
+                    (r.accRequestList || []).forEach(a => {
+                        const issue = accItemCategoryLabel(a);
+                        const qty = parseInt(a.qty) || 0;
+                        const isFirst = !seen.has(issue);
+                        seen.add(issue);
+                        bumpIssue(bucket, type, issue, qty, isFirst);
+                    });
+                } else {
+                    const seen = new Set();
+                    (r.parts || []).forEach(p => {
+                        if (!p.reason) return;
+                        const qty = parseInt(p.qty) || 0;
+                        const isFirst = !seen.has(p.reason);
+                        seen.add(p.reason);
+                        bumpIssue(bucket, type, p.reason, qty, isFirst);
+                    });
+                }
+            });
+            return buckets;
+        }
+        function issueLabelFor(type, issue) { return type === 'ACCOnly' ? issue : (REASON_LABELS[issue] || issue); }
+        // Each type's issues ranked highest-qty-first, independent of the other 2 types' lists.
+        function rankedIssues(byType, type) {
+            return Object.entries(byType[type].issueMap).sort((a, b) => b[1].qty - a[1].qty);
+        }
+        // rowIndex: -1 renders the bold period-total row (blank "รายการปัญหา" cell, totals only);
+        // 0,1,2... renders that rank's issue for each type independently — a type with fewer
+        // issues than another just shows blank cells past its own list's end.
+        function periodTypeCellsHtml(byType, rowIndex, rankedByType) {
+            return PERIOD_SUMMARY_TYPES.map((t, i) => {
+                const borderCls = i === 0 ? ' border-l border-slate-100' : '';
+                if (rowIndex === -1) {
+                    return `
+                        <td class="px-3 py-2.5 text-[10px] text-slate-300${borderCls}"></td>
+                        <td class="px-3 py-2.5 text-xs text-slate-700 text-right font-semibold">${byType[t].count || 0}</td>
+                        <td class="px-3 py-2.5 text-xs text-slate-700 text-right font-semibold">${byType[t].pcs || 0}</td>`;
+                }
+                const entry = rankedByType[t][rowIndex];
+                if (!entry) return `<td class="px-3 py-1.5${borderCls}"></td><td class="px-3 py-1.5"></td><td class="px-3 py-1.5"></td>`;
+                const [issue, stats] = entry;
+                return `
+                    <td class="px-3 py-1.5 text-[10px] text-slate-500 whitespace-nowrap${borderCls}">${escapeHtml(issueLabelFor(t, issue))}</td>
+                    <td class="px-3 py-1.5 text-[10px] text-slate-600 text-right font-semibold">${stats.count}</td>
+                    <td class="px-3 py-1.5 text-[10px] text-slate-600 text-right font-semibold">${stats.qty}</td>`;
+            }).join('');
+        }
+        function periodSummaryRowHtml(key, data, hasIssues) {
+            const label = wipTrendBucketLabel(key, periodSummaryGranularity);
+            const isExpanded = expandedPeriodKey === key;
+            const arrow = hasIssues ? `<span class="inline-block w-3 transition-transform ${isExpanded ? 'rotate-90' : ''}">▸</span>` : `<span class="inline-block w-3"></span>`;
+            return `
+                <tr class="bg-white font-bold ${hasIssues ? 'cursor-pointer hover:bg-indigo-50/40' : ''}" ${hasIssues ? `onclick="togglePeriodRow('${key}')"` : ''}>
+                    <td class="px-4 py-2.5 text-xs text-slate-700" style="padding-left:12px">${arrow} ${escapeHtml(label)}</td>
+                    ${periodTypeCellsHtml(data.byType, -1, null)}
+                </tr>`;
+        }
+        // Issue-breakdown rows for one period — one row per rank position across all 3 types at
+        // once (row 0 = each type's #1 issue, row 1 = each type's #2, ...), stopping once every
+        // type has run out of issues. Each type's ranking is independent, so row N's 3 issues
+        // are unrelated to each other beyond sharing a rank position.
+        function periodIssueRowsHtml(byType) {
+            const rankedByType = {};
+            PERIOD_SUMMARY_TYPES.forEach(t => { rankedByType[t] = rankedIssues(byType, t); });
+            const maxRows = Math.max(...PERIOD_SUMMARY_TYPES.map(t => rankedByType[t].length));
+            if (maxRows === 0) return '';
+            let out = '';
+            for (let i = 0; i < maxRows; i++) {
+                out += `
+                <tr class="bg-white">
+                    <td class="px-4 py-1.5 text-[10px] text-slate-300" style="padding-left:32px">${i === 0 ? '↳' : ''}</td>
+                    ${periodTypeCellsHtml(byType, i, rankedByType)}
+                </tr>`;
+            }
+            return out;
+        }
+        function renderPeriodSummary() {
+            const tbody = document.getElementById('periodSummaryBody');
+            if (!tbody) return;
+            ['Day', 'Week', 'Month', 'Year'].forEach(g => {
+                const btn = document.getElementById('periodGran' + g);
+                if (!btn) return;
+                const active = periodSummaryGranularity === g.toLowerCase();
+                btn.classList.toggle('bg-indigo-600', active);
+                btn.classList.toggle('text-white', active);
+                btn.classList.toggle('text-slate-500', !active);
+            });
+            const buckets = buildPeriodSummaryData();
+            const keys = Object.keys(buckets).sort().reverse(); // most recent first
+            if (!keys.length) {
+                tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-slate-400 text-xs">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>`;
+                return;
+            }
+            let rows = '';
+            keys.forEach(key => {
+                const bucket = buckets[key];
+                const hasIssues = PERIOD_SUMMARY_TYPES.some(t => Object.keys(bucket.byType[t].issueMap).length > 0);
+                rows += periodSummaryRowHtml(key, bucket, hasIssues);
+                if (expandedPeriodKey === key) rows += periodIssueRowsHtml(bucket.byType);
+            });
+            tbody.innerHTML = rows;
         }
 
         function toggleChartDetails(chartId) {
