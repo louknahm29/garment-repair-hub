@@ -4174,6 +4174,16 @@
             if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
         }
 
+        // Cheap fingerprint of "does this data actually differ from last tick" — just enough
+        // per record to catch anything a render would care about (id/status/counts), without
+        // the cost of stringifying the full object (parts, embStages, etc. — expensive at 400+
+        // records with deep nested history). Used below to skip the expensive render calls
+        // entirely on ticks where nothing changed, which is most of them.
+        function autoRefreshSignature(repairsArr, usersArr, logArr) {
+            const repairsSig = repairsArr.length + '|' + repairsArr.map(r => `${r.id}:${r.status}:${r.archived}`).join(',');
+            return repairsSig + '||' + usersArr.length + '||' + logArr.length;
+        }
+        let lastAutoRefreshSignature = null;
         async function autoRefreshTick() {
             if (!currentUser) return;
             // Skip while a save is pending or a modal is open, so we don't clobber
@@ -4185,11 +4195,27 @@
                 const [newRepairs, newUsers, newLog] = await Promise.all([
                     apiGetAll('Repairs'), apiGetAll('Users'), apiGetAll('Log')
                 ]);
+                // BUG FIX: every 12s tick used to unconditionally rebuild every chart (Chart.js
+                // destroy+recreate per canvas), the period-summary table, both history tables,
+                // AND the users/log tables — even on the vast majority of ticks where NOTHING
+                // actually changed since the last poll. With 400+ real records this is enough
+                // synchronous work to visibly freeze the page for a moment, which if it lands
+                // while someone is mid-scroll/mid-click reads as "หน้าเว็บหน่วงกดแทบไม่ได้" —
+                // per report, worse now that the period-summary table (a heavier render) exists.
+                // Skip the whole render block when a cheap signature says nothing changed;
+                // detectAndNotify/migrateRepairsData/resolveDuplicateDocNos still always run
+                // (cheap, and correctness-sensitive) so notifications/dedup stay live either way.
+                const signature = autoRefreshSignature(newRepairs || [], newUsers || [], newLog || []);
+                const changed = signature !== lastAutoRefreshSignature;
+                lastAutoRefreshSignature = signature;
+
                 detectAndNotify(newRepairs || []);
                 repairs = migrateRepairsData(newRepairs || []);
                 resolveDuplicateDocNos();
                 users = newUsers || [];
                 auditLog = (newLog || []).slice().reverse();
+
+                if (!changed) return;
 
                 // Re-apply whatever search/filter is currently active instead of a bare
                 // renderTable() (which defaults to the full unfiltered list) — otherwise every
