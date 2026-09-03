@@ -5967,7 +5967,21 @@
                             ${item.qcCutReplace && !item.qcCutReplace.resolved ? `<div class="text-[9px] font-bold text-red-600 mt-1 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 inline-block">✂️ รอ QC แจ้งตัดเปลี่ยนใหม่ (${escapeHtml((item.qcCutReplace.types || []).map(t => EMB_LABELS[t] || t).join(', '))})<span class="block font-normal normal-case">Pending cut-replace notice</span></div>` : ''}
                             ${item.qcNotifyVendor && !item.qcNotifyVendor.resolved ? `<div class="text-[9px] font-bold text-red-500 mt-1 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 inline-block">📨 รอ QC แจ้ง Vendor (${escapeHtml((item.qcNotifyVendor.types || []).map(t => EMB_LABELS[t] || t).join(', '))})<span class="block font-normal normal-case">Pending vendor notice</span></div>` : ''}
                             ${item.cuttingPending && !item.cuttingPending.resolved ? `<div class="text-[9px] font-bold text-orange-600 mt-1 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 inline-block">✂️ ค้างตัด (${(item.cuttingPending.keys || []).length} ชิ้นส่วน)<span class="block font-normal normal-case">Cutting backlog pending</span></div>` : ''}
-                            ${item.fabricPartialPpc && !item.fabricPartialPpc.resolved ? `<div class="text-[9px] font-bold text-orange-600 mt-1 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 inline-block">🧵 ผ้าขาดบางรายการ (${(item.fabricPartialPpc.items || []).length} ชิ้นส่วน)<span class="block font-normal normal-case">Fabric shortage pending</span></div>` : ''}
+                            ${item.fabricPartialPpc && !item.fabricPartialPpc.resolved ? `
+                                <div class="text-[9px] font-bold text-orange-600 mt-1 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5 inline-block">🧵 ผ้าขาดบางรายการ (${(item.fabricPartialPpc.items || []).length} ชิ้นส่วน)<span class="block font-normal normal-case">Fabric shortage pending</span></div>
+                                <!-- BUG FIX: the badge above only ever said "ผ้าขาดบางรายการ (N
+                                     ชิ้นส่วน)" — the count alone — with no way to tell WHICH of
+                                     the record's parts those N actually are without opening the
+                                     PPC Fabric action modal separately. Per "พอย้อนกลับไปดู
+                                     รายการที่ค้างปล่อย ไม่สามารถมองเห็นได้ว่ารายการไหนไม่มีผ้า" —
+                                     list them right here, same haveQty/needQty already tracked
+                                     on each shortage entry (see fabricPartialPpc's own resolve
+                                     modal, which shows the identical breakdown).
+                                -->
+                                <ul class="text-[9px] text-orange-700 mt-0.5 list-disc list-inside">
+                                    ${(item.fabricPartialPpc.items || []).map(s => `<li>${escapeHtml(s.label)} — มี ${s.haveQty} / ขาดอีก ${s.needQty}</li>`).join('')}
+                                </ul>
+                            ` : ''}
                             <!-- BUG FIX: this used to check only item.currentEmbStage (a single
                                  legacy "which type happened to be active first" snapshot), so a
                                  repair kickback on any OTHER concurrently-active type (now common
