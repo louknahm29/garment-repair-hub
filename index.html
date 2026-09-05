@@ -4184,6 +4184,24 @@
             return repairsSig + '||' + usersArr.length + '||' + logArr.length;
         }
         let lastAutoRefreshSignature = null;
+        // Separate from the auto-refresh one above — this tracks what data was actually
+        // rendered onto the Analytics tab last time it ran (from EITHER switchTab or an
+        // auto-refresh tick while the tab was visible), so switchTab('analytics') can skip
+        // re-rendering everything when nothing changed since, per "พบปัญหาหน้าเว็บหน่วงเมื่อ
+        // เปลี่ยนหน้าข้อมูล" — with 400+ real records, rebuilding ~10 Chart.js charts + the
+        // period-summary table + both history tables on EVERY tab click was expensive enough to
+        // visibly freeze the page each time, even when the underlying data hadn't moved at all
+        // since the last visit (the overwhelmingly common case for a quick back-and-forth
+        // between tabs).
+        let lastAnalyticsRenderedSignature = null;
+        function renderAnalyticsIfChanged(force = false) {
+            const sig = autoRefreshSignature(repairs, users, auditLog);
+            if (!force && sig === lastAnalyticsRenderedSignature) return;
+            lastAnalyticsRenderedSignature = sig;
+            renderCharts();
+            renderCompletedHistory();
+            renderCancelledHistory();
+        }
         async function autoRefreshTick() {
             if (!currentUser) return;
             // Skip while a save is pending or a modal is open, so we don't clobber
@@ -4226,9 +4244,7 @@
                 // the KPI cards genuinely need recomputing, unlike a plain search keystroke.
                 if (!document.getElementById('section-records').classList.contains('hidden')) { renderKpiDashboard(); filterData(); }
                 if (!document.getElementById('section-analytics').classList.contains('hidden')) {
-                    renderCharts();
-                    renderCompletedHistory();
-                    renderCancelledHistory();
+                    renderAnalyticsIfChanged(true); // already confirmed `changed` above — force the render, just also refresh the cached signature
                 }
                 if (!document.getElementById('section-admin').classList.contains('hidden')) {
                     renderUsersTable();
@@ -4300,9 +4316,7 @@
                 document.getElementById('section-analytics').classList.remove('hidden');
                 document.getElementById('tab-analytics').classList.add('nav-active');
                 document.getElementById('tab-analytics').classList.remove('text-slate-400');
-                renderCharts();
-                renderCompletedHistory();
-                renderCancelledHistory();
+                renderAnalyticsIfChanged();
             } else if (tab === 'holidays') {
                 document.getElementById('section-holidays').classList.remove('hidden');
                 document.getElementById('tab-holidays').classList.add('nav-active');
@@ -9248,11 +9262,13 @@
             },
             fabricCheck: {
                 field: 'fabricCheckSend',
-                // Fabric Check still records where the fabric came from (stock vs. already at
-                // the cutting table) for the Fabric Source / Job history shown elsewhere, but
-                // per "ข้ามแผนกสต็อคผ้าเลยเมื่อผ้าพอ ทุกกรณี" that source no longer changes the
-                // ROUTING — any time fabric is confirmed available it skips Stock Fabric
-                // entirely and goes straight to Cutting, regardless of which source it's from.
+                // Fabric source decides ROUTING again — per "จองผ้าในระบบ สต็อก แต่มันไหลไปทาง
+                // ตัดเลยไม่ผ่านสต็อก": ผ้าสต็อค (fabricSource: 'stock') still needs Stock Fabric
+                // to physically pull/prepare it, so it goes through that department as before;
+                // only fabric already sitting at the cutting table skips it, since there's
+                // genuinely nothing left for Stock Fabric to do. This reverses the brief
+                // "skip Stock Fabric always" change from earlier in the same session, which
+                // turned out to be wrong for the 'stock' case specifically.
                 buildExtra: (extra) => ({
                     available: extra.available === 'yes',
                     fabricSource: extra.available === 'yes' ? extra.fabricSource : undefined,
@@ -9268,7 +9284,7 @@
                 },
                 nextStatus: (item) => {
                     if (!item.fabricCheckSend.available) return 'PPCFabricPending';
-                    return 'StockFabricSent';
+                    return item.fabricCheckSend.fabricSource === 'cuttingTable' ? 'StockFabricSent' : 'StockFabricPending';
                 },
             },
             ppcFabric: {
@@ -9288,10 +9304,11 @@
                     }
                     return null;
                 },
-                // Fabric physically arriving via PPC makes it available too — per "ข้ามแผนก
-                // สต็อคผ้าเลยเมื่อผ้าพอ ทุกกรณี" this also skips Stock Fabric straight to
-                // Cutting, same as a Fabric Check that found enough fabric from the start.
-                nextStatus: (item) => item.ppcFabric.actualArrivalDate ? 'StockFabricSent' : null,
+                // Fabric arriving via PPC still needs Stock Fabric to physically receive/prepare
+                // it before Cutting — same reasoning as fabricCheck's 'stock' case above (see
+                // its comment); this only ever skips Stock Fabric for fabric already sitting at
+                // the cutting table, which PPC-procured fabric never is.
+                nextStatus: (item) => item.ppcFabric.actualArrivalDate ? 'StockFabricPending' : null,
             },
             stockFabric: {
                 field: 'stockFabricSend',
