@@ -5742,6 +5742,51 @@
             setKpi('kpiCompleted', repairs.filter(r => r.status === 'Received'));
             if (document.getElementById('kpiCancelled')) setKpi('kpiCancelled', repairs.filter(r => r.status === 'Cancelled'));
         }
+        // Plain-text label(s) for whoever needs to act on this record right now, shown under
+        // the Actions column for every viewer regardless of their own role — per "ให้มีชื่อ
+        // ผู้รับผิดชอบด้วยใต้รายการการจัดการ". Mirrors the same status → department mapping
+        // renderTableRows uses to decide which action BUTTON to show (see statusRow below),
+        // just without the canXXXAct(currentUser) permission gate, since this is informational
+        // for anyone looking, not just the person who can act on it.
+        function currentResponsibleLabel(item) {
+            if (item.mergedInto) return 'รวมเข้าใบอื่นแล้ว';
+            if (['Received', 'Cancelled', 'Rejected', 'FMRejected'].includes(item.status)) return '-';
+            const labels = [];
+            if (item.status === 'PendingApproval') {
+                labels.push(isDeptOwnReview(item) ? `${item.dept} (หัวหน้าแผนก)` : 'BU');
+            } else if (item.status === 'PendingFMApproval') {
+                labels.push('PM/FM');
+            } else if (item.status === 'Approved' || item.status === 'MarkerReceived') {
+                labels.push('Marker');
+            } else if (item.status === 'MarkerSent' || item.status === 'CuttingSheetReceived') {
+                labels.push('ใบปูตัด (Cutting Sheet)');
+            } else if (item.status === 'FabricCheckPending' || item.status === 'FabricCheckReceived') {
+                labels.push('เช็คผ้า (Fabric Check)');
+            } else if (item.status === 'PPCFabricPending' || item.status === 'PPCFabricReceived') {
+                labels.push('PPC Fabric');
+            } else if (item.status === 'StockFabricPending' || item.status === 'StockFabricReceived') {
+                labels.push('สต็อคผ้า (Stock Fabric)');
+            } else if (item.status === 'StockFabricSent' || item.status === 'CuttingReceived') {
+                labels.push('แผนกตัด (Cutting)');
+            } else if (item.status === 'CuttingSent') {
+                // Same two groups as embBtns/qcBtns below — every embellishment type still not
+                // done, plus every QC-pending type (already excluding the ACCOnly/HeatTransfer-
+                // ACC cutting-QC stub, which never surfaces a real button either).
+                (item.activeDeptTypes || []).forEach(t => { if (!embTypeDone(item, t)) labels.push(EMB_LABELS[t] || t); });
+                const isCuttingStub = !!(item.cuttingSend && item.cuttingSend.by === 'system');
+                (item.qcPendingTypes || []).filter(t => !(isCuttingStub && t === CUTTING_QC_TYPE))
+                    .forEach(t => labels.push(`QC (${EMB_LABELS[t] || t})`));
+            } else if (item.status === 'SupermarketPending' || item.status === 'SupermarketReceived') {
+                labels.push('Supermarket');
+            } else if (item.status === 'SupermarketSent') {
+                labels.push('ผู้ขอ (ต้นทาง)');
+            }
+            // ACC is a fully independent parallel track (see accActionable's own comment) —
+            // append it whenever it's still owed something, on top of whatever the main
+            // pipeline is waiting on.
+            if ((accActionable(item) || (item.accSend && hasOutstandingAcc(item))) && !labels.includes('ACC')) labels.push('ACC');
+            return labels.length ? labels.join(', ') : '-';
+        }
         function renderTableRows(data) {
             const tbody = document.getElementById('repairTableBody');
             tbody.innerHTML = '';
@@ -6016,6 +6061,7 @@
                         </td>
                         <td class="px-5 py-4 no-print">
                             <div class="flex flex-col items-center min-w-[120px]">${actionBtns}</div>
+                            <div class="text-[9px] text-slate-400 mt-1.5 text-center">ผู้รับผิดชอบ <span class="opacity-70">(Responsible)</span>: <span class="font-bold text-slate-500">${escapeHtml(currentResponsibleLabel(item))}</span></div>
                         </td>
                     </tr>
                 `;
