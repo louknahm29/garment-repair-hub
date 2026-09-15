@@ -1259,6 +1259,88 @@
                 </div>
             </div>
 
+            <!-- Cut-Replace / Supplier Cut-Replace Summary — same ใบขอ/รายการ/ชิ้น breakdown as
+                 the ACC Summary card above, per "นอกจากจะมีให้สรุปรายการ ACC และ ต้องการให้มี
+                 สรุปรายการขอตัดเปลี่ยน และ ตัดงานซ่อม (ซัพพลายเออร์) ด้วย". ACC's own buckets are
+                 about payment (need/no-need/paid) — a concept that doesn't apply to cutting work,
+                 so these two use the equivalent breakdown for a cutting request's lifecycle:
+                 total / still in progress / fully completed (Received) / cancelled instead. -->
+            <div class="card p-6">
+                <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-4">สรุปรายการตัดเปลี่ยน <span class="font-normal normal-case opacity-70">(Cut-Replace Summary)</span></h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+                        <p class="text-[10px] font-bold uppercase text-slate-500">รายการทั้งหมด <span class="opacity-70">(Total)</span></p>
+                        <div class="grid grid-cols-3 divide-x divide-slate-200 mt-2">
+                            <div class="px-1"><p id="anaCrTotalDocs" class="text-lg font-black text-slate-700">0</p><p class="text-[8px] text-slate-400 uppercase leading-tight">ใบขอ<span class="block opacity-70 normal-case">Docs</span></p></div>
+                            <div class="px-1"><p id="anaCrTotalLines" class="text-lg font-black text-slate-700">0</p><p class="text-[8px] text-slate-400 uppercase leading-tight">รายการ<span class="block opacity-70 normal-case">Lines</span></p></div>
+                            <div class="px-1"><p id="anaCrTotalPcs" class="text-lg font-black text-slate-700">0</p><p class="text-[8px] text-slate-400 uppercase leading-tight">ชิ้น<span class="block opacity-70 normal-case">Pcs</span></p></div>
+                        </div>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-center">
+                        <p class="text-[10px] font-bold uppercase text-amber-600">กำลังดำเนินการ <span class="opacity-70">(In Progress)</span></p>
+                        <div class="grid grid-cols-3 divide-x divide-amber-200 mt-2">
+                            <div class="px-1"><p id="anaCrProgressDocs" class="text-lg font-black text-amber-700">0</p><p class="text-[8px] text-amber-500 uppercase leading-tight">ใบขอ<span class="block opacity-70 normal-case">Docs</span></p></div>
+                            <div class="px-1"><p id="anaCrProgressLines" class="text-lg font-black text-amber-700">0</p><p class="text-[8px] text-amber-500 uppercase leading-tight">รายการ<span class="block opacity-70 normal-case">Lines</span></p></div>
+                            <div class="px-1"><p id="anaCrProgressPcs" class="text-lg font-black text-amber-700">0</p><p class="text-[8px] text-amber-500 uppercase leading-tight">ชิ้น<span class="block opacity-70 normal-case">Pcs</span></p></div>
+                        </div>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
+                        <p class="text-[10px] font-bold uppercase text-emerald-600">เสร็จสมบูรณ์ <span class="opacity-70">(Completed)</span></p>
+                        <div class="grid grid-cols-3 divide-x divide-emerald-200 mt-2">
+                            <div class="px-1"><p id="anaCrDoneDocs" class="text-lg font-black text-emerald-700">0</p><p class="text-[8px] text-emerald-500 uppercase leading-tight">ใบขอ<span class="block opacity-70 normal-case">Docs</span></p></div>
+                            <div class="px-1"><p id="anaCrDoneLines" class="text-lg font-black text-emerald-700">0</p><p class="text-[8px] text-emerald-500 uppercase leading-tight">รายการ<span class="block opacity-70 normal-case">Lines</span></p></div>
+                            <div class="px-1"><p id="anaCrDonePcs" class="text-lg font-black text-emerald-700">0</p><p class="text-[8px] text-emerald-500 uppercase leading-tight">ชิ้น<span class="block opacity-70 normal-case">Pcs</span></p></div>
+                        </div>
+                    </div>
+                    <div class="bg-rose-50 border border-rose-100 rounded-xl p-4 text-center">
+                        <p class="text-[10px] font-bold uppercase text-rose-500">ยกเลิก <span class="opacity-70">(Cancelled)</span></p>
+                        <div class="grid grid-cols-3 divide-x divide-rose-200 mt-2">
+                            <div class="px-1"><p id="anaCrCancelDocs" class="text-lg font-black text-rose-600">0</p><p class="text-[8px] text-rose-400 uppercase leading-tight">ใบขอ<span class="block opacity-70 normal-case">Docs</span></p></div>
+                            <div class="px-1"><p id="anaCrCancelLines" class="text-lg font-black text-rose-600">0</p><p class="text-[8px] text-rose-400 uppercase leading-tight">รายการ<span class="block opacity-70 normal-case">Lines</span></p></div>
+                            <div class="px-1"><p id="anaCrCancelPcs" class="text-lg font-black text-rose-600">0</p><p class="text-[8px] text-rose-400 uppercase leading-tight">ชิ้น<span class="block opacity-70 normal-case">Pcs</span></p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-6">
+                <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-4">สรุปรายการตัดงานซ่อม (ซัพพลายเออร์) <span class="font-normal normal-case opacity-70">(Supplier Cut-Replace Summary)</span></h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
+                        <p class="text-[10px] font-bold uppercase text-slate-500">รายการทั้งหมด <span class="opacity-70">(Total)</span></p>
+                        <div class="grid grid-cols-3 divide-x divide-slate-200 mt-2">
+                            <div class="px-1"><p id="anaSpTotalDocs" class="text-lg font-black text-slate-700">0</p><p class="text-[8px] text-slate-400 uppercase leading-tight">ใบขอ<span class="block opacity-70 normal-case">Docs</span></p></div>
+                            <div class="px-1"><p id="anaSpTotalLines" class="text-lg font-black text-slate-700">0</p><p class="text-[8px] text-slate-400 uppercase leading-tight">รายการ<span class="block opacity-70 normal-case">Lines</span></p></div>
+                            <div class="px-1"><p id="anaSpTotalPcs" class="text-lg font-black text-slate-700">0</p><p class="text-[8px] text-slate-400 uppercase leading-tight">ชิ้น<span class="block opacity-70 normal-case">Pcs</span></p></div>
+                        </div>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-center">
+                        <p class="text-[10px] font-bold uppercase text-amber-600">กำลังดำเนินการ <span class="opacity-70">(In Progress)</span></p>
+                        <div class="grid grid-cols-3 divide-x divide-amber-200 mt-2">
+                            <div class="px-1"><p id="anaSpProgressDocs" class="text-lg font-black text-amber-700">0</p><p class="text-[8px] text-amber-500 uppercase leading-tight">ใบขอ<span class="block opacity-70 normal-case">Docs</span></p></div>
+                            <div class="px-1"><p id="anaSpProgressLines" class="text-lg font-black text-amber-700">0</p><p class="text-[8px] text-amber-500 uppercase leading-tight">รายการ<span class="block opacity-70 normal-case">Lines</span></p></div>
+                            <div class="px-1"><p id="anaSpProgressPcs" class="text-lg font-black text-amber-700">0</p><p class="text-[8px] text-amber-500 uppercase leading-tight">ชิ้น<span class="block opacity-70 normal-case">Pcs</span></p></div>
+                        </div>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
+                        <p class="text-[10px] font-bold uppercase text-emerald-600">เสร็จสมบูรณ์ <span class="opacity-70">(Completed)</span></p>
+                        <div class="grid grid-cols-3 divide-x divide-emerald-200 mt-2">
+                            <div class="px-1"><p id="anaSpDoneDocs" class="text-lg font-black text-emerald-700">0</p><p class="text-[8px] text-emerald-500 uppercase leading-tight">ใบขอ<span class="block opacity-70 normal-case">Docs</span></p></div>
+                            <div class="px-1"><p id="anaSpDoneLines" class="text-lg font-black text-emerald-700">0</p><p class="text-[8px] text-emerald-500 uppercase leading-tight">รายการ<span class="block opacity-70 normal-case">Lines</span></p></div>
+                            <div class="px-1"><p id="anaSpDonePcs" class="text-lg font-black text-emerald-700">0</p><p class="text-[8px] text-emerald-500 uppercase leading-tight">ชิ้น<span class="block opacity-70 normal-case">Pcs</span></p></div>
+                        </div>
+                    </div>
+                    <div class="bg-rose-50 border border-rose-100 rounded-xl p-4 text-center">
+                        <p class="text-[10px] font-bold uppercase text-rose-500">ยกเลิก <span class="opacity-70">(Cancelled)</span></p>
+                        <div class="grid grid-cols-3 divide-x divide-rose-200 mt-2">
+                            <div class="px-1"><p id="anaSpCancelDocs" class="text-lg font-black text-rose-600">0</p><p class="text-[8px] text-rose-400 uppercase leading-tight">ใบขอ<span class="block opacity-70 normal-case">Docs</span></p></div>
+                            <div class="px-1"><p id="anaSpCancelLines" class="text-lg font-black text-rose-600">0</p><p class="text-[8px] text-rose-400 uppercase leading-tight">รายการ<span class="block opacity-70 normal-case">Lines</span></p></div>
+                            <div class="px-1"><p id="anaSpCancelPcs" class="text-lg font-black text-rose-600">0</p><p class="text-[8px] text-rose-400 uppercase leading-tight">ชิ้น<span class="block opacity-70 normal-case">Pcs</span></p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Process Duration Summary: average time spent per workflow stage -->
             <div class="card overflow-hidden">
                 <div class="p-4 border-b bg-slate-50">
@@ -1460,6 +1542,38 @@
                         <canvas id="requestTypeChart"></canvas>
                     </div>
                     <div id="requestTypeChartDetails" class="hidden mt-3 text-xs text-slate-600 space-y-0.5 max-h-40 overflow-y-auto"></div>
+                </div>
+            </div>
+
+            <!-- Part-name breakdown by request type (Cut-Replace vs Supplier Cut-Replace), per
+                 "ขอเพิ่มสรุปเป็นกราฟว่าโดยแบ่งเป็นการตัดซ่อม และการตัดซ่อมที่เกิดจากซัพพลายเออร์
+                 โดยต้องการแยกชิ้นส่วนว่าชิ้นส่วนไหนมีการขอตัดซ่อมบ้าง" — grouped bar (not pie):
+                 a pie can only show ONE series, but this needs 2 side-by-side per part name, so
+                 a grouped bar reads far more clearly for that comparison. ACC excluded (it has
+                 no `parts`/part-name concept — see accItemCategoryLabel elsewhere for its own,
+                 separate "which item was requested" breakdown). Ranked by combined total,
+                 highest first, same convention as every other summary in this tab; capped to
+                 the top 15 part names so the x-axis doesn't become unreadable if there are many. -->
+            <div class="card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">ชิ้นส่วนที่ขอตัดซ่อมบ่อยที่สุด แยกตามประเภท <span class="font-normal normal-case opacity-70">(Part Repair Frequency — Cut-Replace vs Supplier)</span></h3>
+                    <button id="partRepairChartToggleBtn" onclick="toggleChartDetails('partRepairChart')" class="text-[10px] font-bold text-indigo-600 hover:underline whitespace-nowrap ml-1">Show details</button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="partRepairChart"></canvas>
+                </div>
+                <div id="partRepairChartDetails" class="hidden mt-3 text-xs text-slate-600 max-h-56 overflow-y-auto">
+                    <table class="w-full text-xs">
+                        <thead class="sticky top-0 bg-white">
+                            <tr class="text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-100">
+                                <th class="text-left font-bold py-1">ชิ้นส่วน</th>
+                                <th class="text-right font-bold py-1">ตัดเปลี่ยน (ชิ้น)</th>
+                                <th class="text-right font-bold py-1">ตัดเปลี่ยน-ซัพพลายเออร์ (ชิ้น)</th>
+                                <th class="text-right font-bold py-1">รวม (ชิ้น)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partRepairChartDetailsBody"></tbody>
+                    </table>
                 </div>
             </div>
 
@@ -2905,6 +3019,18 @@
             if (!data.ok) throw new Error(data.error || `API error loading ${sheetName}`);
             return data.rows;
         }
+        // Incremental fetch for Repairs — { rows: [...changed], deletedIds: [...], full: bool }.
+        // `full` tells the caller whether this was actually an incremental response or a full
+        // one (the deployed backend not supporting `since` yet, or `since` being null/omitted),
+        // so the caller can apply it the right way (merge vs. wholesale replace) either way.
+        async function apiGetRepairsSync(since) {
+            const url = since
+                ? `${API_BASE_URL}?sheet=Repairs&since=${encodeURIComponent(since)}`
+                : `${API_BASE_URL}?sheet=Repairs`;
+            const data = await fetchJsonWithRetry(url);
+            if (!data.ok) throw new Error(data.error || 'API error loading Repairs');
+            return { rows: data.rows || [], deletedIds: data.deletedIds || [], full: !data.incremental };
+        }
         async function apiPost(body) {
             // 5 attempts (vs the default 3) — writes matter more than reads for not losing
             // data, and the lock-busy retry above needs a bit more headroom to actually outlast
@@ -3369,31 +3495,67 @@
         }
 
         // --- STORAGE (Google Sheets backend) ---
+        // Incremental sync (Repairs only) — per "ปรับให้ backend ส่งเฉพาะข้อมูลที่เปลี่ยนแปลง
+        // แทนการดึงทั้งชีททุกครั้ง". `lastSyncTs` tracks the newest `lastModified` this client has
+        // actually seen; every poll after the first one asks the server for only rows touched
+        // AFTER that instead of the whole sheet. Falls back to a full fetch automatically:
+        // - on the very first load (lastSyncTs is still null)
+        // - periodically anyway, every FULL_RESYNC_EVERY ticks (see autoRefreshTick) as a
+        //   reconciliation safety net against any drift the incremental path can't model
+        // - if the deployed backend doesn't understand `since` yet (old .gs, no `incremental`
+        //   flag on the response) — it just ignores the unknown query param and returns the
+        //   full sheet as before, which this code detects and treats as a full response, so
+        //   this is safe to ship even before the user deploys the matching backend change.
+        let lastSyncTs = null;
+        function newestLastModified(rows) {
+            return (rows || []).reduce((max, r) => (r.lastModified && r.lastModified > max) ? r.lastModified : max, lastSyncTs || '');
+        }
+        // Applies an incremental (or full) Repairs response onto the in-memory `repairs` array —
+        // upserts every changed/new row by id, drops any id in `deletedIds`, migrates only the
+        // CHANGED rows (migrateRepairsData's steps are all per-record — see its own functions —
+        // so running it on just the delta is equivalent to running it on everything, cheaper).
+        function applyRepairsSync(rows, deletedIds) {
+            if (deletedIds && deletedIds.length) {
+                const deleteSet = new Set(deletedIds);
+                repairs = repairs.filter(r => !deleteSet.has(r.id));
+            }
+            if (rows && rows.length) {
+                migrateRepairsData(rows);
+                rows.forEach(row => {
+                    const idx = repairs.findIndex(r => r.id === row.id);
+                    if (idx === -1) repairs.push(row); else repairs[idx] = row;
+                });
+            }
+            resolveDuplicateDocNos();
+            lastSyncTs = newestLastModified(rows);
+        }
         async function loadFromStorage() {
             try {
                 const rows = await apiGetAll('Repairs');
                 if (rows && rows.length) {
                     repairs = migrateRepairsData(rows);
                     resolveDuplicateDocNos();
+                    lastSyncTs = newestLastModified(rows);
                 } else {
                     // BUG FIX: an empty `rows` array used to be treated as "brand-new sheet,
                     // safe to seed" and immediately WROTE the sample dataset back over the whole
-                    // Repairs sheet via autoSave(null, true) → apiReplaceAll. But apiGetAll
-                    // returning [] doesn't only mean "genuinely empty" — a transient Apps Script
-                    // hiccup, quota issue, or any bug that returns {ok:true, rows:[]} for a
-                    // NON-empty sheet would silently nuke every real record with sample data,
-                    // no confirmation asked. Per "ในระบบไม่มีรายการที่เสร็จจริงๆหรอทำไมมีแค่
-                    // ตัวอย่างข้อมูล" — show the sample data locally same as the network-failure
-                    // branch below, but NEVER auto-write it back. Seeding a genuinely fresh
-                    // sheet is the admin's explicit call via "Reset to Default Data", not this
-                    // silent path.
-                    repairs = JSON.parse(JSON.stringify(defaultRepairs));
-                    showToast('Google Sheet ไม่มีข้อมูล (หรือโหลดไม่สำเร็จ) กำลังแสดงข้อมูลตัวอย่าง — ยังไม่ได้บันทึกทับชีทจริง (Sheet returned no data — showing sample data locally only, nothing written back)', 'warning');
+                    // Repairs sheet via autoSave(null, true) → apiReplaceAll. That auto-write-back
+                    // is gone (see history), but this branch was still silently substituting the
+                    // sample dataset (defaultRepairs, e.g. CR-000001) into the live tables/history —
+                    // per "หน้าประวัติยังคงไม่แสดงรายการจริงแต่แสดง mock up ต้องการให้ลบ mock up
+                    // นี้ออก" that mockup must never appear at all. apiGetAll returning [] doesn't
+                    // only mean "genuinely empty" — a transient Apps Script hiccup, quota issue, or
+                    // any bug that returns {ok:true, rows:[]} for a NON-empty sheet would otherwise
+                    // show fake data as if it were real. Show nothing and surface the problem
+                    // instead; seeding a genuinely fresh sheet is the admin's explicit call via
+                    // "Reset to Default Data", not this silent path.
+                    repairs = [];
+                    showToast('Google Sheet ไม่มีข้อมูล (หรือโหลดไม่สำเร็จ) — ไม่พบรายการจริง (Sheet returned no data — no records to show)', 'warning');
                 }
             } catch (e) {
                 console.error("Failed to load repairs from Google Sheet", e);
-                repairs = JSON.parse(JSON.stringify(defaultRepairs));
-                showToast('ไม่สามารถเชื่อมต่อ Google Sheet ได้ กำลังใช้ข้อมูลตัวอย่าง (Cannot connect - using sample data, offline mode)', 'warning');
+                repairs = [];
+                showToast('ไม่สามารถเชื่อมต่อ Google Sheet ได้ ไม่สามารถโหลดข้อมูลได้ (Cannot connect to Google Sheet - no data loaded)', 'warning');
             }
         }
 
@@ -4183,7 +4345,13 @@
             const repairsSig = repairsArr.length + '|' + repairsArr.map(r => `${r.id}:${r.status}:${r.archived}`).join(',');
             return repairsSig + '||' + usersArr.length + '||' + logArr.length;
         }
-        let lastAutoRefreshSignature = null;
+        // Every 10th tick (~2 min at the 12s interval) forces a FULL Repairs resync even though
+        // incremental sync is available — a reconciliation safety net against anything the
+        // delta path can't model (a client that was offline past what `since` can express,
+        // clock skew between devices, etc.), so any drift self-heals quickly instead of
+        // compounding silently forever.
+        const FULL_RESYNC_EVERY_N_TICKS = 10;
+        let autoRefreshTickCount = 0;
         // Separate from the auto-refresh one above — this tracks what data was actually
         // rendered onto the Analytics tab last time it ran (from EITHER switchTab or an
         // auto-refresh tick while the tab was visible), so switchTab('analytics') can skip
@@ -4210,8 +4378,15 @@
             if (document.querySelector('.fixed.inset-0.z-50:not(.hidden)')) return;
 
             try {
-                const [newRepairs, newUsers, newLog] = await Promise.all([
-                    apiGetAll('Repairs'), apiGetAll('Users'), apiGetAll('Log')
+                autoRefreshTickCount++;
+                // null `since` forces a full fetch — on the first tick ever (lastSyncTs unset),
+                // periodically for reconciliation (see FULL_RESYNC_EVERY_N_TICKS above), or any
+                // time apiGetRepairsSync itself reports the server didn't actually honor `since`
+                // (an old, not-yet-updated backend — see its own comment).
+                const forceFullResync = !lastSyncTs || (autoRefreshTickCount % FULL_RESYNC_EVERY_N_TICKS === 0);
+                const [repairsSync, newUsers, newLog] = await Promise.all([
+                    apiGetRepairsSync(forceFullResync ? null : lastSyncTs),
+                    apiGetAll('Users'), apiGetAll('Log')
                 ]);
                 // BUG FIX: every 12s tick used to unconditionally rebuild every chart (Chart.js
                 // destroy+recreate per canvas), the period-summary table, both history tables,
@@ -4220,18 +4395,29 @@
                 // synchronous work to visibly freeze the page for a moment, which if it lands
                 // while someone is mid-scroll/mid-click reads as "หน้าเว็บหน่วงกดแทบไม่ได้" —
                 // per report, worse now that the period-summary table (a heavier render) exists.
-                // Skip the whole render block when a cheap signature says nothing changed;
-                // detectAndNotify/migrateRepairsData/resolveDuplicateDocNos still always run
-                // (cheap, and correctness-sensitive) so notifications/dedup stay live either way.
-                const signature = autoRefreshSignature(newRepairs || [], newUsers || [], newLog || []);
-                const changed = signature !== lastAutoRefreshSignature;
-                lastAutoRefreshSignature = signature;
+                // Skip the whole render block when a signature over the CURRENT in-memory state
+                // says nothing actually changed after applying this tick's sync — computed
+                // before/after so it works identically whether this tick was a full replace or
+                // an incremental merge. detectAndNotify/dedup still always run (cheap, and
+                // correctness-sensitive) so notifications/dedup stay live either way.
+                const prevSignature = autoRefreshSignature(repairs, users, auditLog);
 
-                detectAndNotify(newRepairs || []);
-                repairs = migrateRepairsData(newRepairs || []);
-                resolveDuplicateDocNos();
+                detectAndNotify(repairsSync.rows);
+                if (repairsSync.full) {
+                    // Either we asked for a full resync, or the deployed backend doesn't
+                    // recognize `since` yet and returned everything regardless — either way,
+                    // treat it as the authoritative complete snapshot, same as before this
+                    // feature existed.
+                    repairs = migrateRepairsData(repairsSync.rows);
+                    resolveDuplicateDocNos();
+                    lastSyncTs = newestLastModified(repairsSync.rows);
+                } else {
+                    applyRepairsSync(repairsSync.rows, repairsSync.deletedIds);
+                }
                 users = newUsers || [];
                 auditLog = (newLog || []).slice().reverse();
+
+                const changed = autoRefreshSignature(repairs, users, auditLog) !== prevSignature;
 
                 if (!changed) return;
 
@@ -9028,12 +9214,30 @@
                 r.qcPendingTypes = r.qcPendingTypes.filter(t => t !== CUTTING_QC_TYPE);
             }
         }
+        // Cosmetic-only backfill for records cancelled before this app enforced a mandatory
+        // reason/canceller/timestamp on every cancellation (confirmCancelRequest requires all
+        // three today — see its own comment) — those old records were written straight to the
+        // sheet with status:'Cancelled' and no cancelReason at all, which rendered as a bare "-"
+        // for reason/ยกเลิกโดย/วันที่ in renderCancelledHistory, indistinguishable from a bug.
+        // Per "รายการที่ถูกยกเลิก บางรายการไม่มีวันที่ เหตุผล และ ยกเลิกโดยใคร...ช่วยเช็คระบบ" —
+        // the real cause was confirmed to be pre-existing legacy data (no other code path in this
+        // app can ever set status:'Cancelled' without going through the mandatory-reason modal),
+        // so this only relabels the gap clearly instead of inventing a fake reason/date we don't
+        // actually know. Never written back to the sheet — display-only, same as every other
+        // migrate* function here.
+        function backfillLegacyCancelReason(r) {
+            if (r.status !== 'Cancelled') return;
+            if (r.cancelReason && typeof r.cancelReason === 'object') return;
+            if (typeof r.cancelReason === 'string' && r.cancelReason) return; // legacy string reason — restoreLegacyMergedRecords/history render already handle this shape
+            r.cancelReason = { text: 'ไม่ระบุ (ข้อมูลเก่าก่อนระบบบังคับกรอกเหตุผล)', name: 'ไม่ระบุ (ข้อมูลเก่า)', ts: null, legacy: true };
+        }
         function migrateRepairsData(list) {
             (list || []).forEach(migrateLegacyEmbFields);
             (list || []).forEach(backfillCuttingQc);
             (list || []).forEach(stripBogusCuttingQc);
             restoreLegacyMergedRecords(list);
             (list || []).forEach(reconcileAccDoneAdvancement);
+            (list || []).forEach(backfillLegacyCancelReason);
             return list;
         }
         // Re-checks whether ACC's exemption rules (see embNeedsAcc — print types,
@@ -12283,6 +12487,42 @@
             setAccBucket('NeedPay', accBuckets.needPay);
             setAccBucket('NoNeed', accBuckets.noNeed);
             setAccBucket('Paid', accBuckets.paid);
+            // Cut-Replace / Supplier Cut-Replace Summary — same ใบขอ/รายการ/ชิ้น breakdown as ACC
+            // Summary above, but bucketed by lifecycle stage (total/in-progress/done/cancelled)
+            // instead of payment, since "need to pay" isn't a concept that applies to cutting
+            // work. Runs over ALL repairs (not activeForHealth) since the cancelled bucket needs
+            // archived:true cancelled records too. "รายการ (Lines)" = part rows, "ชิ้น (Pcs)" =
+            // total qty across those rows — same convention as the ACC buckets above.
+            const makeReqBucket = () => ({ docs: 0, lines: 0, pcs: 0 });
+            const crBuckets = { total: makeReqBucket(), progress: makeReqBucket(), done: makeReqBucket(), cancel: makeReqBucket() };
+            const spBuckets = { total: makeReqBucket(), progress: makeReqBucket(), done: makeReqBucket(), cancel: makeReqBucket() };
+            const bumpReq = (bucket, r) => {
+                bucket.docs++;
+                bucket.lines += (r.parts || []).length;
+                bucket.pcs += (r.parts || []).reduce((s, p) => s + (parseInt(p.qty) || 0), 0);
+            };
+            repairs.forEach(r => {
+                const type = reqTypeOf(r);
+                if (type !== 'CutReplace' && type !== 'SupplierCutReplace') return;
+                const buckets = type === 'CutReplace' ? crBuckets : spBuckets;
+                bumpReq(buckets.total, r);
+                if (r.status === 'Cancelled') bumpReq(buckets.cancel, r);
+                else if (r.status === 'Received') bumpReq(buckets.done, r);
+                else bumpReq(buckets.progress, r);
+            });
+            const setReqBucket = (prefix, bucket) => {
+                document.getElementById(`ana${prefix}Docs`).innerText = bucket.docs;
+                document.getElementById(`ana${prefix}Lines`).innerText = bucket.lines;
+                document.getElementById(`ana${prefix}Pcs`).innerText = bucket.pcs;
+            };
+            setReqBucket('CrTotal', crBuckets.total);
+            setReqBucket('CrProgress', crBuckets.progress);
+            setReqBucket('CrDone', crBuckets.done);
+            setReqBucket('CrCancel', crBuckets.cancel);
+            setReqBucket('SpTotal', spBuckets.total);
+            setReqBucket('SpProgress', spBuckets.progress);
+            setReqBucket('SpDone', spBuckets.done);
+            setReqBucket('SpCancel', spBuckets.cancel);
             renderOntimeDelay();
 
             Object.keys(myCharts).forEach(key => { if (myCharts[key]) myCharts[key].destroy(); });
@@ -12486,8 +12726,59 @@
             });
             renderChartDetailsList('requestTypeChart', requestTypeLabels, requestTypeData);
 
+            renderPartRepairChart();
             renderWipTrendChart();
             renderPeriodSummary();
+        }
+        // Part-name breakdown by request type (Cut-Replace vs Supplier Cut-Replace), per
+        // "ขอเพิ่มสรุปเป็นกราฟว่าโดยแบ่งเป็นการตัดซ่อม และการตัดซ่อมที่เกิดจากซัพพลายเออร์ โดย
+        // ต้องการแยกชิ้นส่วนว่าชิ้นส่วนไหนมีการขอตัดซ่อมบ้าง". ACC excluded (no `parts`). Ranked
+        // by combined (CutReplace + Supplier) qty, highest first, capped to the top 15 names so
+        // the chart stays readable even with many distinct part names in the data.
+        function renderPartRepairChart() {
+            const byPart = {}; // partName -> { CutReplace: qty, SupplierCutReplace: qty }
+            repairs.forEach(r => {
+                const type = reqTypeOf(r);
+                if (type === 'ACCOnly') return;
+                (r.parts || []).forEach(p => {
+                    const name = PART_NAME_LABELS[p.name] || p.name || 'ไม่ระบุ';
+                    const qty = parseInt(p.qty) || 0;
+                    if (!byPart[name]) byPart[name] = { CutReplace: 0, SupplierCutReplace: 0 };
+                    byPart[name][type] += qty;
+                });
+            });
+            const ranked = Object.entries(byPart)
+                .sort((a, b) => (b[1].CutReplace + b[1].SupplierCutReplace) - (a[1].CutReplace + a[1].SupplierCutReplace))
+                .slice(0, 15);
+            const labels = ranked.length ? ranked.map(([name]) => name) : ['-'];
+            const cutReplaceData = ranked.length ? ranked.map(([, v]) => v.CutReplace) : [0];
+            const supplierData = ranked.length ? ranked.map(([, v]) => v.SupplierCutReplace) : [0];
+            const canvas = document.getElementById('partRepairChart');
+            if (!canvas) return;
+            if (myCharts.partRepairChart) myCharts.partRepairChart.destroy();
+            myCharts.partRepairChart = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'ตัดเปลี่ยน (Cut-Replace)', data: cutReplaceData, backgroundColor: '#6366f1' },
+                        { label: 'ตัดเปลี่ยน-ซัพพลายเออร์ (Supplier)', data: supplierData, backgroundColor: '#f97316' },
+                    ],
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 } } } },
+            });
+            const detailsBodyEl = document.getElementById('partRepairChartDetailsBody');
+            if (detailsBodyEl) {
+                detailsBodyEl.innerHTML = !ranked.length
+                    ? '<tr><td colspan="4" class="text-slate-400 text-center py-2">ไม่มีข้อมูล</td></tr>'
+                    : ranked.map(([name, v]) => `
+                    <tr class="border-b border-slate-50">
+                        <td class="py-1">${escapeHtml(name)}</td>
+                        <td class="py-1 text-right">${v.CutReplace}</td>
+                        <td class="py-1 text-right">${v.SupplierCutReplace}</td>
+                        <td class="py-1 text-right font-bold text-slate-700">${v.CutReplace + v.SupplierCutReplace}</td>
+                    </tr>`).join('');
+            }
         }
 
         // Cut-Replace vs ACC requisition trend — bucketed by day/week/month (toggle), across
