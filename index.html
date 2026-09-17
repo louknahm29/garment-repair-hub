@@ -4881,10 +4881,15 @@
             }
             return sel.value;
         }
+        // Repair/CutReplace relabeled to plain "ซ่อมได้ / ซ่อมไม่ได้" per "ปรับเป็นปุ่ม 2
+        // ตัวเลือก ซ่อมได้/ซ่อมไม่ได้แทน" — display wording only, the underlying `value` codes
+        // (Repair/CutReplace) are unchanged since the rest of the app keys its logic off them
+        // (repair-kickback routing, auto cut-replace creation, etc.). Pass/NotifyVendor keep
+        // their existing wording, per the user's own scoping of this change.
         const QC_DECISION_OPTIONS = [
             { value: 'Pass', label: 'ผ่าน (Pass)' },
-            { value: 'Repair', label: 'ส่งซ่อม (Send for Repair)' },
-            { value: 'CutReplace', label: 'แจ้งตัดเปลี่ยน (Request Cut-Replace)' },
+            { value: 'Repair', label: 'ซ่อมได้ (Repairable)' },
+            { value: 'CutReplace', label: 'ซ่อมไม่ได้ (Not Repairable)' },
             { value: 'NotifyVendor', label: 'แจ้ง Vendor (Notify Vendor)' },
         ];
         const QC_DECISION_LABELS = Object.fromEntries(QC_DECISION_OPTIONS.map(o => [o.value, o.label]));
