@@ -943,7 +943,7 @@
                          suggestion banner below only ever checks SAME-DAY groups, so without
                          this button a cross-day-only set of candidates would have no way to be
                          opened at all. -->
-                    <button onclick="openMergeModal()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1" title="ดูรายการที่สามารถรวมใบสั่งซ่อมได้">
+                    <button id="btnMergeCandidates" onclick="openMergeModal()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1" title="ดูรายการที่สามารถรวมใบสั่งซ่อมได้">
                         <span>🔗 รายการที่รวมได้ <span class="text-[9px] font-normal opacity-70">(Merge Candidates)</span></span>
                     </button>
                     <button id="btnResetData" onclick="resetToDefaultData()" class="btn-ghost text-xs text-slate-500 hover:text-rose-600 flex items-center gap-1 hidden" title="คืนค่าข้อมูลตัวอย่างเริ่มต้น (Admin เท่านั้น)">
@@ -2558,8 +2558,8 @@
         <div class="bg-white rounded-2xl w-full max-w-6xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-indigo-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
                 <div>
-                    <h3 class="font-bold text-base">รวมใบสั่งซ่อม (Job/Style เดียวกัน)</h3>
-                    <p class="text-[10px] text-indigo-100 uppercase font-semibold">Merge Same-Job Requests</p>
+                    <h3 class="font-bold text-base">รวมใบสั่งซ่อม (Style เดียวกัน) <span class="text-[10px] font-normal opacity-80">— Marker/Admin เท่านั้น</span></h3>
+                    <p class="text-[10px] text-indigo-100 uppercase font-semibold">Merge Same-Style Requests (Marker/Admin only)</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <!-- Admin-only bulk undo — per "ต้องการ clear merge request ก่อนหน้านี้
@@ -3831,6 +3831,13 @@
         function canKickback(user) {
             return !!user && (hasRole(user, 'Admin') || hasRole(user, 'FactoryManager') || hasRole(user, 'ProductionManager') || hasRole(user, 'Approver'));
         }
+        // Merging same-Style requests used to be open to anyone logged in — per "ต้องการปรับเป็น
+        // หน้าสำหรับรวม Job/style ให้เป็น Maker เท่านั้นที่เป็นคนรวม", restricted to Marker (the
+        // department that actually benefits from combining same-style work) plus Admin, matching
+        // the rest of the app's "Admin can always act" convention.
+        function canMerge(user) {
+            return !!user && (hasRole(user, 'Admin') || hasRole(user, 'Marker'));
+        }
         // Whoever is currently the one actionable department on this item — same permission
         // check that decides whether they see the "รับงาน/ส่งต่อ" button for it.
         function currentStageActorCan(user, item) {
@@ -4487,6 +4494,7 @@
             document.getElementById('currentUserRole').innerText = currentUser.roles.join(' / ');
             document.getElementById('tab-admin').classList.toggle('hidden', !hasRole(currentUser, 'Admin'));
             document.getElementById('btnResetData').classList.toggle('hidden', !isPrimaryAdmin(currentUser));
+            document.getElementById('btnMergeCandidates').classList.toggle('hidden', !canMerge(currentUser));
             renderNotifPanel();
             loadKpiSeenCounts();
             buildKpiTabBar();
@@ -6547,7 +6555,7 @@
             badge.classList.toggle('hidden', !activeKpiPredicate);
             if (activeKpiPredicate) document.getElementById('activeKpiBadgeLabel').innerText = activeKpiLabel;
             const mergeLink = document.getElementById('activeKpiMergeCandidatesLink');
-            if (mergeLink) mergeLink.classList.toggle('hidden', activeKpiKey !== 'mergedDocs');
+            if (mergeLink) mergeLink.classList.toggle('hidden', activeKpiKey !== 'mergedDocs' || !canMerge(currentUser));
         }
         // Pure — recomputes the currently-filtered list from whatever's presently in the
         // search box/dropdowns/activeKpiPredicate, without rendering anything. This is also
@@ -6691,7 +6699,11 @@
                 // status === 'PendingApproval'), permanently stuck with no way to proceed. Adding
                 // status to the key keeps every group at a single, uniform stage, per "ห้ามรวมข้าม
                 // สถานะ" — a doc only offers to merge with others sitting at the exact same step.
-                const keyParts = [r.style, r.job, r.dept, r.requestType, r.status];
+                // `job` deliberately dropped from the key — per "ข้อมูลหลักที่ marker ใช้จะเป็น
+                // style" (merging is now Marker/Admin-only, and Marker works off the STYLE's
+                // marker pattern, not the Job number), so two requests on the same style but
+                // different jobs are now offered together too.
+                const keyParts = [r.style, r.dept, r.requestType, r.status];
                 if (!crossDay) keyParts.push(dateOnlyPart(r.date));
                 const key = keyParts.join('||');
                 (groups[key] = groups[key] || []).push(r);
@@ -6701,6 +6713,7 @@
         function renderMergeBanner() {
             const banner = document.getElementById('mergeSuggestBanner');
             if (!banner) return;
+            if (!canMerge(currentUser)) { banner.classList.add('hidden'); return; }
             const groups = findMergeableGroups(false);
             banner.classList.toggle('hidden', groups.length === 0);
             if (groups.length) {
@@ -6710,7 +6723,7 @@
                 // (restore the top banner) plus the earlier "แสดงจำนวนรายการที่สามารถรวมได้
                 // และรวมแล้วจะเหลือทั้งหมดกี่รายการ" ask, so this is visible without opening
                 // the modal at all.
-                document.getElementById('mergeSuggestText').innerText = `พบ ${groups.length} กลุ่มงาน (รวม ${totalDocs} ใบ) ที่ Job/Style/แผนกเดียวกัน สั่งวันเดียวกัน — หากรวมทั้งหมดจะเหลือ ${groups.length} ใบ (ลดลง ${totalDocs - groups.length} ใบ)`;
+                document.getElementById('mergeSuggestText').innerText = `พบ ${groups.length} กลุ่มงาน (รวม ${totalDocs} ใบ) ที่ Style/แผนกเดียวกัน สั่งวันเดียวกัน — หากรวมทั้งหมดจะเหลือ ${groups.length} ใบ (ลดลง ${totalDocs - groups.length} ใบ)`;
             }
         }
         // Modal-local state — reset every time the modal is (re)opened, never persisted, so it
@@ -6722,6 +6735,7 @@
         // date list on every click.
         let mergeSelectedDates = null;
         function openMergeModal() {
+            if (!canMerge(currentUser)) { showToast('เฉพาะ Marker หรือ Admin เท่านั้นที่รวมใบสั่งซ่อมได้ (Marker/Admin only)', 'warning'); return; }
             mergeCrossDayMode = false;
             mergeSelectedDates = null;
             mergeAllUnmergedExpanded = false;
@@ -6807,15 +6821,22 @@
 
             document.getElementById('mergeGroupsContainer').innerHTML = groups.length ? groups.map((g, gIdx) => {
                 const spansMultipleDays = new Set(g.map(r => dateOnlyPart(r.date))).size > 1;
+                // job is no longer part of the grouping key (see findMergeableGroups' own
+                // comment — merging is now keyed on Style, the data Marker actually works off),
+                // so a group's members can legitimately span different Job numbers now — flagged
+                // here, and each row below shows its own job, instead of the header implying
+                // every member shares g[0]'s job.
+                const spansMultipleJobs = new Set(g.map(r => r.job)).size > 1;
                 // status is now part of findMergeableGroups' key, so every group is guaranteed
                 // to sit at a single uniform stage — no "คนละสถานะ" badge needed anymore (see
                 // findMergeableGroups' own comment for why mixing was unsafe).
                 return `
                 <div class="border rounded-xl p-3 bg-slate-50" data-group-idx="${gIdx}">
-                    <div class="text-xs font-bold text-slate-700 mb-2">${escapeHtml(g[0].style)} / ${escapeHtml(g[0].job)} — ${escapeHtml(g[0].dept)}
+                    <div class="text-xs font-bold text-slate-700 mb-2">${escapeHtml(g[0].style)} — ${escapeHtml(g[0].dept)}
                         ${spansMultipleDays
                             ? `<span class="text-amber-600 font-bold text-[10px] bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 ml-1">คนละวันที่</span>`
                             : `<span class="text-slate-400 font-normal">(${escapeHtml(dateOnlyPart(g[0].date))})</span>`}
+                        ${spansMultipleJobs ? `<span class="text-violet-600 font-bold text-[10px] bg-violet-50 border border-violet-200 rounded px-1.5 py-0.5 ml-1">คนละ Job</span>` : ''}
                     </div>
                     <div class="space-y-1 mb-2">
                         ${g.map((r, i) => `
@@ -6823,6 +6844,7 @@
                                 <input type="checkbox" class="mergeItemCheck" data-id="${escapeHtml(r.id)}" checked>
                                 <span class="font-bold ${i === 0 ? 'text-indigo-600' : 'text-slate-600'}">${escapeHtml(docLabel(r))}</span>
                                 ${i === 0 ? '<span class="text-[9px] text-indigo-500 font-bold">(ใบหลัก — เก่าสุด)</span>' : ''}
+                                <span class="text-slate-500 font-bold">${escapeHtml(r.job)}</span>
                                 <span class="text-slate-400">${r.parts.length} รายการชิ้นส่วน, ${(r.accRequestList||[]).length} รายการ ACC เพิ่มเติม</span>
                                 <span class="text-sky-600 text-[10px] font-bold">${escapeHtml(STATUS_LABELS[r.status] || r.status)}</span>
                                 <span class="text-slate-400 ml-auto">${escapeHtml(fmtDT(r.date))}</span>
@@ -6955,6 +6977,7 @@
             previewEl.classList.remove('hidden');
         }
         function mergeSelectedGroup(groupIdx) {
+            if (!canMerge(currentUser)) { showToast('เฉพาะ Marker หรือ Admin เท่านั้นที่รวมใบสั่งซ่อมได้ (Marker/Admin only)', 'warning'); return; }
             const groups = document.getElementById('mergeGroupsContainer')._mergeGroups;
             const group = groups[groupIdx];
             if (!group) return;
