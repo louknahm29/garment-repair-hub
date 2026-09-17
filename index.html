@@ -6659,7 +6659,13 @@
         // "ถ้างานไปอยู่ในแผนกอื่นแล้วแต่เค้ายังไม่ได้ดำเนินการก็สามารถให้รวมงานได้เหมือนกัน" — a
         // record already past BU/FM approval and sitting in one of these pipeline hand-off
         // queues (Marker→Cutting Sheet→Fabric Check→PPC/Stock Fabric→Cutting) can still be
-        // merged as long as nobody has actually received/touched it there yet.
+        // merged as long as nobody has actually received/touched it there yet. BUG FIX: this
+        // list spans many stages, but findMergeableGroups() only ever groups records that share
+        // the exact SAME status with each other — merging a still-PendingApproval doc into an
+        // already-further-along one used to permanently strand its parts with no route back
+        // through the approval/embellishment-decision screen (that screen only ever renders for
+        // status === 'PendingApproval'), leaving the user unable to proceed at all. See
+        // findMergeableGroups' own comment.
         const MERGE_ELIGIBLE_STATUSES = [
             'PendingApproval', 'Rejected', 'PendingFMApproval', 'FMRejected', 'Approved',
             'MarkerSent', 'FabricCheckPending', 'PPCFabricPending', 'StockFabricPending', 'StockFabricSent',
@@ -6677,7 +6683,15 @@
             const eligible = repairs.filter(r => !r.archived && !r.mergedInto && MERGE_ELIGIBLE_STATUSES.includes(r.status));
             const groups = {};
             eligible.forEach(r => {
-                const keyParts = [r.style, r.job, r.dept, r.requestType];
+                // BUG FIX: status used to NOT be part of the grouping key, so a group could mix
+                // a record still at PendingApproval with one already past it (e.g. MarkerSent) —
+                // mergeSelectedGroup keeps the oldest record's status regardless, so the
+                // not-yet-approved record's parts got folded in with NO route back through the
+                // approval/embellishment-decision screen ever again (that screen only renders for
+                // status === 'PendingApproval'), permanently stuck with no way to proceed. Adding
+                // status to the key keeps every group at a single, uniform stage, per "ห้ามรวมข้าม
+                // สถานะ" — a doc only offers to merge with others sitting at the exact same step.
+                const keyParts = [r.style, r.job, r.dept, r.requestType, r.status];
                 if (!crossDay) keyParts.push(dateOnlyPart(r.date));
                 const key = keyParts.join('||');
                 (groups[key] = groups[key] || []).push(r);
@@ -6793,17 +6807,15 @@
 
             document.getElementById('mergeGroupsContainer').innerHTML = groups.length ? groups.map((g, gIdx) => {
                 const spansMultipleDays = new Set(g.map(r => dateOnlyPart(r.date))).size > 1;
-                // A group can now mix docs at different pipeline stages (e.g. one still
-                // PendingApproval, another already MarkerSent) since eligibility extends past
-                // approval — flagged here so it's obvious before even opening the preview.
-                const spansMultipleStatuses = new Set(g.map(r => r.status)).size > 1;
+                // status is now part of findMergeableGroups' key, so every group is guaranteed
+                // to sit at a single uniform stage — no "คนละสถานะ" badge needed anymore (see
+                // findMergeableGroups' own comment for why mixing was unsafe).
                 return `
                 <div class="border rounded-xl p-3 bg-slate-50" data-group-idx="${gIdx}">
                     <div class="text-xs font-bold text-slate-700 mb-2">${escapeHtml(g[0].style)} / ${escapeHtml(g[0].job)} — ${escapeHtml(g[0].dept)}
                         ${spansMultipleDays
                             ? `<span class="text-amber-600 font-bold text-[10px] bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 ml-1">คนละวันที่</span>`
                             : `<span class="text-slate-400 font-normal">(${escapeHtml(dateOnlyPart(g[0].date))})</span>`}
-                        ${spansMultipleStatuses ? `<span class="text-sky-600 font-bold text-[10px] bg-sky-50 border border-sky-200 rounded px-1.5 py-0.5 ml-1">คนละสถานะ/แผนก</span>` : ''}
                     </div>
                     <div class="space-y-1 mb-2">
                         ${g.map((r, i) => `
@@ -6950,6 +6962,15 @@
             const selectedIds = Array.from(groupEl.querySelectorAll('.mergeItemCheck:checked')).map(cb => cb.dataset.id);
             if (selectedIds.length < 2) { showToast('เลือกอย่างน้อย 2 ใบเพื่อรวม (Select at least 2 to merge)', 'warning'); return; }
             const selected = group.filter(r => selectedIds.includes(r.id));
+            // Defensive belt-and-suspenders check — findMergeableGroups() already only ever
+            // forms same-status groups, so this should never actually trigger, but merging
+            // across statuses is exactly what stranded parts with no way to proceed (see
+            // findMergeableGroups' comment), so refuse outright rather than silently allow it
+            // if this ever gets called with a hand-built/stale selection.
+            if (new Set(selected.map(r => r.status)).size > 1) {
+                showToast('ไม่สามารถรวมรายการที่อยู่คนละสถานะกันได้ (Cannot merge records at different statuses)', 'warning');
+                return;
+            }
             const primary = selected[0]; // already sorted oldest-first
             const others = selected.slice(1);
             const primaryIdx = repairs.findIndex(r => r.id === primary.id);
@@ -8065,11 +8086,28 @@
         // Groups an item's flat one-entry-per-size parts[] back into one row per
         // (name, part) pair — same grouping editOrder() uses — so BU ticks Embellishment
         // once per part, not once per size.
+        // Shared by every "one card per (name,part)" grouping used across Approval/FM-Marker/
+        // Add-Embellishment (groupPartsForEmb) and every write-back path that needs to
+        // recompute the identical key per raw part — MUST always match groupPartsForEmb's own
+        // key, or a merged doc's decision cards and the write-back onto raw parts silently
+        // drift apart. Includes sourceDocNo whenever ANY part in the record carries one (i.e.
+        // after a merge — see mergeSelectedGroup/tagPartsWithDoc) so two different source
+        // bundles that happen to share the same part Name+Part never collapse into one card —
+        // previously BU/PM's decision for one bundle silently overwrote the other's real
+        // embellishment need with no error shown, a genuine risk for "same Job/Style" merges
+        // where two source docs commonly DO share a part name+letter.
+        function partsHaveSourceDoc(parts) {
+            return (parts || []).some(p => p.sourceDocNo);
+        }
+        function embPartKey(p, hasSourceDoc) {
+            return (hasSourceDoc ? (p.sourceDocNo || '') + '||' : '') + (p.name || '') + '||' + (p.part || '');
+        }
         function groupPartsForEmb(parts) {
+            const hasSourceDoc = partsHaveSourceDoc(parts);
             const groups = [];
             const groupMap = {};
             parts.forEach(p => {
-                const key = (p.name || '') + '||' + (p.part || '');
+                const key = embPartKey(p, hasSourceDoc);
                 if (!groupMap[key]) {
                     groupMap[key] = { key, name: p.name, part: p.part || '', embellishment: p.embellishment || [], embNone: !!p.embNone };
                     groups.push(groupMap[key]);
@@ -8118,8 +8156,9 @@
             // 'input' listener below), per the "จำนวนตำแหน่ง...23" report where a BU had typed
             // the piece quantity into the position-count field by mistake.
             const qtyByKey = {};
+            const qtyHasSourceDoc = partsHaveSourceDoc(item.parts || []);
             (item.parts || []).forEach(p => {
-                const key = (p.name || '') + '||' + (p.part || '');
+                const key = embPartKey(p, qtyHasSourceDoc);
                 qtyByKey[key] = (qtyByKey[key] || 0) + parseInt(p.qty || 0);
             });
             container.innerHTML = groups.map(g => {
@@ -8386,8 +8425,9 @@
             const missingCount = Object.values(newTicksByKey).some(arr => arr.some(e => e.count <= 0));
             if (missingCount) { showToast('กรุณาระบุจำนวนตำแหน่งให้ครบทุกประเภทที่ติ๊กเพิ่ม (Please specify a position count for every newly-ticked type)', 'warning'); return; }
             const addedTypes = new Set();
+            const addEmbHasSourceDoc = partsHaveSourceDoc(item.parts);
             item.parts = item.parts.map(p => {
-                const key = (p.name || '') + '||' + (p.part || '');
+                const key = embPartKey(p, addEmbHasSourceDoc);
                 const newEntries = newTicksByKey[key];
                 if (!newEntries || !newEntries.length) return p;
                 newEntries.forEach(e => addedTypes.add(e.type));
@@ -8437,8 +8477,9 @@
                 return;
             }
             if (embByKey) {
+                const hasSourceDoc = partsHaveSourceDoc(repairs[idx].parts);
                 repairs[idx].parts = repairs[idx].parts.map(p => {
-                    const key = (p.name || '') + '||' + (p.part || '');
+                    const key = embPartKey(p, hasSourceDoc);
                     const g = embByKey[key];
                     return g ? { ...p, part: g.part, embellishment: g.embellishment, embNone: g.embNone } : p;
                 });
