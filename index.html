@@ -2572,6 +2572,36 @@
         </div>
     </div>
 
+    <!-- MODAL: MANUAL QC CUT-REPLACE (standalone trigger — QC no longer does receive/inspect/send,
+         but still needs to be able to raise a cut-replace request on its own, reusing the same
+         qty-entry-and-create flow that used to be auto-triggered only by a QC-reject decision) -->
+    <div id="manualQcCutReplaceModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="bg-red-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
+                <div>
+                    <h3 class="font-bold text-base">สร้างใบตัดเปลี่ยนใหม่ (QC)</h3>
+                    <p class="text-[10px] text-red-100 uppercase font-semibold">Manual cut-replace request</p>
+                </div>
+                <button onclick="closeModal('manualQcCutReplaceModal')" class="text-white hover:text-red-100 text-lg">✕</button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto">
+                <div id="manualQcCutReplaceInfo" class="p-3.5 bg-slate-50 rounded-xl text-xs border border-slate-100 space-y-1"></div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-600 block mb-1.5">เกี่ยวข้องกับส่วนใด <span class="opacity-70">(Applies to)</span> *</label>
+                    <div id="manualQcCutReplaceTypes" class="space-y-1.5"></div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-600 block mb-1.5">เหตุผล <span class="opacity-70">(Reason)</span> *</label>
+                    <textarea id="manualQcCutReplaceReason" rows="3" class="w-full text-xs" placeholder="ระบุปัญหาที่พบ..."></textarea>
+                </div>
+                <div class="pt-2 flex gap-2">
+                    <button type="button" onclick="closeModal('manualQcCutReplaceModal')" class="btn-ghost w-1/3 text-xs">ยกเลิก <span class="text-[9px] font-normal opacity-70">(Cancel)</span></button>
+                    <button type="button" onclick="confirmManualQcCutReplace()" class="btn-danger flex-1 text-xs py-2.5">ถัดไป <span class="text-[9px] font-normal opacity-70">(Next)</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: MERGE SAME-JOB REQUESTS -->
     <div id="mergeModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <!-- Widened from max-w-3xl — this modal stacks several full buildPartsRatioTable()
@@ -6214,6 +6244,12 @@
                 if (item.qcCutReplace && !item.qcCutReplace.resolved && canResolveQcCutReplace(currentUser)) {
                     utilityRow += utilityBtn('✂️', 'สร้างใบตัดเปลี่ยนใหม่', `openQcCutReplaceModal('${item.id}')`, 'bg-slate-50 text-red-600 hover:bg-red-50');
                 }
+                // Standalone trigger — now that QC no longer does receive/inspect/send, this is
+                // the only way left for QC to raise a cut-replace request. Hidden while one is
+                // already pending on this record to avoid creating a conflicting second request.
+                if (canResolveQcCutReplace(currentUser) && !item.mergedInto && (item.parts || []).length > 0 && !(item.qcCutReplace && !item.qcCutReplace.resolved)) {
+                    utilityRow += utilityBtn('✂️', 'ขอตัดเปลี่ยนใหม่ (QC)', `openManualQcCutReplaceModal('${item.id}')`, 'bg-slate-50 text-red-500 hover:bg-red-50');
+                }
                 if (item.cuttingPending && !item.cuttingPending.resolved && canCuttingAct(currentUser)) {
                     utilityRow += utilityBtn('✂️', 'ดำเนินการตัดคงค้างต่อ', `openCuttingPendingModal('${item.id}')`, 'bg-slate-50 text-amber-600 hover:bg-amber-50');
                 }
@@ -9355,15 +9391,15 @@
                 // of the whole record being locked to just one type at a time.
                 repairs[idx].activeDeptTypes = nextEmbStages;
                 repairs[idx].currentEmbStage = nextEmbStages[0] || null; // kept for legacy display/CSV compat only
-                // Every job — with or without embellishment — must pass a QC check on the
-                // cutting itself before Supermarket, per "ทุกงานต้องผ่าน QC ตรวจตัดก่อนเข้า
-                // Supermarket เสมอ". Queued directly here (no upstream production department
-                // to wait on, unlike embellishment types) alongside whatever real embellishment
-                // types are also being sent this round.
-                repairs[idx].qcPendingTypes = [...new Set([...(repairs[idx].qcPendingTypes || []), CUTTING_QC_TYPE])];
+                // QC's receive-inspect-send step is removed — per "ยกเลิก ส่วนของ QC ในการรับ-
+                // ตรวจ-ส่งงานออก...ข้าม QC ไปเลย ตัดส่งตรงเข้า Supermarket/ขั้นต่อไปเลย" (quality
+                // inspection now lives in a separate ERP system). CUTTING_QC_TYPE is no longer
+                // queued here — embellishmentChainDone() no longer waits on a QC decision either
+                // (see its own comment), so a job with no embellishment ticked advances straight
+                // through checkAdvanceToSupermarket() below the moment cutting itself is done.
                 // ACC may have already finished earlier (it runs independently from FM
-                // approval) — if so, and no embellishment/QC applies either, skip straight
-                // to Supermarket instead of sitting at 'CuttingSent' with nothing left to do.
+                // approval) — if so, and no embellishment applies either, skip straight to
+                // Supermarket instead of sitting at 'CuttingSent' with nothing left to do.
                 checkAdvanceToSupermarket(repairs[idx]);
                 logAction('CuttingSend', repairs[idx].id, `${currentUser.name} ตัดเสร็จ${nextEmbStages.length ? ' → ส่งต่อ ' + nextEmbStages.map(t => EMB_LABELS[t] || t).join(', ') : ''}${pendingPartKeys.length ? ` — คงค้างตัด ${pendingPartKeys.length} รายการ` : ''}`);
                 showToast(pendingPartKeys.length ? `บันทึกตัดเสร็จเรียบร้อย — คงค้างอีก ${pendingPartKeys.length} รายการ (Some items still pending)` : 'บันทึกตัดเสร็จเรียบร้อย (Cutting done saved)', pendingPartKeys.length ? 'warning' : 'success');
@@ -9459,14 +9495,12 @@
             // not just the legacy-missing-field case. So the reconciliation below always runs
             // when both are still empty, regardless of how they got that way.
             if (r.activeDeptTypes.length || r.qcPendingTypes.length) return;
-            if (r.currentEmbStage === 'QC') {
-                // The legacy single-shared qcInspection object only ever tracked ONE visit at
-                // a time — currentType is that visit's type; if even that's missing (a record
-                // that reached QC before per-type tracking existed at all), fall back to
-                // whichever ticked type hasn't been sent yet.
-                const t = (r.qcInspection && r.qcInspection.currentType) || remainingEmbTypes(r)[0];
-                if (t && !r.qcPendingTypes.includes(t)) r.qcPendingTypes.push(t);
-            } else if (r.currentEmbStage && EMB_STAGE_TYPES.includes(r.currentEmbStage) && !embTypeDone(r, r.currentEmbStage)) {
+            // A legacy currentEmbStage of 'QC' meant that type's own department had ALREADY
+            // sent it (that's how it reached "at QC" in the old single-shared-visit model) —
+            // now that QC's step is removed, embTypeDone(r, t) already reads true from that
+            // same send flag, so there's nothing left to recover into either array for this
+            // case; it just falls through to "already done".
+            if (r.currentEmbStage && EMB_STAGE_TYPES.includes(r.currentEmbStage) && !embTypeDone(r, r.currentEmbStage)) {
                 if (!r.activeDeptTypes.includes(r.currentEmbStage)) r.activeDeptTypes.push(r.currentEmbStage);
             }
             // Still nothing recovered but the record is sitting at CuttingSent with ticked
@@ -9501,36 +9535,20 @@
             });
             return list;
         }
-        // Retroactively queues the mandatory Cutting-QC check onto any record already sitting
-        // at CuttingSent from before this gate existed — otherwise every in-flight record with
-        // no embellishment (the exact "ตัดเสร็จ...ไม่แสดงปุ่ม" report) would stay permanently
-        // stuck, since it was cut before CUTTING_QC_TYPE started getting queued automatically.
-        // Skips a record that already has a decision recorded (nothing to backfill) or is
-        // already queued (no-op either way).
-        function backfillCuttingQc(r) {
-            if (r.status !== 'CuttingSent') return;
-            // ACCOnly / HeatTransfer-ACC requests are stamped into 'CuttingSent' purely as an
-            // internal bookkeeping stub (cuttingSend.by === 'system') — no actual cutting ever
-            // happens for them, so they must never be queued for a Cutting-QC check, per
-            // "รายการเบิก ACC จะไม่มีงานที่เกี่ยวกับตัด ดังนั้นไม่จำเป็นต้องมี QC ตัด...เข้ามา
-            // เกี่ยวข้อง".
-            if (r.cuttingSend && r.cuttingSend.by === 'system') return;
-            const hasDecision = !!(r.qcInspection && r.qcInspection.perType && r.qcInspection.perType[CUTTING_QC_TYPE]);
-            const alreadyQueued = (r.qcPendingTypes || []).includes(CUTTING_QC_TYPE);
-            if (!hasDecision && !alreadyQueued) {
-                r.qcPendingTypes = [...(r.qcPendingTypes || []), CUTTING_QC_TYPE];
+        // FEATURE REMOVAL: QC's receive-inspect-send step is gone — per "ยกเลิก ส่วนของ QC ใน
+        // การรับ-ตรวจ-ส่งงานออก...ข้าม QC ไปเลย ตัดส่งตรงเข้า Supermarket/ขั้นต่อไปเลย" (quality
+        // inspection now lives in a separate ERP system, to be integrated later). Any record
+        // already sitting with something in qcPendingTypes from before this change deployed
+        // (queued for a QC check that will now never come) needs to be unstuck — clear the
+        // queue and re-check whether the record can now advance straight through, exactly like
+        // reconcileAccDoneAdvancement already does for ACC below. Historical qcInspection/
+        // qcRepairRequests/qcCutReplace data is left untouched — this only clears the now-
+        // meaningless PENDING queue, never the record of decisions already made in the past.
+        function removeQcGate(r) {
+            if (Array.isArray(r.qcPendingTypes) && r.qcPendingTypes.length) {
+                r.qcPendingTypes = [];
             }
-        }
-        // Cleans up CUTTING_QC_TYPE that was already wrongly queued onto ACCOnly /
-        // HeatTransfer-ACC stub records by earlier app versions (before the guard above
-        // existed) — otherwise records already saved to the sheet with the bogus entry would
-        // keep showing a Cutting-QC button forever, since backfillCuttingQc alone only stops
-        // it from happening again, it doesn't undo what's already there.
-        function stripBogusCuttingQc(r) {
-            if (!(r.cuttingSend && r.cuttingSend.by === 'system')) return;
-            if (Array.isArray(r.qcPendingTypes) && r.qcPendingTypes.includes(CUTTING_QC_TYPE)) {
-                r.qcPendingTypes = r.qcPendingTypes.filter(t => t !== CUTTING_QC_TYPE);
-            }
+            checkAdvanceToSupermarket(r);
         }
         // Cosmetic-only backfill for records cancelled before this app enforced a mandatory
         // reason/canceller/timestamp on every cancellation (confirmCancelRequest requires all
@@ -9551,8 +9569,7 @@
         }
         function migrateRepairsData(list) {
             (list || []).forEach(migrateLegacyEmbFields);
-            (list || []).forEach(backfillCuttingQc);
-            (list || []).forEach(stripBogusCuttingQc);
+            (list || []).forEach(removeQcGate);
             restoreLegacyMergedRecords(list);
             (list || []).forEach(reconcileAccDoneAdvancement);
             (list || []).forEach(backfillLegacyCancelReason);
@@ -9677,44 +9694,18 @@
             const t = item.qcInspection && item.qcInspection.currentType;
             return t ? [t] : applicableEmbTypes(item);
         }
-        // ACCOnly requests (and the HeatTransfer "acc" variant — see the FM approval handler's
-        // isHeatTransferAccSkip) never touch fabric/cutting at all — their cuttingSend is just a
-        // system-stamped placeholder so mainPipelineDone() doesn't wait forever, not a real cut.
-        // The mandatory Cutting-QC gate has nothing to inspect for them, per "ถ้ารายการเบิก acc
-        // จะไม่มีงานที่เกี่ยวกับตัด ดังนั้นไม่จำเป็นต้องมี QC ตัดและกระบวนการตัดเข้ามาอนุมัติหรือ
-        // เกี่ยวข้อง".
-        function cuttingQcApplicable(item) {
-            return !(item.requestType === 'ACCOnly' || (item.dept === 'HeatTransfer' && item.heatTransferType === 'acc'));
-        }
-        // No embellishment ticked at all -> nothing to inspect -> QC doesn't apply either.
-        // Otherwise EVERY ticked type must have its own QC decision recorded — each type is
-        // inspected in its own visit now (send type -> QC that type -> next type...), so
-        // "done" means every applicable type has passed through QC at least once, not just
-        // that the (single, shared) qcInspection.send field happens to be set.
+        // BUG FIX / FEATURE REMOVAL: this used to require every applicable embellishment type
+        // AND cutting itself to pass through a QC decision before counting as "done" — per
+        // "ยกเลิก ส่วนของ QC ในการรับ-ตรวจ-ส่งงานออก...ข้าม QC ไปเลย" (quality inspection now
+        // lives in a separate ERP system, integrated later), that whole QC gate is removed.
+        // "Done" is now purely each department's own send — embTypeDone(item, t) already
+        // reflects this correctly even for OLD records that went through the repair-kickback
+        // loop before this change (a Repair decision nulled that type's embStages[t].send, so
+        // embTypeDone is false regardless of whether perType is still consulted), so dropping
+        // the qcInspection check here is safe for historical data too, not just new records.
         function embellishmentChainDone(item) {
             const types = applicableEmbTypes(item);
-            const perType = item.qcInspection && item.qcInspection.perType;
-            // Any Repair qty resets that type's own send (see the QC-send handler) and sends
-            // it back to be redone — it must NOT count as done just because a decision is
-            // recorded; only a split with zero Repair qty (or a legacy non-'Repair' string) is
-            // terminal. embTypeDone(item, t) alone would already catch this (Repair resets
-            // .send to null), but checking the decision directly keeps this self-explanatory.
-            const embTypesDone = types.length === 0 ? true : (!!perType && types.every(t => {
-                const d = perType[t];
-                if (!d) return false;
-                const stillNeedsRepair = typeof d === 'string' ? d === 'Repair' : (d.Repair || 0) > 0;
-                return !stillNeedsRepair && embTypeDone(item, t);
-            }));
-            // Cutting QC is a mandatory gate for every job that actually gets cut, independent
-            // of embellishment — per "ทุกงานต้องผ่าน QC ตรวจตัดก่อนเข้า Supermarket เสมอ". It has
-            // no upstream production department to "send" it on (Cutting itself queues it
-            // directly), so its own completion is just: QC recorded a decision and it isn't a
-            // still-open CutReplace (there's no Repair option offered for it — see
-            // stageQcSendFieldsHtml). ACCOnly/HeatTransfer-acc jobs skip this gate entirely
-            // (see cuttingQcApplicable) since there's no cutting to inspect.
-            const cuttingQcDecision = perType && perType[CUTTING_QC_TYPE];
-            const cuttingQcDone = cuttingQcApplicable(item) ? !!cuttingQcDecision : true;
-            return embTypesDone && cuttingQcDone;
+            return types.every(t => embTypeDone(item, t));
         }
         // ACC runs from FM approval straight through to Supermarket on its own timeline,
         // independent of what stage the main Marker->Cutting pipeline is currently on.
@@ -10928,6 +10919,48 @@
         // this review screen and confirm the qty before anything is created, it just no
         // longer has to re-type the style/job/item/part/defect details from scratch.
         let qcCutReplaceActiveId = null;
+        let manualQcCutReplaceActiveId = null;
+        // Standalone entry point into the same cut-replace flow that used to be reachable only
+        // as a side-effect of the old QC-reject decision. Just collects which type(s) it applies
+        // to + a reason, builds the same item.qcCutReplace shape the auto-create path used to
+        // build, then hands off into the existing, unmodified openQcCutReplaceModal().
+        function openManualQcCutReplaceModal(id) {
+            const item = repairs.find(r => r.id === id);
+            if (!item) return;
+            if (!canResolveQcCutReplace(currentUser)) { showToast('คุณไม่มีสิทธิ์ดำเนินการนี้ (No permission)', 'warning'); return; }
+            if (item.qcCutReplace && !item.qcCutReplace.resolved) { showToast('มีคำขอตัดเปลี่ยนที่ยังไม่เสร็จสิ้นอยู่แล้ว (A pending request already exists)', 'warning'); return; }
+            manualQcCutReplaceActiveId = id;
+            document.getElementById('manualQcCutReplaceInfo').innerHTML = buildInfoBlock(item);
+            const types = [CUTTING_QC_TYPE, ...applicableEmbTypes(item)];
+            document.getElementById('manualQcCutReplaceTypes').innerHTML = types.map(t => `
+                <label class="flex items-center gap-2 text-xs p-2 border rounded-lg cursor-pointer hover:bg-slate-50">
+                    <input type="checkbox" class="manualQcCutReplaceTypeCheck" value="${t}">
+                    <span>${escapeHtml(t === CUTTING_QC_TYPE ? 'งานตัด (ทั้งหมด)' : (EMB_LABELS[t] || t))}</span>
+                </label>`).join('');
+            document.getElementById('manualQcCutReplaceReason').value = '';
+            document.getElementById('manualQcCutReplaceModal').classList.replace('hidden', 'flex');
+        }
+        function confirmManualQcCutReplace() {
+            const idx = repairs.findIndex(r => r.id === manualQcCutReplaceActiveId);
+            if (idx === -1) return;
+            const item = repairs[idx];
+            const selectedTypes = Array.from(document.querySelectorAll('.manualQcCutReplaceTypeCheck:checked')).map(el => el.value);
+            if (!selectedTypes.length) { showToast('กรุณาเลือกอย่างน้อย 1 รายการ (Select at least one)', 'warning'); return; }
+            const reason = (document.getElementById('manualQcCutReplaceReason').value || '').trim();
+            if (!reason) { showToast('กรุณาระบุเหตุผล (Reason required)', 'warning'); return; }
+            item.qcCutReplace = {
+                types: selectedTypes,
+                reason,
+                by: currentUser.username,
+                name: currentUser.name,
+                ts: getLocalTime(),
+                resolved: false
+            };
+            logAction('QcCutReplaceRequest', item.id, `${currentUser.name} ขอตัดเปลี่ยนใหม่ (${selectedTypes.map(t => t === CUTTING_QC_TYPE ? 'งานตัด' : (EMB_LABELS[t] || t)).join(', ')}): ${reason}`);
+            autoSave();
+            closeModal('manualQcCutReplaceModal');
+            openQcCutReplaceModal(item.id);
+        }
         function openQcCutReplaceModal(id) {
             const item = repairs.find(r => r.id === id);
             if (!item) return;
@@ -11495,28 +11528,19 @@
                 logAction('QCReceive', item.id, `${currentUser.name} รับงาน (QC — ${EMB_LABELS[qcType] || qcType})`);
                 showToast('บันทึกการรับงานเรียบร้อย (Receipt saved)', 'success');
             } else if (mode === 'send' && EMB_STAGE_TYPES.includes(stage)) {
-                // Every embellishment type now goes straight to QC the moment its own work
-                // is done — per "ในทุกรายการ Embellishment ที่ต้องทำกำหนดให้มี QC ตรวจงานด้วย
-                // หลังจากที่มีการทำงานจบ...ส่งต่อให้กระบวนการ Embellishment ถัดไปหรือหน่วยงาน
-                // ถัดไป" — QC decides afterward whether the NEXT ticked type (if any) or
-                // Supermarket is next, instead of this department picking ahead of QC's say.
+                // QC's receive-inspect-send step is removed — per "ยกเลิก ส่วนของ QC ในการรับ-
+                // ตรวจ-ส่งงานออก...ข้าม QC ไปเลย ตัดส่งตรงเข้า Supermarket/ขั้นต่อไปเลย" (quality
+                // inspection now lives in a separate ERP system). This type no longer hands off
+                // to a QC queue — it's simply done the moment this department sends it
+                // (embTypeDone() already only checks embStages[stage].send), so this directly
+                // checks whether the whole record can now advance, the same way ACC's own send
+                // handler already does (see the PARALLEL_STAGE_PERM branch below).
                 item.embStages[stage] = { ...(item.embStages[stage] || {}), send: { by: currentUser.username, name: currentUser.name, attachment, ts } };
-                // This type moves from "at its own dept" to "at QC" — tracked per-type in
-                // qcInspection.visits so a second type finishing (possibly in parallel, on a
-                // different piece) never clobbers this one's still-pending visit data, per the
-                // exact bug that a single shared qcInspection object used to cause.
                 item.activeDeptTypes = (item.activeDeptTypes || []).filter(t => t !== stage);
-                item.qcPendingTypes = [...new Set([...(item.qcPendingTypes || []), stage])];
-                item.currentEmbStage = item.activeDeptTypes[0] || (item.qcPendingTypes.length ? 'QC' : null); // legacy display/CSV compat only
-                item.qcInspection = {
-                    ...(item.qcInspection || {}),
-                    visits: {
-                        ...((item.qcInspection && item.qcInspection.visits) || {}),
-                        [stage]: { receive: null, receivedQty: null, defectQty: 0, defectCodes: [], defectNotes: '' },
-                    },
-                };
-                logAction('EmbSend', item.id, `${currentUser.name} ส่งต่อ (${EMB_LABELS[stage] || stage}) → QC ตรวจ${EMB_LABELS[stage] || stage}`);
-                showToast('บันทึกการส่งต่อเรียบร้อย — ส่งไปให้ QC ตรวจก่อนไปขั้นตอนถัดไป (Sent to QC for inspection)', 'success');
+                item.currentEmbStage = item.activeDeptTypes[0] || null; // legacy display/CSV compat only
+                checkAdvanceToSupermarket(item);
+                logAction('EmbSend', item.id, `${currentUser.name} ส่งต่อ (${EMB_LABELS[stage] || stage})`);
+                showToast('บันทึกการส่งต่อเรียบร้อย (Sent)', 'success');
             } else if (mode === 'send' && stage === 'qc') {
                 // Each embellishment type's decision is now an exact quantity split across
                 // Pass/Repair/CutReplace/NotifyVendor (must sum to that type's received qty),
