@@ -2453,6 +2453,17 @@
                     <div id="mCuttingChecklist" class="overflow-x-auto border rounded-lg"></div>
                 </div>
 
+                <!-- ACC now only becomes actionable once Cutting has actually sent (see
+                     accActionable()) instead of running in parallel — per "หลังจากจัดเสร็จแล้วให้
+                     เป็นตัดเสร็จก่อน แล้วค่อยส่งต่อไปที่ acc เพื่อให้แผนกตัด ตัดสินใจว่าต้องทำการขอ
+                     acc มาเพิ่มหรือไม่ก่อนส่งให้แผนกถัดไป". This is Cutting's one chance to add to
+                     accRequestList right before handing off — entirely optional, leave everything
+                     unticked if nothing more is needed. -->
+                <div id="mAccAddField" class="hidden">
+                    <label class="text-[10px] font-black text-lime-600 uppercase mb-1 block">ขอเบิก ACC เพิ่มเติมก่อนส่งต่อ <span class="font-normal normal-case opacity-70">(Request additional ACC items before handoff — optional)</span></label>
+                    <div id="mAccRequestContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+                </div>
+
                 <!-- Same-piece embellishment ORDER — per "ถ้าเป็นชิ้นเดียวกันก็อาจจะต้องให้แผนก
                      ต้นทางที่ส่งงานให้ระบุไปว่าจะส่งให้แผนกไหนก่อน": only shown for a part with
                      2+ ticked types where sequencing actually matters (see reorderablePartsFor).
@@ -3332,10 +3343,10 @@
                     <button type="button" class="accReqRemoveRow text-rose-400 hover:text-rose-600 text-sm font-bold px-1" onclick="removeAccRequestSubRow(this)">✕</button>
                 </div>`;
         }
-        function renderAccRequestChecklist(saved = []) {
+        function renderAccRequestChecklist(saved = [], containerId = 'accRequestContainer') {
             const savedByKey = {};
             (saved || []).forEach(s => { (savedByKey[s.key] = savedByKey[s.key] || []).push(s); });
-            const container = document.getElementById('accRequestContainer');
+            const container = document.getElementById(containerId);
             container.innerHTML = ACC_REQUEST_OPTIONS.map(opt => {
                 const rows = savedByKey[opt.value] || [];
                 const checked = rows.length > 0;
@@ -3379,8 +3390,8 @@
             // with a blank list of sub-rows.
             if (fields.querySelectorAll('.accReqSubRow').length > 1) subRow.remove();
         }
-        function collectAccRequestList() {
-            return Array.from(document.querySelectorAll('#accRequestContainer [data-acc-key]'))
+        function collectAccRequestList(containerId = 'accRequestContainer') {
+            return Array.from(document.querySelectorAll(`#${containerId} [data-acc-key]`))
                 .filter(row => row.querySelector('.accReqCheck').checked)
                 .flatMap(row => {
                     const key = row.dataset.accKey;
@@ -9151,6 +9162,7 @@
                 nextEmbField.classList.add('hidden');
                 orderField.classList.add('hidden');
                 checklistField.classList.add('hidden');
+                document.getElementById('mAccAddField').classList.add('hidden');
                 saveBtn.innerText = 'รับงานตัด (Receive)';
             } else {
                 title.innerText = 'ตัดเสร็จ (Cutting Done)';
@@ -9162,6 +9174,8 @@
                 const alreadyCut = new Set(item.cuttingCutParts || []);
                 checklistField.classList.remove('hidden');
                 document.getElementById('mCuttingChecklist').innerHTML = buildCuttingCheckableTable(item, alreadyCut);
+                document.getElementById('mAccAddField').classList.remove('hidden');
+                renderAccRequestChecklist(item.accRequestList || [], 'mAccRequestContainer');
                 // Same-piece work order — reorderablePartsFor() only returns parts where
                 // sequencing genuinely matters (2+ types, not just a Print/Pad pair).
                 const reorderable = reorderablePartsFor(item);
@@ -9509,6 +9523,7 @@
             document.getElementById('mFinishDateField').classList.add('hidden');
             document.getElementById('mNextEmbStageField').classList.add('hidden');
             document.getElementById('mEmbSourceField').classList.add('hidden');
+            document.getElementById('mAccAddField').classList.add('hidden');
             document.getElementById('mCuttingChecklistField').classList.remove('hidden');
             document.getElementById('mCuttingChecklist').innerHTML = buildCuttingCheckableTable(item, new Set(item.cuttingCutParts || []));
             document.getElementById('btnActionSave').innerText = 'บันทึก';
@@ -9598,6 +9613,13 @@
                 } else if (repairs[idx].cuttingPending) {
                     repairs[idx].cuttingPending = { ...repairs[idx].cuttingPending, resolved: true };
                 }
+                // Cutting's one chance to add to accRequestList before ACC picks this record up
+                // (accActionable() now requires cuttingSend — see its own comment) — replaces the
+                // whole list wholesale, same pattern the original intake form/editOrder already
+                // use, since the checklist above was pre-filled with whatever already existed.
+                const prevAccCount = (repairs[idx].accRequestList || []).length;
+                repairs[idx].accRequestList = collectAccRequestList('mAccRequestContainer');
+                const accAdded = repairs[idx].accRequestList.length - prevAccCount;
                 repairs[idx].cuttingSend = { by: currentUser.username, name: currentUser.name, attachment, ts, finishDate };
                 pushStatusHistory(repairs[idx]);
                 repairs[idx].status = 'CuttingSent';
@@ -9616,7 +9638,7 @@
                 // approval) — if so, and no embellishment applies either, skip straight to
                 // Supermarket instead of sitting at 'CuttingSent' with nothing left to do.
                 checkAdvanceToSupermarket(repairs[idx]);
-                logAction('CuttingSend', repairs[idx].id, `${currentUser.name} ตัดเสร็จ${nextEmbStages.length ? ' → ส่งต่อ ' + nextEmbStages.map(t => EMB_LABELS[t] || t).join(', ') : ''}${pendingPartKeys.length ? ` — คงค้างตัด ${pendingPartKeys.length} รายการ` : ''}`);
+                logAction('CuttingSend', repairs[idx].id, `${currentUser.name} ตัดเสร็จ${nextEmbStages.length ? ' → ส่งต่อ ' + nextEmbStages.map(t => EMB_LABELS[t] || t).join(', ') : ''}${pendingPartKeys.length ? ` — คงค้างตัด ${pendingPartKeys.length} รายการ` : ''}${accAdded > 0 ? ` — ขอเบิก ACC เพิ่ม ${accAdded} รายการ` : ''}`);
                 showToast(pendingPartKeys.length ? `บันทึกตัดเสร็จเรียบร้อย — คงค้างอีก ${pendingPartKeys.length} รายการ (Some items still pending)` : 'บันทึกตัดเสร็จเรียบร้อย (Cutting done saved)', pendingPartKeys.length ? 'warning' : 'success');
             }
 
@@ -9951,8 +9973,17 @@
             });
             return out;
         }
+        // ACC used to run fully in parallel with Cutting (only needing FM approval) — now it
+        // must wait for Cutting to actually finish first, per "หลังจากจัดเสร็จแล้วให้เป็นตัดเสร็จ
+        // ก่อน แล้วค่อยส่งต่อไปที่ acc เพื่อให้แผนกตัด ตัดสินใจว่าต้องทำการขอ acc มาเพิ่มหรือไม่ก่อน
+        // ส่งให้แผนกถัดไป" — giving Cutting a chance to add to accRequestList (see the new
+        // mAccAddField in saveAction()) before ACC can act on it. ACCOnly/HeatTransfer-ACC
+        // requests are unaffected: they already get a synthetic system-stamped cuttingSend set
+        // at FM-approval time (see isHeatTransferAccSkip) since they never go through a real
+        // Cutting step, so this condition is already true for them at the same moment it always
+        // was.
         function accActionable(item) {
-            return !!(item.fmApproval && item.fmApproval.decision === 'Approved') && !item.accSend && hasAccContent(item);
+            return !!(item.fmApproval && item.fmApproval.decision === 'Approved') && !!item.cuttingSend && !item.accSend && hasAccContent(item);
         }
         // The main pipeline is only "done" once Cutting has actually sent AND (this item has
         // no embellishment ticked, or the full embellishment chain + QC has finished).
