@@ -165,6 +165,9 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                         <span>คิวงานซ่อม<span class="block text-[8px] font-normal normal-case opacity-70">Repair Queue</span></span>
                     </button>
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-btn py-3 font-bold text-sm text-slate-400 transition flex items-center gap-1.5">
+                        <span>🖥️</span><span>Dashboard<span class="block text-[8px] font-normal normal-case opacity-70">Dashboard</span></span>
+                    </button>
                     <button onclick="switchTab('analytics')" id="tab-analytics" class="nav-btn py-3 font-bold text-sm text-slate-400 transition flex items-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                         <span>สรุปปัญหา & Analytics<span class="block text-[8px] font-normal normal-case opacity-70">Analytics</span></span>
@@ -215,6 +218,217 @@
         <!-- SECTION: RECORDS & QUEUE -->
         <div id="section-records" class="tab-content space-y-3">
 
+            <div class="flex flex-wrap lg:flex-nowrap justify-between items-center gap-2">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">รายการสั่งซ่อมและคิวงานตัด</h2>
+                    <p class="text-slate-500 text-xs mt-0.5">ติดตามสถานะใบแจ้งตัดซ่อม การอนุมัติ การรับ-ส่งงานของแผนกตัด</p>
+                </div>
+                <!-- Work-in-process summary — split by line-item TYPE (parts vs ACC requisition),
+                     not by the record's requestType flag, so a request that asks for BOTH
+                     (Cut-Replace + ACC together) naturally contributes to both blocks instead of
+                     needing its own third "mixed" block, per "แยกส่วนงานไปในบล็อคก่อนหน้า". Sized
+                     down ~30% and kept on one line (no-wrap), per "ปรับขนาดให้เล็กลงอีก 30%
+                     ต้องการให้ทั้งหมดเรียงอยู่...ในบรรทัดเดียว...ลดสเปซลงมา". -->
+                <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-1.5">
+                        <div class="flex items-center gap-1 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-1 whitespace-nowrap">
+                            <span class="text-[8px] font-bold text-indigo-600 uppercase">ตัดเปลี่ยน</span>
+                            <span id="dashCutReplaceDocs" class="text-xs font-black text-indigo-700">0</span><span class="text-[7px] text-indigo-400">ใบขอ</span>
+                            <span id="dashCutReplaceLines" class="text-xs font-black text-indigo-700 ml-0.5">0</span><span class="text-[7px] text-indigo-400">รายการ</span>
+                            <span id="dashCutReplaceQty" class="text-xs font-black text-indigo-700 ml-0.5">0</span><span class="text-[7px] text-indigo-400">ชิ้น</span>
+                        </div>
+                        <div class="flex items-center gap-1 bg-lime-50 border border-lime-100 rounded-lg px-2 py-1 whitespace-nowrap">
+                            <span class="text-[8px] font-bold text-lime-600 uppercase">เบิก ACC</span>
+                            <span id="dashAccDocs" class="text-xs font-black text-lime-700">0</span><span class="text-[7px] text-lime-400">ใบขอ</span>
+                            <span id="dashAccLines" class="text-xs font-black text-lime-700 ml-0.5">0</span><span class="text-[7px] text-lime-400">รายการ</span>
+                            <span id="dashAccQty" class="text-xs font-black text-lime-700 ml-0.5">0</span><span class="text-[7px] text-lime-400">ชิ้น</span>
+                        </div>
+                    </div>
+                    <!-- New request type added later needs its own WIP count too, per "มีรายการ
+                         อื่นเพิ่ม ให้ช่วยเพิ่มรายการอยู่ด้านล่าง 2 ช่องนี้" — stacked as a second row
+                         instead of widening the row, so this whole block's height still just
+                         matches the title+subtitle block next to it (no extra page height). -->
+                    <div class="flex items-center gap-1.5">
+                        <div class="flex items-center gap-1 bg-orange-50 border border-orange-100 rounded-lg px-2 py-1 whitespace-nowrap">
+                            <span class="text-[8px] font-bold text-orange-600 uppercase">ตัดงานซ่อม (ซัพพลายเออร์)</span>
+                            <span id="dashSupplierDocs" class="text-xs font-black text-orange-700">0</span><span class="text-[7px] text-orange-400">ใบขอ</span>
+                            <span id="dashSupplierLines" class="text-xs font-black text-orange-700 ml-0.5">0</span><span class="text-[7px] text-orange-400">รายการ</span>
+                            <span id="dashSupplierQty" class="text-xs font-black text-orange-700 ml-0.5">0</span><span class="text-[7px] text-orange-400">ชิ้น</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 no-print">
+                    <button id="btnManualRefresh" onclick="manualRefresh()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1" title="ดึงข้อมูลล่าสุดจากระบบ">
+                        <span>🔃 Refresh</span>
+                    </button>
+                    <button onclick="printCurrentPage()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1" title="พิมพ์หน้านี้">
+                        <span>🖨️ พิมพ์เอกสาร <span class="text-[9px] font-normal opacity-70">(Print)</span></span>
+                    </button>
+                    <!-- Always-available popup listing every currently-mergeable group — the
+                         suggestion banner below only ever checks SAME-DAY groups, so without
+                         this button a cross-day-only set of candidates would have no way to be
+                         opened at all. -->
+                    <button id="btnMergeCandidates" onclick="openMergeModal()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1" title="ดูรายการที่สามารถรวมใบสั่งซ่อมได้">
+                        <span>🔗 รายการที่รวมได้ <span class="text-[9px] font-normal opacity-70">(Merge Candidates)</span></span>
+                    </button>
+                    <button id="btnResetData" onclick="resetToDefaultData()" class="btn-ghost text-xs text-slate-500 hover:text-rose-600 flex items-center gap-1 hidden" title="คืนค่าข้อมูลตัวอย่างเริ่มต้น (Admin เท่านั้น)">
+                        <span>🔄 รีเซ็ตข้อมูล <span class="text-[9px] font-normal opacity-70">(Reset)</span></span>
+                    </button>
+                    <!-- Export dropdown — CSV/Excel/PDF, per "เปลี่ยนคำว่าส่งออก CSV เป็น Export
+                         File และมี dropdown ให้เลือกว่าเป็น CSV, Excel, Pdf". -->
+                    <div class="relative">
+                        <button onclick="toggleExportMenu()" class="btn-secondary text-xs flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span>Export File</span>
+                            <span class="text-[8px]">▾</span>
+                        </button>
+                        <div id="exportMenu" class="hidden absolute right-0 mt-1 w-36 bg-white rounded-lg shadow-2xl border border-slate-200 z-50 overflow-hidden">
+                            <button onclick="exportData('csv')" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50">CSV</button>
+                            <button onclick="exportData('excel')" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 border-t border-slate-100">Excel</button>
+                            <button onclick="exportData('pdf')" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 border-t border-slate-100">PDF</button>
+                        </div>
+                    </div>
+                    <button onclick="openFormModal()" class="btn-primary shadow-lg shadow-indigo-200 flex items-center gap-1 text-sm">
+                        <span>+ สร้างใบสั่งซ่อมใหม่ <span class="text-[9px] font-normal opacity-70">(New Request)</span></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Merge-suggestion banner — same job/style/dept ordered the same day, still
+                 early enough (no department has actually started work) to safely combine into
+                 one document, per "ปุ่มกดรวบรวมจ๊อบเดียวกันสไตส์เดียวกันที่สั่งกันในวันเดียวกัน
+                 รวมในใบเดียวได้มั๊ย...จะได้ง่ายตั้งแต่คนวางมาร์ค ถึงคนตามงาน". Hidden entirely
+                 when there's nothing to suggest. -->
+            <div id="mergeSuggestBanner" class="card p-3 bg-indigo-50 border-indigo-200 hidden flex items-center justify-between gap-3 flex-wrap">
+                <div class="text-xs text-indigo-800">
+                    🔗 <span id="mergeSuggestText"></span>
+                </div>
+                <button onclick="openMergeModal()" class="btn-secondary text-xs shrink-0">ดูรายละเอียด / รวมใบ <span class="text-[9px] font-normal opacity-70">(Review / Merge)</span></button>
+            </div>
+
+            <!-- FILTERS & SEARCH TOOLBAR -->
+            <div class="card p-4 bg-slate-50/80 flex flex-wrap gap-3 items-center">
+                <div class="flex-1 min-w-[220px]">
+                    <div class="relative">
+                        <input type="text" id="searchInput" autocomplete="off" placeholder="ค้นหา (Search) Style, Job No., สี, สาเหตุ หรือ ID..." class="w-full pl-9 pr-3 text-xs bg-white">
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                </div>
+                <div class="w-auto min-w-[150px]">
+                    <select id="filterRequestType" onchange="onManualFilterChange()" oninput="onManualFilterChange()" class="w-full text-xs bg-white">
+                        <option value="all">ทุกประเภทคำขอ (All Types)</option>
+                        <option value="CutReplace">แจ้งขอตัดเปลี่ยน (Cut-Replace)</option>
+                        <option value="SupplierCutReplace">แจ้งตัดงานซ่อม (ซัพพลายเออร์)</option>
+                        <option value="ACCOnly">แจ้งขอเบิกอุปกรณ์ (ACC)</option>
+                    </select>
+                </div>
+                <div class="w-auto min-w-[150px]">
+                    <!-- Every status the active-queue pipeline can actually be in, per
+                         "ช่วยเช็คและใส่รายการสถานะในการตรวจสอบใส่ใน dropdown ให้ครบ" — this used
+                         to list only 10 of the 20+ real statuses (Marker/CuttingSheet/FabricCheck
+                         /PPCFabric/StockFabric/ACC/SupermarketPending were all missing, silently
+                         unfilterable). Received/Cancelled are left out on purpose — those records
+                         are archived and never appear in this active-queue view anyway (they live
+                         in the separate Completed History table), so listing them here would just
+                         be a filter that always returns zero rows.
+                         A plain <select> (options filled in by JS from FILTER_STATUS_OPTIONS) —
+                         per "ต้องการให้เมื่อกดเลือกก็สามารถทำได้ โดยไม่ต้องกดลบทีละตัว", this used
+                         to be a free-text box matched against a datalist by exact label text,
+                         which turned out unreliable across browsers (a clicked suggestion didn't
+                         always fire a change, and a global uppercase-on-input listener elsewhere
+                         in the app was silently mangling the label so it could never match at
+                         all). A <select> can't have either problem — clicking an option always
+                         fires change, and its value is always exactly one of the option codes. -->
+                    <select id="filterStatus" onchange="onManualFilterChange()" class="w-full text-xs bg-white">
+                        <option value="">ทุกสถานะ (All Status)</option>
+                    </select>
+                </div>
+                <div class="w-auto min-w-[140px]">
+                    <select id="filterDept" onchange="onManualFilterChange()" class="w-full text-xs bg-white">
+                        <option value="">ทุกแผนกที่แจ้ง (All Depts)</option>
+                    </select>
+                </div>
+                <button onclick="resetFilters()" class="text-xs text-slate-500 hover:text-indigo-600 font-bold px-2 py-1">
+                    ล้างตัวกรอง <span class="text-[9px] font-normal opacity-70">(Clear Filters)</span>
+                </button>
+            </div>
+
+            <!-- Shows which KPI-card selection (if any) is currently narrowing the table below
+                 — these ad hoc criteria (overdue, QC waiting, by-vendor, etc.) can't be expressed
+                 by the Request Type/Status/Dept dropdowns above, so without this badge a user had
+                 no way to tell the list was still scoped to a card click. Search and the 3
+                 dropdowns are a fully independent layer that always just combines with whatever
+                 card is active (per "ไม่ต้องการให้การค้นหาติดอยู่ที่ฟังชั่นใดฟังชั่นหนึ่ง...ให้
+                 แยกส่วนกัน") rather than clearing it — this badge's own ✕ (clearKpiScope) is the
+                 explicit way to drop just the card scope, keeping whatever's typed/picked below. -->
+
+            <div id="activeKpiBadge" class="hidden -mt-2 mb-2">
+                <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-2.5 py-1">
+                    🔎 กำลังกรองตาม: <span id="activeKpiBadgeLabel"></span>
+                    <!-- Only shown when filtering by "เอกสารที่มีการรวม" — a shortcut to the
+                         separate "still mergeable" list, since that's what someone looking at
+                         already-merged docs will usually want to check next, per "ต้องการให้มี
+                         รายการเอกสารที่สามารถรวมได้ด้วยเพื่อให้เห็นว่ามีอะไรบ้างที่สามารถรวมได้". -->
+                    <button id="activeKpiMergeCandidatesLink" onclick="openMergeModal()" class="hidden text-violet-600 hover:underline ml-1 font-bold">🔗 ดูรายการที่รวมได้ (Merge Candidates)</button>
+                    <button onclick="clearKpiScope()" class="text-indigo-400 hover:text-indigo-700 ml-1" title="ล้างตัวกรองนี้">✕</button>
+                </span>
+            </div>
+
+            <!-- Bulk approve action bar — per "ให้สามารถคิดเลือกเหมือน select all แล้ว approve
+                 ได้" — appears once 1+ rows are ticked via the table's own select-all/per-row
+                 checkboxes (see toggleBulkApproveSelectAll/toggleBulkApproveOne). Covers both BU
+                 (PendingApproval) and PM/FM (PendingFMApproval) in one go — each selected record
+                 is routed through its own correct approval path per its current status. Records
+                 missing required data (Part/Embellishment not yet decided) are silently skipped
+                 rather than blocking the whole batch, per explicit confirmation; the result toast
+                 afterward reports how many were approved vs skipped. -->
+            <div id="bulkApproveBar" class="hidden card p-3 bg-emerald-50 border-emerald-200 flex items-center justify-between gap-3 flex-wrap">
+                <div class="text-xs text-emerald-800 font-bold">✅ เลือกไว้ <span id="bulkApproveCount">0</span> รายการ <span class="font-normal opacity-70">(selected)</span></div>
+                <div class="flex items-center gap-2">
+                    <button onclick="clearBulkApproveSelection()" class="btn-ghost text-xs">ล้างการเลือก <span class="text-[9px] font-normal opacity-70">(Clear)</span></button>
+                    <button onclick="bulkApproveSelected()" class="btn-primary text-xs">✅ อนุมัติที่เลือก <span class="text-[9px] font-normal opacity-70">(Approve Selected)</span></button>
+                </div>
+            </div>
+
+            <!-- REPAIR TABLE -->
+            <div class="card overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-left">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <!-- Bulk select-all for approval — per "ให้สามารถคิดเลือกเหมือน
+                                     select all แล้ว approve ได้". Only ever selects rows THIS
+                                     user can actually approve right now (BU's PendingApproval or
+                                     PM/FM's PendingFMApproval) — see isBulkApprovable(). -->
+                                <th class="px-2 py-3.5 text-center no-print w-8">
+                                    <input type="checkbox" id="bulkApproveSelectAll" onchange="toggleBulkApproveSelectAll(this.checked)" title="เลือกทั้งหมดที่อนุมัติได้ (Select all approvable)">
+                                </th>
+                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">รหัส & วันกำหนดรับ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">ID & Due Date</span></th>
+                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">ข้อมูลสินค้า / Job<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Product Info</span></th>
+                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">แผนก / ไลน์ผลิต & ผู้ขอ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Dept / Line & Requester</span></th>
+                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap w-28">รายการ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Type</span></th>
+                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap w-[380px]">ชิ้นส่วน & สาเหตุ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Parts & Reason</span></th>
+                                <th class="px-5 py-3.5 text-[9px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap w-36">สถานะงาน<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Status</span></th>
+                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap w-44">Alert</th>
+                                <th class="px-5 py-3.5 text-center text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap no-print">การจัดการ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="repairTableBody" class="divide-y divide-slate-100 bg-white">
+                            <!-- Injected dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SECTION: DASHBOARD (full-page Overview/KPI — same cards as before, moved into
+             their own tab instead of being squeezed above the records table, per "หน้า
+             Dashboard แยก...เหมือนภาพรวม (Overview/KPI ที่มีอยู่แล้ว) แต่เต็มหน้า", visible to
+             every role equally (no extra permission gate). Clicking a KPI row still jumps
+             into the filtered records queue via filterByKpi(), which already calls
+             switchTab('records') itself. -->
+        <div id="section-dashboard" class="tab-content hidden space-y-3">
             <!-- KPI STATS SUMMARY, now a tab bar instead of an always-expanded card grid, per
                  "ต้องการให้ปรับส่วนที่เป็น KPI Card เป็น tab รายการหัวข้อและเมื่อกดเลือกจะเป็น
                  รายการโชว์ลงมาให้เห็น และมี Notification รวมในหัวข้อ tab ของนั้นๆ" — clicking a
@@ -895,209 +1109,6 @@
                     </div>
                 </div>
             </div><!-- /#kpiTabPanels -->
-
-            <div class="flex flex-wrap lg:flex-nowrap justify-between items-center gap-2">
-                <div>
-                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">รายการสั่งซ่อมและคิวงานตัด</h2>
-                    <p class="text-slate-500 text-xs mt-0.5">ติดตามสถานะใบแจ้งตัดซ่อม การอนุมัติ การรับ-ส่งงานของแผนกตัด</p>
-                </div>
-                <!-- Work-in-process summary — split by line-item TYPE (parts vs ACC requisition),
-                     not by the record's requestType flag, so a request that asks for BOTH
-                     (Cut-Replace + ACC together) naturally contributes to both blocks instead of
-                     needing its own third "mixed" block, per "แยกส่วนงานไปในบล็อคก่อนหน้า". Sized
-                     down ~30% and kept on one line (no-wrap), per "ปรับขนาดให้เล็กลงอีก 30%
-                     ต้องการให้ทั้งหมดเรียงอยู่...ในบรรทัดเดียว...ลดสเปซลงมา". -->
-                <div class="flex flex-col gap-1">
-                    <div class="flex items-center gap-1.5">
-                        <div class="flex items-center gap-1 bg-indigo-50 border border-indigo-100 rounded-lg px-2 py-1 whitespace-nowrap">
-                            <span class="text-[8px] font-bold text-indigo-600 uppercase">ตัดเปลี่ยน</span>
-                            <span id="dashCutReplaceDocs" class="text-xs font-black text-indigo-700">0</span><span class="text-[7px] text-indigo-400">ใบขอ</span>
-                            <span id="dashCutReplaceLines" class="text-xs font-black text-indigo-700 ml-0.5">0</span><span class="text-[7px] text-indigo-400">รายการ</span>
-                            <span id="dashCutReplaceQty" class="text-xs font-black text-indigo-700 ml-0.5">0</span><span class="text-[7px] text-indigo-400">ชิ้น</span>
-                        </div>
-                        <div class="flex items-center gap-1 bg-lime-50 border border-lime-100 rounded-lg px-2 py-1 whitespace-nowrap">
-                            <span class="text-[8px] font-bold text-lime-600 uppercase">เบิก ACC</span>
-                            <span id="dashAccDocs" class="text-xs font-black text-lime-700">0</span><span class="text-[7px] text-lime-400">ใบขอ</span>
-                            <span id="dashAccLines" class="text-xs font-black text-lime-700 ml-0.5">0</span><span class="text-[7px] text-lime-400">รายการ</span>
-                            <span id="dashAccQty" class="text-xs font-black text-lime-700 ml-0.5">0</span><span class="text-[7px] text-lime-400">ชิ้น</span>
-                        </div>
-                    </div>
-                    <!-- New request type added later needs its own WIP count too, per "มีรายการ
-                         อื่นเพิ่ม ให้ช่วยเพิ่มรายการอยู่ด้านล่าง 2 ช่องนี้" — stacked as a second row
-                         instead of widening the row, so this whole block's height still just
-                         matches the title+subtitle block next to it (no extra page height). -->
-                    <div class="flex items-center gap-1.5">
-                        <div class="flex items-center gap-1 bg-orange-50 border border-orange-100 rounded-lg px-2 py-1 whitespace-nowrap">
-                            <span class="text-[8px] font-bold text-orange-600 uppercase">ตัดงานซ่อม (ซัพพลายเออร์)</span>
-                            <span id="dashSupplierDocs" class="text-xs font-black text-orange-700">0</span><span class="text-[7px] text-orange-400">ใบขอ</span>
-                            <span id="dashSupplierLines" class="text-xs font-black text-orange-700 ml-0.5">0</span><span class="text-[7px] text-orange-400">รายการ</span>
-                            <span id="dashSupplierQty" class="text-xs font-black text-orange-700 ml-0.5">0</span><span class="text-[7px] text-orange-400">ชิ้น</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex items-center gap-1 no-print">
-                    <button id="btnManualRefresh" onclick="manualRefresh()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1" title="ดึงข้อมูลล่าสุดจากระบบ">
-                        <span>🔃 Refresh</span>
-                    </button>
-                    <button onclick="printCurrentPage()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1" title="พิมพ์หน้านี้">
-                        <span>🖨️ พิมพ์เอกสาร <span class="text-[9px] font-normal opacity-70">(Print)</span></span>
-                    </button>
-                    <!-- Always-available popup listing every currently-mergeable group — the
-                         suggestion banner below only ever checks SAME-DAY groups, so without
-                         this button a cross-day-only set of candidates would have no way to be
-                         opened at all. -->
-                    <button id="btnMergeCandidates" onclick="openMergeModal()" class="btn-ghost text-xs text-slate-500 flex items-center gap-1" title="ดูรายการที่สามารถรวมใบสั่งซ่อมได้">
-                        <span>🔗 รายการที่รวมได้ <span class="text-[9px] font-normal opacity-70">(Merge Candidates)</span></span>
-                    </button>
-                    <button id="btnResetData" onclick="resetToDefaultData()" class="btn-ghost text-xs text-slate-500 hover:text-rose-600 flex items-center gap-1 hidden" title="คืนค่าข้อมูลตัวอย่างเริ่มต้น (Admin เท่านั้น)">
-                        <span>🔄 รีเซ็ตข้อมูล <span class="text-[9px] font-normal opacity-70">(Reset)</span></span>
-                    </button>
-                    <!-- Export dropdown — CSV/Excel/PDF, per "เปลี่ยนคำว่าส่งออก CSV เป็น Export
-                         File และมี dropdown ให้เลือกว่าเป็น CSV, Excel, Pdf". -->
-                    <div class="relative">
-                        <button onclick="toggleExportMenu()" class="btn-secondary text-xs flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            <span>Export File</span>
-                            <span class="text-[8px]">▾</span>
-                        </button>
-                        <div id="exportMenu" class="hidden absolute right-0 mt-1 w-36 bg-white rounded-lg shadow-2xl border border-slate-200 z-50 overflow-hidden">
-                            <button onclick="exportData('csv')" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50">CSV</button>
-                            <button onclick="exportData('excel')" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 border-t border-slate-100">Excel</button>
-                            <button onclick="exportData('pdf')" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 border-t border-slate-100">PDF</button>
-                        </div>
-                    </div>
-                    <button onclick="openFormModal()" class="btn-primary shadow-lg shadow-indigo-200 flex items-center gap-1 text-sm">
-                        <span>+ สร้างใบสั่งซ่อมใหม่ <span class="text-[9px] font-normal opacity-70">(New Request)</span></span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Merge-suggestion banner — same job/style/dept ordered the same day, still
-                 early enough (no department has actually started work) to safely combine into
-                 one document, per "ปุ่มกดรวบรวมจ๊อบเดียวกันสไตส์เดียวกันที่สั่งกันในวันเดียวกัน
-                 รวมในใบเดียวได้มั๊ย...จะได้ง่ายตั้งแต่คนวางมาร์ค ถึงคนตามงาน". Hidden entirely
-                 when there's nothing to suggest. -->
-            <div id="mergeSuggestBanner" class="card p-3 bg-indigo-50 border-indigo-200 hidden flex items-center justify-between gap-3 flex-wrap">
-                <div class="text-xs text-indigo-800">
-                    🔗 <span id="mergeSuggestText"></span>
-                </div>
-                <button onclick="openMergeModal()" class="btn-secondary text-xs shrink-0">ดูรายละเอียด / รวมใบ <span class="text-[9px] font-normal opacity-70">(Review / Merge)</span></button>
-            </div>
-
-            <!-- FILTERS & SEARCH TOOLBAR -->
-            <div class="card p-4 bg-slate-50/80 flex flex-wrap gap-3 items-center">
-                <div class="flex-1 min-w-[220px]">
-                    <div class="relative">
-                        <input type="text" id="searchInput" autocomplete="off" placeholder="ค้นหา (Search) Style, Job No., สี, สาเหตุ หรือ ID..." class="w-full pl-9 pr-3 text-xs bg-white">
-                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    </div>
-                </div>
-                <div class="w-auto min-w-[150px]">
-                    <select id="filterRequestType" onchange="onManualFilterChange()" oninput="onManualFilterChange()" class="w-full text-xs bg-white">
-                        <option value="all">ทุกประเภทคำขอ (All Types)</option>
-                        <option value="CutReplace">แจ้งขอตัดเปลี่ยน (Cut-Replace)</option>
-                        <option value="SupplierCutReplace">แจ้งตัดงานซ่อม (ซัพพลายเออร์)</option>
-                        <option value="ACCOnly">แจ้งขอเบิกอุปกรณ์ (ACC)</option>
-                    </select>
-                </div>
-                <div class="w-auto min-w-[150px]">
-                    <!-- Every status the active-queue pipeline can actually be in, per
-                         "ช่วยเช็คและใส่รายการสถานะในการตรวจสอบใส่ใน dropdown ให้ครบ" — this used
-                         to list only 10 of the 20+ real statuses (Marker/CuttingSheet/FabricCheck
-                         /PPCFabric/StockFabric/ACC/SupermarketPending were all missing, silently
-                         unfilterable). Received/Cancelled are left out on purpose — those records
-                         are archived and never appear in this active-queue view anyway (they live
-                         in the separate Completed History table), so listing them here would just
-                         be a filter that always returns zero rows.
-                         A plain <select> (options filled in by JS from FILTER_STATUS_OPTIONS) —
-                         per "ต้องการให้เมื่อกดเลือกก็สามารถทำได้ โดยไม่ต้องกดลบทีละตัว", this used
-                         to be a free-text box matched against a datalist by exact label text,
-                         which turned out unreliable across browsers (a clicked suggestion didn't
-                         always fire a change, and a global uppercase-on-input listener elsewhere
-                         in the app was silently mangling the label so it could never match at
-                         all). A <select> can't have either problem — clicking an option always
-                         fires change, and its value is always exactly one of the option codes. -->
-                    <select id="filterStatus" onchange="onManualFilterChange()" class="w-full text-xs bg-white">
-                        <option value="">ทุกสถานะ (All Status)</option>
-                    </select>
-                </div>
-                <div class="w-auto min-w-[140px]">
-                    <select id="filterDept" onchange="onManualFilterChange()" class="w-full text-xs bg-white">
-                        <option value="">ทุกแผนกที่แจ้ง (All Depts)</option>
-                    </select>
-                </div>
-                <button onclick="resetFilters()" class="text-xs text-slate-500 hover:text-indigo-600 font-bold px-2 py-1">
-                    ล้างตัวกรอง <span class="text-[9px] font-normal opacity-70">(Clear Filters)</span>
-                </button>
-            </div>
-
-            <!-- Shows which KPI-card selection (if any) is currently narrowing the table below
-                 — these ad hoc criteria (overdue, QC waiting, by-vendor, etc.) can't be expressed
-                 by the Request Type/Status/Dept dropdowns above, so without this badge a user had
-                 no way to tell the list was still scoped to a card click. Search and the 3
-                 dropdowns are a fully independent layer that always just combines with whatever
-                 card is active (per "ไม่ต้องการให้การค้นหาติดอยู่ที่ฟังชั่นใดฟังชั่นหนึ่ง...ให้
-                 แยกส่วนกัน") rather than clearing it — this badge's own ✕ (clearKpiScope) is the
-                 explicit way to drop just the card scope, keeping whatever's typed/picked below. -->
-
-            <div id="activeKpiBadge" class="hidden -mt-2 mb-2">
-                <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-2.5 py-1">
-                    🔎 กำลังกรองตาม: <span id="activeKpiBadgeLabel"></span>
-                    <!-- Only shown when filtering by "เอกสารที่มีการรวม" — a shortcut to the
-                         separate "still mergeable" list, since that's what someone looking at
-                         already-merged docs will usually want to check next, per "ต้องการให้มี
-                         รายการเอกสารที่สามารถรวมได้ด้วยเพื่อให้เห็นว่ามีอะไรบ้างที่สามารถรวมได้". -->
-                    <button id="activeKpiMergeCandidatesLink" onclick="openMergeModal()" class="hidden text-violet-600 hover:underline ml-1 font-bold">🔗 ดูรายการที่รวมได้ (Merge Candidates)</button>
-                    <button onclick="clearKpiScope()" class="text-indigo-400 hover:text-indigo-700 ml-1" title="ล้างตัวกรองนี้">✕</button>
-                </span>
-            </div>
-
-            <!-- Bulk approve action bar — per "ให้สามารถคิดเลือกเหมือน select all แล้ว approve
-                 ได้" — appears once 1+ rows are ticked via the table's own select-all/per-row
-                 checkboxes (see toggleBulkApproveSelectAll/toggleBulkApproveOne). Covers both BU
-                 (PendingApproval) and PM/FM (PendingFMApproval) in one go — each selected record
-                 is routed through its own correct approval path per its current status. Records
-                 missing required data (Part/Embellishment not yet decided) are silently skipped
-                 rather than blocking the whole batch, per explicit confirmation; the result toast
-                 afterward reports how many were approved vs skipped. -->
-            <div id="bulkApproveBar" class="hidden card p-3 bg-emerald-50 border-emerald-200 flex items-center justify-between gap-3 flex-wrap">
-                <div class="text-xs text-emerald-800 font-bold">✅ เลือกไว้ <span id="bulkApproveCount">0</span> รายการ <span class="font-normal opacity-70">(selected)</span></div>
-                <div class="flex items-center gap-2">
-                    <button onclick="clearBulkApproveSelection()" class="btn-ghost text-xs">ล้างการเลือก <span class="text-[9px] font-normal opacity-70">(Clear)</span></button>
-                    <button onclick="bulkApproveSelected()" class="btn-primary text-xs">✅ อนุมัติที่เลือก <span class="text-[9px] font-normal opacity-70">(Approve Selected)</span></button>
-                </div>
-            </div>
-
-            <!-- REPAIR TABLE -->
-            <div class="card overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200 text-left">
-                        <thead class="bg-slate-50">
-                            <tr>
-                                <!-- Bulk select-all for approval — per "ให้สามารถคิดเลือกเหมือน
-                                     select all แล้ว approve ได้". Only ever selects rows THIS
-                                     user can actually approve right now (BU's PendingApproval or
-                                     PM/FM's PendingFMApproval) — see isBulkApprovable(). -->
-                                <th class="px-2 py-3.5 text-center no-print w-8">
-                                    <input type="checkbox" id="bulkApproveSelectAll" onchange="toggleBulkApproveSelectAll(this.checked)" title="เลือกทั้งหมดที่อนุมัติได้ (Select all approvable)">
-                                </th>
-                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">รหัส & วันกำหนดรับ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">ID & Due Date</span></th>
-                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">ข้อมูลสินค้า / Job<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Product Info</span></th>
-                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">แผนก / ไลน์ผลิต & ผู้ขอ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Dept / Line & Requester</span></th>
-                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap w-28">รายการ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Type</span></th>
-                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap w-[380px]">ชิ้นส่วน & สาเหตุ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Parts & Reason</span></th>
-                                <th class="px-5 py-3.5 text-[9px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap w-36">สถานะงาน<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Status</span></th>
-                                <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap w-44">Alert</th>
-                                <th class="px-5 py-3.5 text-center text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap no-print">การจัดการ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Actions</span></th>
-                            </tr>
-                        </thead>
-                        <tbody id="repairTableBody" class="divide-y divide-slate-100 bg-white">
-                            <!-- Injected dynamically by JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
         </div>
 
         <!-- SECTION: ANALYTICS -->
@@ -4643,6 +4654,11 @@
                 // trigger a full renderTable().
                 renderKpiDashboard();
                 filterData();
+            } else if (tab === 'dashboard') {
+                document.getElementById('section-dashboard').classList.remove('hidden');
+                document.getElementById('tab-dashboard').classList.add('nav-active');
+                document.getElementById('tab-dashboard').classList.remove('text-slate-400');
+                renderKpiDashboard();
             } else if (tab === 'analytics') {
                 document.getElementById('section-analytics').classList.remove('hidden');
                 document.getElementById('tab-analytics').classList.add('nav-active');
