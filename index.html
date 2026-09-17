@@ -12,6 +12,9 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+    <!-- Tesseract.js — client-side OCR for the ERP label scan feature (no server needed;
+         only loaded/used when the line leader actually opens the scan modal). -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <!-- Font Sarabun -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -2043,6 +2046,14 @@
                     <h3 id="formModalTitle" class="text-lg font-black text-slate-800">แจ้งซ่อมงาน / ขอตัดเปลี่ยนใหม่</h3>
                     <p id="formModalSubtitle" class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Garment Repair Request Form</p>
                 </div>
+                <!-- Auto-fills the fields below from a photo of the ERP-printed bundle ticket
+                     instead of the line leader retyping everything by hand, per "ต้องการดึงหรือ
+                     จับข้อมูลนี้มาใส่ในเอกสารอัตโนมัติโดยไม่ต้องให้หัวหน้าไลน์กรอกข้อมูล" — there's
+                     no ERP API access yet, so this reads the printed label optically (OCR) and
+                     always leaves every field editable for review before save, never auto-saves. -->
+                <button type="button" onclick="openLabelScanModal()" class="btn-ghost text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50">
+                    📷 สแกนป้าย ERP <span class="text-[9px] font-normal opacity-70">(Scan Label)</span>
+                </button>
                 <!-- Request type toggle — moved up into the header bar's spare space, per
                      "ต้องการให้ขยับประเภทคำขอขึ้นไปอีกเนื่องจากด้านบนมีพื้นที่เหลือค่อนข้างมาก".
                      Per "ให้มีติ๊กเลือกด้านบนข้อมูลว่าแจ้งขอตัดเปลี่ยน กับ แจ้งขอเบิกอุปกรณ์ (ACC)
@@ -2177,8 +2188,8 @@
                         <datalist id="jobList"></datalist>
                     </div>
                     <div>
-                        <label class="text-[10px] font-extrabold text-slate-600 block mb-1">Item / ชื่อสินค้า *</label>
-                        <input type="text" id="fItem" list="itemList" placeholder="เช่น Polo Shirt" class="w-full text-xs bg-white" required>
+                        <label class="text-[10px] font-extrabold text-slate-600 block mb-1">PO Line Item *</label>
+                        <input type="text" id="fItem" list="itemList" placeholder="เช่น 100" class="w-full text-xs bg-white" required>
                         <datalist id="itemList"></datalist>
                     </div>
                     <div>
@@ -2248,6 +2259,37 @@
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL: SCAN ERP LABEL — camera capture + barcode decode + OCR of the ERP-printed
+         bundle ticket, to pre-fill (never auto-submit) the request form above. -->
+    <div id="labelScanModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="bg-indigo-600 px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
+                <div>
+                    <h3 class="font-bold text-base">สแกนป้าย ERP</h3>
+                    <p class="text-[10px] text-indigo-100 uppercase font-semibold">Scan ERP bundle ticket</p>
+                </div>
+                <button onclick="closeLabelScanModal()" class="text-white hover:text-indigo-100 text-lg">✕</button>
+            </div>
+            <div class="p-6 space-y-3 overflow-y-auto">
+                <div id="labelScanCameraView">
+                    <video id="labelScanVideo" class="w-full rounded-xl bg-slate-900" autoplay playsinline muted></video>
+                    <p class="text-[9px] text-slate-400 mt-1.5">จัดป้ายให้อยู่กลางเฟรม ให้อ่านตัวหนังสือได้ชัด แล้วกดถ่ายภาพ</p>
+                    <button type="button" onclick="captureLabelFrame()" class="btn-primary w-full text-xs mt-2">📸 ถ่ายภาพ <span class="text-[9px] font-normal opacity-70">(Capture)</span></button>
+                </div>
+                <canvas id="labelScanCanvas" class="hidden w-full rounded-xl"></canvas>
+                <div id="labelScanStatus" class="hidden text-xs text-center text-slate-500 py-3">⏳ กำลังอ่านข้อมูล... <span class="opacity-70">(Reading...)</span></div>
+                <div id="labelScanResult" class="hidden space-y-2">
+                    <p class="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">⚠️ ข้อมูลจากสแกน — ตรวจสอบให้ถูกต้องก่อนกดใช้ค่านี้ <span class="font-normal opacity-70">(From scan — review before applying)</span></p>
+                    <div id="labelScanFields" class="text-xs bg-slate-50 border rounded-xl p-3 space-y-1"></div>
+                    <div class="flex gap-2 pt-1">
+                        <button type="button" onclick="retryLabelScan()" class="btn-ghost w-1/3 text-xs">ถ่ายใหม่ <span class="text-[9px] font-normal opacity-70">(Retry)</span></button>
+                        <button type="button" onclick="applyLabelScanResult()" class="btn-primary flex-1 text-xs">ใช้ค่านี้ <span class="text-[9px] font-normal opacity-70">(Apply)</span></button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -7505,6 +7547,163 @@
             document.getElementById('formModal').classList.replace('hidden', 'flex');
         }
 
+        // ===== Scan ERP Label (barcode decode + OCR) =====
+        // No ERP API access exists yet, so the only way to pull this data without the line
+        // leader retyping it by hand is to read the printed bundle ticket optically: decode its
+        // barcode (a plain unique serial — it does NOT encode Style/Job/Size/Qty itself) plus
+        // OCR the surrounding printed text, anchored on the ticket's own fixed Thai/English field
+        // labels rather than guessing positions. Every result only ever pre-fills the normal,
+        // still fully-editable form fields — nothing here ever saves on its own.
+        const ERP_PART_NAME_ALIASES = { 'ตัวหน้า': 'Front', 'ตัวหลัง': 'Back', 'แขน': 'Sleeve' };
+        const ERP_LABEL_FIELD_PATTERNS = [
+            { key: 'style', re: /^\s*แบบผลิตภัณฑ์\s*[:：]?\s*(.+)$/m },
+            { key: 'job', re: /^\s*เลขที่ใบสั่งผลิต\s*[:：]?\s*(.+)$/m },
+            { key: 'item', re: /^\s*PO\s*Line\s*Item\s*[:：]?\s*(.+)$/im },
+            { key: 'color', re: /^\s*สี\s*[:：]\s*(.+)$/m },
+            { key: 'po', re: /^\s*เลขที่ใบสั่งซื้อลูกค้า\s*[:：]?\s*(.+)$/m },
+            { key: 'season', re: /^\s*Season\s*[:：]?\s*(.+)$/im },
+            { key: 'bundleNo', re: /^\s*มัดที่\s*[:：]?\s*(.+)$/m },
+            { key: 'partLabel', re: /^\s*ชิ้นงาน\s*[:：]?\s*(.+)$/m },
+            { key: 'size', re: /^\s*ขนาด\s*[:：]?\s*(.+)$/m },
+            { key: 'qty', re: /^\s*จำนวน\s*[:：]?\s*(.+)$/m },
+            { key: 'supplierName', re: /^\s*ชื่อผู้รับเหมา\s*[:：]?\s*(.+)$/m },
+            { key: 'embDetail', re: /^\s*รายละเอียดลายปัก\s*[:：]?\s*(.+)$/m },
+            { key: 'cuttingLayNo', re: /^\s*เลขที่ปูตัด\s*[:：]?\s*(.+)$/m },
+        ];
+        // Resolves an ERP-printed part name to the app's internal part code — checks the app's
+        // OWN label text first (in case OCR happens to match it exactly), then a small alias
+        // table for known ERP synonyms. Anything unrecognized is kept as raw text rather than
+        // guessed, same tolerance the searchable part-name field already gives free-typed values.
+        function resolvePartNameCode(label) {
+            const trimmed = (label || '').trim();
+            if (!trimmed) return '';
+            if (PART_NAME_CODES[trimmed]) return PART_NAME_CODES[trimmed];
+            if (ERP_PART_NAME_ALIASES[trimmed]) return ERP_PART_NAME_ALIASES[trimmed];
+            return trimmed;
+        }
+        function parseErpLabelText(text, barcodeValue) {
+            const clean = (text || '').replace(/\r/g, '');
+            const out = {};
+            ERP_LABEL_FIELD_PATTERNS.forEach(({ key, re }) => {
+                const m = clean.match(re);
+                if (m) out[key] = m[1].trim();
+            });
+            out.barcodeValue = barcodeValue || '';
+            if (out.qty) out.qty = (out.qty.match(/\d+/) || [''])[0];
+            return out;
+        }
+        let labelScanStream = null;
+        let labelScanParsed = null;
+        async function openLabelScanModal() {
+            document.getElementById('labelScanResult').classList.add('hidden');
+            document.getElementById('labelScanStatus').classList.add('hidden');
+            document.getElementById('labelScanCameraView').classList.remove('hidden');
+            document.getElementById('labelScanCanvas').classList.add('hidden');
+            document.getElementById('labelScanModal').classList.replace('hidden', 'flex');
+            try {
+                labelScanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                document.getElementById('labelScanVideo').srcObject = labelScanStream;
+            } catch (err) {
+                showToast('เปิดกล้องไม่ได้ (Cannot open camera): ' + err.message, 'warning');
+                closeLabelScanModal();
+            }
+        }
+        function stopLabelScanStream() {
+            if (labelScanStream) {
+                labelScanStream.getTracks().forEach(t => t.stop());
+                labelScanStream = null;
+            }
+        }
+        function closeLabelScanModal() {
+            stopLabelScanStream();
+            closeModal('labelScanModal');
+        }
+        function retryLabelScan() {
+            openLabelScanModal();
+        }
+        async function captureLabelFrame() {
+            const video = document.getElementById('labelScanVideo');
+            const canvas = document.getElementById('labelScanCanvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            document.getElementById('labelScanCameraView').classList.add('hidden');
+            canvas.classList.remove('hidden');
+            stopLabelScanStream();
+            document.getElementById('labelScanStatus').classList.remove('hidden');
+            let barcodeValue = '';
+            // Barcode decode is best-effort — Code128/EAN etc. via the native BarcodeDetector
+            // (Android Chrome); not every device/browser supports it (notably iOS Safari), so
+            // this never blocks the OCR path below when it's unavailable or finds nothing.
+            try {
+                if ('BarcodeDetector' in window) {
+                    const detector = new BarcodeDetector();
+                    const codes = await detector.detect(canvas);
+                    if (codes.length) barcodeValue = codes[0].rawValue;
+                }
+            } catch (e) { /* unsupported on this device — OCR fields still apply */ }
+            let ocrText = '';
+            try {
+                const result = await Tesseract.recognize(canvas, 'tha+eng');
+                ocrText = (result.data && result.data.text) || '';
+            } catch (e) {
+                showToast('อ่านภาพไม่สำเร็จ (OCR failed): ' + e.message, 'error');
+            }
+            labelScanParsed = parseErpLabelText(ocrText, barcodeValue);
+            renderLabelScanResult(labelScanParsed);
+            document.getElementById('labelScanStatus').classList.add('hidden');
+            document.getElementById('labelScanResult').classList.remove('hidden');
+        }
+        function renderLabelScanResult(parsed) {
+            const rows = [
+                ['Style', parsed.style], ['Job', parsed.job], ['PO Line Item', parsed.item],
+                ['CW (Colorway)', parsed.color], ['PO No.', parsed.po], ['Season', parsed.season],
+                ['ชิ้นงาน (Part)', parsed.partLabel],
+                ['ขนาด / จำนวน', [parsed.size, parsed.qty].filter(Boolean).join(' / ')],
+                ['มัดที่', parsed.bundleNo], ['ผู้รับเหมา', parsed.supplierName],
+                ['บาร์โค้ด', parsed.barcodeValue],
+            ];
+            document.getElementById('labelScanFields').innerHTML = rows.map(([label, val]) => `
+                <div class="flex justify-between gap-2">
+                    <span class="text-slate-400">${escapeHtml(label)}</span>
+                    <span class="font-bold ${val ? 'text-slate-800' : 'text-rose-400'}">${val ? escapeHtml(val) : 'ไม่พบ (กรอกเองได้)'}</span>
+                </div>`).join('');
+        }
+        function applyLabelScanResult() {
+            if (!labelScanParsed) return;
+            const p = labelScanParsed;
+            if (p.style) document.getElementById('fStyle').value = p.style;
+            if (p.job) document.getElementById('fJob').value = p.job;
+            if (p.item) document.getElementById('fItem').value = p.item;
+            if (p.color) document.getElementById('fColor').value = p.color;
+            if (p.po) document.getElementById('fPO').value = p.po;
+            if (p.season) document.getElementById('fSeason').value = p.season;
+            if (p.supplierName) renderSupplierNameSelect(p.supplierName);
+            const remarkParts = [];
+            if (p.embDetail) remarkParts.push('ลายปัก: ' + p.embDetail);
+            if (p.cuttingLayNo) remarkParts.push('เลขที่ปูตัด (อ้างอิง): ' + p.cuttingLayNo);
+            if (p.barcodeValue) remarkParts.push('บาร์โค้ดป้าย ERP (อ้างอิง): ' + p.barcodeValue);
+            if (remarkParts.length) {
+                const remarkEl = document.getElementById('fRemark');
+                remarkEl.value = (remarkEl.value ? remarkEl.value + '\n' : '') + remarkParts.join('\n');
+            }
+            if (p.partLabel || p.size || p.qty || p.bundleNo) {
+                // openFormModal() always pre-adds one blank row — if nothing's been typed into
+                // it yet, replace it instead of leaving it dangling (its part-name field is
+                // required, so an untouched blank row would otherwise block submission).
+                // Never touches rows the user has already started filling in.
+                const container = document.getElementById('partsContainer');
+                const existingRows = Array.from(container.children);
+                if (existingRows.length && existingRows.every(r => !r.querySelector('.pName').value.trim())) {
+                    container.innerHTML = '';
+                }
+                const sizes = {};
+                if (p.size && p.qty) sizes[p.size.trim()] = parseInt(p.qty) || 0;
+                addPartRow(resolvePartNameCode(p.partLabel), '', sizes, '', false, null, '', '', '', p.bundleNo || '');
+            }
+            showToast('เติมข้อมูลจากสแกนแล้ว — ตรวจสอบทุกช่องก่อนบันทึก (Applied — please review before saving)', 'success');
+            closeLabelScanModal();
+        }
         function editOrder(id) {
             const idx = repairs.findIndex(r => r.id === id);
             if (idx === -1) return;
