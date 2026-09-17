@@ -1049,12 +1049,35 @@
                 </span>
             </div>
 
+            <!-- Bulk approve action bar — per "ให้สามารถคิดเลือกเหมือน select all แล้ว approve
+                 ได้" — appears once 1+ rows are ticked via the table's own select-all/per-row
+                 checkboxes (see toggleBulkApproveSelectAll/toggleBulkApproveOne). Covers both BU
+                 (PendingApproval) and PM/FM (PendingFMApproval) in one go — each selected record
+                 is routed through its own correct approval path per its current status. Records
+                 missing required data (Part/Embellishment not yet decided) are silently skipped
+                 rather than blocking the whole batch, per explicit confirmation; the result toast
+                 afterward reports how many were approved vs skipped. -->
+            <div id="bulkApproveBar" class="hidden card p-3 bg-emerald-50 border-emerald-200 flex items-center justify-between gap-3 flex-wrap">
+                <div class="text-xs text-emerald-800 font-bold">✅ เลือกไว้ <span id="bulkApproveCount">0</span> รายการ <span class="font-normal opacity-70">(selected)</span></div>
+                <div class="flex items-center gap-2">
+                    <button onclick="clearBulkApproveSelection()" class="btn-ghost text-xs">ล้างการเลือก <span class="text-[9px] font-normal opacity-70">(Clear)</span></button>
+                    <button onclick="bulkApproveSelected()" class="btn-primary text-xs">✅ อนุมัติที่เลือก <span class="text-[9px] font-normal opacity-70">(Approve Selected)</span></button>
+                </div>
+            </div>
+
             <!-- REPAIR TABLE -->
             <div class="card overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 text-left">
                         <thead class="bg-slate-50">
                             <tr>
+                                <!-- Bulk select-all for approval — per "ให้สามารถคิดเลือกเหมือน
+                                     select all แล้ว approve ได้". Only ever selects rows THIS
+                                     user can actually approve right now (BU's PendingApproval or
+                                     PM/FM's PendingFMApproval) — see isBulkApprovable(). -->
+                                <th class="px-2 py-3.5 text-center no-print w-8">
+                                    <input type="checkbox" id="bulkApproveSelectAll" onchange="toggleBulkApproveSelectAll(this.checked)" title="เลือกทั้งหมดที่อนุมัติได้ (Select all approvable)">
+                                </th>
                                 <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">รหัส & วันกำหนดรับ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">ID & Due Date</span></th>
                                 <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">ข้อมูลสินค้า / Job<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Product Info</span></th>
                                 <th class="px-5 py-3.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wide whitespace-nowrap">แผนก / ไลน์ผลิต & ผู้ขอ<span class="block normal-case font-normal text-slate-300 text-[8px] mt-0.5">Dept / Line & Requester</span></th>
@@ -3761,6 +3784,17 @@
         function canFMApprove(user) {
             return !!user && (hasRole(user, 'Admin') || hasRole(user, 'FactoryManager') || hasRole(user, 'ProductionManager'));
         }
+        // Whether THIS user can bulk-select this record's row for select-all approve — per
+        // "ให้สามารถคิดเลือกเหมือน select all แล้ว approve ได้". Only ever true for the exact
+        // same two review gates as the single-record modals (BU's PendingApproval, PM/FM's
+        // PendingFMApproval) — no new permission surface, just a faster path through the same
+        // ones that already exist.
+        function isBulkApprovable(item) {
+            if (item.mergedInto) return false;
+            if (item.status === 'PendingApproval') return canApprove(currentUser, item);
+            if (item.status === 'PendingFMApproval') return canFMApprove(currentUser);
+            return false;
+        }
         function canCuttingAct(user) {
             return !!user && (hasRole(user, 'Admin') || hasRole(user, 'Cutting'));
         }
@@ -6022,7 +6056,7 @@
             tbody.innerHTML = '';
 
             if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 text-xs">ไม่พบข้อมูลรายการสั่งซ่อมตามเงื่อนไข</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-12 text-center text-slate-400 text-xs">ไม่พบข้อมูลรายการสั่งซ่อมตามเงื่อนไข</td></tr>`;
                 return;
             }
 
@@ -6211,8 +6245,12 @@
                 // to miss scanning down a long queue, unlike a badge easily lost among the rest
                 // of the row's text.
                 const isMostUrgent = item.urgency === 'mostUrgent';
+                const bulkApprovable = isBulkApprovable(item);
                 return `
                     <tr class="${isMostUrgent ? 'bg-red-50 hover:bg-red-100 border-l-4 border-l-red-500' : 'hover:bg-slate-50/80'} transition-colors">
+                        <td class="px-2 py-4 text-center no-print">
+                            ${bulkApprovable ? `<input type="checkbox" class="bulkApproveCheck" data-id="${escapeHtml(item.id)}" ${bulkApproveSelectedIds.has(item.id) ? 'checked' : ''} onchange="toggleBulkApproveOne('${escapeHtml(item.id)}', this.checked)">` : ''}
+                        </td>
                         <td class="px-5 py-4">
                             <div class="text-xs font-black ${item.requestType === 'ACCOnly' ? 'text-lime-600' : (item.requestType === 'SupplierCutReplace' ? 'text-orange-600' : 'text-indigo-600')}">${escapeHtml(docLabel(item))}</div>
                             ${mergeRefBadgeHtml(item)}
@@ -6315,6 +6353,146 @@
             tbody.innerHTML = rowsHtml;
             updateKpiNotificationHighlights();
             updateKpiTabBadges();
+            // Prune any selected id that no longer exists / no longer qualifies (record acted
+            // on elsewhere, status changed, filtered out) — keeps the count and "select all"
+            // checkbox's checked state honest against what's actually still on screen.
+            pruneBulkApproveSelection();
+        }
+
+        // --- BULK SELECT-ALL APPROVE --------------------------------------------------
+        // Per "ให้สามารถคิดเลือกเหมือน select all แล้ว approve ได้" — lets BU/PM-FM tick
+        // several rows at once (via the table's own checkbox column) and approve them all in
+        // one action, instead of opening each record's modal individually. Covers both review
+        // gates (BU's PendingApproval, PM/FM's PendingFMApproval) in a single batch; each
+        // record is routed through its own correct path based on its current status. A record
+        // missing required data (Part/Embellishment not yet decided, PO/Item/Job blank, etc.)
+        // is silently skipped rather than blocking the rest of the batch — per explicit
+        // confirmation — with a final toast reporting how many were approved vs skipped.
+        let bulkApproveSelectedIds = new Set();
+        function toggleBulkApproveOne(id, checked) {
+            if (checked) bulkApproveSelectedIds.add(id); else bulkApproveSelectedIds.delete(id);
+            updateBulkApproveBar();
+        }
+        function toggleBulkApproveSelectAll(checked) {
+            document.querySelectorAll('#repairTableBody .bulkApproveCheck').forEach(cb => {
+                cb.checked = checked;
+                if (checked) bulkApproveSelectedIds.add(cb.dataset.id); else bulkApproveSelectedIds.delete(cb.dataset.id);
+            });
+            updateBulkApproveBar();
+        }
+        function clearBulkApproveSelection() {
+            bulkApproveSelectedIds.clear();
+            document.querySelectorAll('#repairTableBody .bulkApproveCheck').forEach(cb => { cb.checked = false; });
+            updateBulkApproveBar();
+        }
+        function pruneBulkApproveSelection() {
+            Array.from(bulkApproveSelectedIds).forEach(id => {
+                const item = repairs.find(r => r.id === id);
+                if (!item || !isBulkApprovable(item)) bulkApproveSelectedIds.delete(id);
+            });
+            updateBulkApproveBar();
+        }
+        function updateBulkApproveBar() {
+            const bar = document.getElementById('bulkApproveBar');
+            const countEl = document.getElementById('bulkApproveCount');
+            if (!bar || !countEl) return;
+            countEl.innerText = bulkApproveSelectedIds.size;
+            bar.classList.toggle('hidden', bulkApproveSelectedIds.size === 0);
+            const selectAllBox = document.getElementById('bulkApproveSelectAll');
+            const rowBoxes = Array.from(document.querySelectorAll('#repairTableBody .bulkApproveCheck'));
+            if (selectAllBox) {
+                const allChecked = rowBoxes.length > 0 && rowBoxes.every(cb => cb.checked);
+                selectAllBox.checked = allChecked;
+                selectAllBox.indeterminate = !allChecked && rowBoxes.some(cb => cb.checked);
+            }
+        }
+        // Bulk-mode equivalent of collectFmMarkerDecision() — reads the SAME already-saved
+        // fields renderFmMarkerGroups() itself falls back to (an explicit fmMarkerDecision
+        // entry, a requester pass-through, or the originFabricType-based default) instead of
+        // fresh radio-button input, since there's no per-record modal open in bulk mode. This
+        // mirrors an interactive approval where PM/FM opens the modal and clicks Approve
+        // without touching any radio — every part already resolves to a real yes/no, never
+        // "incomplete", so this never causes a bulk record to be skipped.
+        function computeFmMarkerDecisionFromStored(item) {
+            const groups = groupPartsForEmb(item.parts || []);
+            const saved = item.fmMarkerDecision || {};
+            const trail = item.markerLaidTrail || {};
+            const defaultLaid = item.originFabricType === 'matched' ? 'no' : 'yes';
+            const decision = {};
+            groups.forEach(g => {
+                const passedThrough = trail[g.key] && trail[g.key].decidedBy === 'requester';
+                const val = saved[g.key] === true ? 'yes' : saved[g.key] === false ? 'no' : passedThrough ? (trail[g.key].laid ? 'yes' : 'no') : defaultLaid;
+                decision[g.key] = val === 'yes';
+            });
+            return decision;
+        }
+        // Bulk-mode equivalent of submitApproval('Approved') — same guards, same mutation,
+        // same log line, just reading already-SAVED part data (embNone/embellishment) instead
+        // of the modal's live DOM, since there's no modal open per record in bulk mode. Returns
+        // true if approved, false if this record must be skipped (silently — see the bar's own
+        // comment for why).
+        function bulkApproveBuRecord(item) {
+            if (findAmbiguousPartGroups(item.parts).length) return false;
+            if (!isFilled(item.po) || !isFilled(item.item) || !isFilled(item.job)) return false;
+            const groups = groupPartsForEmb(item.parts);
+            const groupsComplete = groups.every(g => {
+                if (!isFilled(g.part)) return false;
+                if (g.embNone) return true;
+                return g.embellishment.length > 0 && g.embellishment.every(e => (parseInt(e.count) || 0) > 0);
+            });
+            if (!groupsComplete) return false;
+            if (item.parts.some(p => !isFilled(p.part) || !isFilled(p.name))) return false;
+
+            pushStatusHistory(item);
+            item.status = 'PendingFMApproval';
+            item.approval = { by: currentUser.username, name: currentUser.name, decision: 'Approved', attachment: null, ts: getLocalTime() };
+            logAction('Approve', item.id, `${currentUser.name} ตรวจสอบผ่านใบสั่งซ่อม (PO: ${item.po}, Item: ${item.item}, Job: ${item.job}) — ส่งต่อให้ Factory Manager อนุมัติ (select-all approve)`);
+            return true;
+        }
+        // Bulk-mode equivalent of submitFMApproval('Approved') — same guards/transitions as the
+        // interactive modal, using computeFmMarkerDecisionFromStored() in place of reading
+        // live radio buttons. markerLaidTrail is left untouched (no radio was ever "touched" by
+        // a human in bulk mode) rather than re-attributing every part to 'fm' the way the
+        // modal does for an enabled radio — existing attributions (requester pass-through, etc.)
+        // stay accurate.
+        function bulkApproveFmRecord(item) {
+            if (findAmbiguousPartGroups(item.parts).length) return false;
+            if (item.parts.some(p => !isFilled(p.part))) return false;
+
+            const isHeatTransferAccSkip = (item.dept === 'HeatTransfer' && item.heatTransferType === 'acc') || item.requestType === 'ACCOnly';
+            const fmMarkerDecision = computeFmMarkerDecisionFromStored(item);
+            const needsMarker = Object.keys(fmMarkerDecision).length === 0 || Object.values(fmMarkerDecision).some(v => v === true);
+            const isMarkerSkip = !isHeatTransferAccSkip && !needsMarker;
+
+            pushStatusHistory(item);
+            item.status = isHeatTransferAccSkip ? 'CuttingSent' : (isMarkerSkip ? 'MarkerSent' : 'Approved');
+            item.fmMarkerDecision = fmMarkerDecision;
+            if (isHeatTransferAccSkip) item.cuttingSend = { by: 'system', ts: getLocalTime() };
+            if (isMarkerSkip) item.markerAction = { by: 'system', name: 'system', fabricType: 'matched', ts: getLocalTime() };
+            item.fmApproval = { by: currentUser.username, name: currentUser.name, decision: 'Approved', remark: '', attachment: null, ts: getLocalTime() };
+            logAction('FMApprove', item.id, `${currentUser.name} (Factory Manager) อนุมัติใบสั่งซ่อม (select-all approve)`);
+            return true;
+        }
+        function bulkApproveSelected() {
+            const ids = Array.from(bulkApproveSelectedIds);
+            if (!ids.length) { showToast('ยังไม่ได้เลือกรายการ (No records selected)', 'warning'); return; }
+            let approvedCount = 0, skippedCount = 0;
+            const changedIds = [];
+            ids.forEach(id => {
+                const idx = repairs.findIndex(r => r.id === id);
+                if (idx === -1) { skippedCount++; return; }
+                const item = repairs[idx];
+                if (!isBulkApprovable(item)) { skippedCount++; return; }
+                let ok = false;
+                if (item.status === 'PendingApproval') ok = bulkApproveBuRecord(item);
+                else if (item.status === 'PendingFMApproval') ok = bulkApproveFmRecord(item);
+                if (ok) { approvedCount++; changedIds.push(id); } else { skippedCount++; }
+            });
+            bulkApproveSelectedIds.clear();
+            if (changedIds.length) autoSave(changedIds);
+            renderTable();
+            const skippedNote = skippedCount ? ` — ข้าม ${skippedCount} รายการ (ข้อมูลไม่ครบ กรุณาเปิดแก้ไขทีละใบ)` : '';
+            showToast(`อนุมัติสำเร็จ ${approvedCount} รายการ${skippedNote}`, approvedCount ? 'success' : 'warning');
         }
 
         // Fixed (non-parameterized) KPI-card predicates — ad hoc criteria the plain Request
