@@ -6683,7 +6683,7 @@
         // placed on DIFFERENT days for the same Style/Job/Dept/Type, per "เพิ่มกรณีที่เอกสารขอมา
         // เป็นคนละวันด้วยแต่ยังคงไม่ได้ดำเนินการ" — only ever opted into inside the modal itself,
         // never silently on by default, since combining across days is a bigger judgment call.
-        function findMergeableGroups(crossDay = false) {
+        function findMergeableGroups(crossDay = false, sameJobOnly = false) {
             // Excludes records already merged into something else — since merging no longer
             // cancels/archives the source doc (per "ไม่ต้องลบข้อมูลเดิมและเปลี่ยนเป็นเหตุผลที่
             // ยกเลิก"), its status/archived flag alone can no longer tell "already handled"
@@ -6699,11 +6699,15 @@
                 // status === 'PendingApproval'), permanently stuck with no way to proceed. Adding
                 // status to the key keeps every group at a single, uniform stage, per "ห้ามรวมข้าม
                 // สถานะ" — a doc only offers to merge with others sitting at the exact same step.
-                // `job` deliberately dropped from the key — per "ข้อมูลหลักที่ marker ใช้จะเป็น
-                // style" (merging is now Marker/Admin-only, and Marker works off the STYLE's
-                // marker pattern, not the Job number), so two requests on the same style but
-                // different jobs are now offered together too.
+                // `job` deliberately NOT required by default — per "ข้อมูลหลักที่ marker ใช้จะเป็น
+                // style" (merging is Marker/Admin-only, and Marker works off the STYLE's marker
+                // pattern first), so two requests on the same style but different jobs are
+                // offered together by default. `job` is still tracked/shown per row (and via the
+                // "คนละ Job" badge) rather than hidden — per "เอา Job ไว้เหมือนเดิมเพื่อให้รู้" —
+                // and sameJobOnly lets it be opted BACK IN as an additional narrowing filter when
+                // someone genuinely wants same-job-only candidates (see the modal's own checkbox).
                 const keyParts = [r.style, r.dept, r.requestType, r.status];
+                if (sameJobOnly) keyParts.push(r.job);
                 if (!crossDay) keyParts.push(dateOnlyPart(r.date));
                 const key = keyParts.join('||');
                 (groups[key] = groups[key] || []).push(r);
@@ -6729,6 +6733,11 @@
         // Modal-local state — reset every time the modal is (re)opened, never persisted, so it
         // never silently carries a stale "cross-day" choice into the next unrelated visit.
         let mergeCrossDayMode = false;
+        // Opt-in narrowing filter — per "โชว์ Job เป็นตัวเลือกเพิ่ม (ไม่บังคับ)": grouping is
+        // Style-first by default (job not required to match), but ticking this re-requires job
+        // to match too, for whoever genuinely wants same-job-only candidates this particular
+        // visit. Reset every time the modal (re)opens, same as mergeCrossDayMode.
+        let mergeSameJobOnlyMode = false;
         // null sentinel = "include every date" — materialized into a concrete Set the first
         // time renderMergeModalContent runs (see below), so individual date checkboxes can
         // just add/remove from it directly afterward without needing to re-derive the full
@@ -6737,6 +6746,7 @@
         function openMergeModal() {
             if (!canMerge(currentUser)) { showToast('เฉพาะ Marker หรือ Admin เท่านั้นที่รวมใบสั่งซ่อมได้ (Marker/Admin only)', 'warning'); return; }
             mergeCrossDayMode = false;
+            mergeSameJobOnlyMode = false;
             mergeSelectedDates = null;
             mergeAllUnmergedExpanded = false;
             const allUnmergedContainer = document.getElementById('mergeAllUnmergedContainer');
@@ -6753,6 +6763,11 @@
             mergeSelectedDates = null;
             renderMergeModalContent();
         }
+        function toggleMergeSameJobOnly(checked) {
+            mergeSameJobOnlyMode = checked;
+            mergeSelectedDates = null;
+            renderMergeModalContent();
+        }
         // Per-date checkbox — per "ให้สามารถแสดงรายการวันที่เป็น checkbox ด้านบนเพิ่มให้เลือก
         // วันที่รวมได้" so several specific days can be picked together (not just one at a
         // time via a single dropdown, and not only all-or-nothing).
@@ -6763,12 +6778,12 @@
         }
         function toggleMergeDateAll(checked) {
             if (!checked) { mergeSelectedDates = new Set(); renderMergeModalContent(); return; }
-            const allGroupsNow = findMergeableGroups(mergeCrossDayMode);
+            const allGroupsNow = findMergeableGroups(mergeCrossDayMode, mergeSameJobOnlyMode);
             mergeSelectedDates = new Set(allGroupsNow.flatMap(g => g.map(r => dateOnlyPart(r.date))));
             renderMergeModalContent();
         }
         function renderMergeModalContent() {
-            const allGroups = findMergeableGroups(mergeCrossDayMode);
+            const allGroups = findMergeableGroups(mergeCrossDayMode, mergeSameJobOnlyMode);
             const allDates = [...new Set(allGroups.flatMap(g => g.map(r => dateOnlyPart(r.date))))].sort();
             // First render (or after a cross-day toggle reset) — start with every date
             // selected, same as the old "all" default.
@@ -6794,6 +6809,15 @@
                 <label class="flex items-center gap-2 text-xs font-bold text-slate-600">
                     <input type="checkbox" ${mergeCrossDayMode ? 'checked' : ''} onchange="toggleMergeCrossDay(this.checked)">
                     รวมข้ามวันที่ด้วย (เฉพาะรายการที่ยังไม่ดำเนินการ) <span class="font-normal text-slate-400">(Include different dates too — still-unstarted requests only)</span>
+                </label>
+                <!-- Grouping is Style-first by default (job not required — see
+                     findMergeableGroups' own comment), per "หลักๆเมื่อมาร์คเกอร์ทำงานจะยึดจาก
+                     style เป็นหลักก่อน" — this lets whoever's in here opt BACK IN to requiring
+                     the same Job too, per "โชว์ Job เป็นตัวเลือกเพิ่ม (ไม่บังคับ)", without
+                     changing the default for everyone else. -->
+                <label class="flex items-center gap-2 text-xs font-bold text-slate-600 mt-1.5">
+                    <input type="checkbox" ${mergeSameJobOnlyMode ? 'checked' : ''} onchange="toggleMergeSameJobOnly(this.checked)">
+                    รวมเฉพาะ Job เดียวกันเท่านั้น <span class="font-normal text-slate-400">(Require same Job too — off by default, groups by Style alone)</span>
                 </label>
                 <!-- Independent of the cross-day checkbox above — even in same-day-only mode,
                      candidate groups can span several different days (today's group, yesterday's
