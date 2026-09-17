@@ -1463,6 +1463,34 @@
                 </div>
             </div>
 
+            <!-- Which PART is being requested for cut-replace, split by whether the defect was
+                 caused in-house vs by the supplier — per "ต้องการให้เป็นกราฟว่าโดยแบ่งเป็นการ
+                 ตัดซ่อม และการตัดซ่อมที่เกิดจากซัพพลายเออร์ โดยต้องการแยกชิ้นส่วนว่าชิ้นส่วนไหนมี
+                 การขอตัดซ่อมบ้าง". Bars are total pcs (same "operationally-important number"
+                 convention as the other charts here), ranked highest-first. -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">ชิ้นส่วนที่ขอตัดซ่อม <span class="font-normal normal-case opacity-70">(Cut-Replace by Part)</span></h3>
+                        <button id="cutReplacePartChartToggleBtn" onclick="toggleChartDetails('cutReplacePartChart')" class="text-[10px] font-bold text-indigo-600 hover:underline whitespace-nowrap ml-1">Show details</button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="cutReplacePartChart"></canvas>
+                    </div>
+                    <div id="cutReplacePartChartDetails" class="hidden mt-3 text-xs text-slate-600 space-y-0.5 max-h-40 overflow-y-auto"></div>
+                </div>
+                <div class="card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">ชิ้นส่วนที่ขอตัดซ่อม — ซัพพลายเออร์ <span class="font-normal normal-case opacity-70">(Supplier Cut-Replace by Part)</span></h3>
+                        <button id="supplierCutReplacePartChartToggleBtn" onclick="toggleChartDetails('supplierCutReplacePartChart')" class="text-[10px] font-bold text-indigo-600 hover:underline whitespace-nowrap ml-1">Show details</button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="supplierCutReplacePartChart"></canvas>
+                    </div>
+                    <div id="supplierCutReplacePartChartDetails" class="hidden mt-3 text-xs text-slate-600 space-y-0.5 max-h-40 overflow-y-auto"></div>
+                </div>
+            </div>
+
             <!-- Cut-Replace vs ACC requisition trend, per "ต้องการให้มี Chart สรุปยอดตัดเปลี่ยน
                  และเบิก acc ออกเป็นรายเดือน รายสัปดาห์ รายวัน...มีตัดเปลี่ยนและเบิก ACC ทั้งหมด
                  กี่รายการและจำนวนกี่ชิ้น" — bars are total pcs (the operationally-important
@@ -3880,8 +3908,17 @@
             if (!currentUser) return null;
             const scopeKey = scopeKeyOf(item);
             const inScope = scopesOf(currentUser).includes(scopeKey);
-            if (item.status === 'PendingApproval' && hasRole(currentUser, 'Approver') && inScope) {
-                return `รอ BU ตรวจสอบ (Pending BU review): ${docLabel(item)} (${item.style}/${item.job})`;
+            // BUG FIX: used to only fire for hasRole(currentUser, 'Approver') && inScope — the
+            // plain BU-review path. But canApprove()/isDeptOwnReview() route an Embellishment-
+            // dept or QC-dept-originated request to EmbApprover/that dept's own role instead of
+            // BU (see canApprove), so those reviewers never got a notification for a record they
+            // could actually act on. Reuse canApprove() directly, same check the action button
+            // itself already uses (renderTableRows), and word the message per who's actually
+            // reviewing (isDeptOwnReview), same as displayStatusLabel already does.
+            if (item.status === 'PendingApproval' && canApprove(currentUser, item)) {
+                return isDeptOwnReview(item)
+                    ? `รอหัวหน้าแผนกตรวจสอบ (Pending dept review): ${docLabel(item)} (${item.style}/${item.job})`
+                    : `รอ BU ตรวจสอบ (Pending BU review): ${docLabel(item)} (${item.style}/${item.job})`;
             }
             if (item.status === 'PendingFMApproval' && (hasRole(currentUser, 'FactoryManager') || hasRole(currentUser, 'ProductionManager'))) {
                 return `รอ PM / FM อนุมัติ (Pending PM/FM approval): ${docLabel(item)} (${item.style}/${item.job})`;
@@ -4055,15 +4092,26 @@
         // logged-in devices' changes show up without a manual reload, and to
         // reduce the window where two people editing the same record overwrite
         // each other's work) ---
-        // Narrowed back to 12s (per "อยากให้ระบบรีเฟรชค่อนข้างถี่แต่ยังให้สามารถพิมพ์ค้นหาได้")
-        // — this is safe against search/typing because autoRefreshTick() never touches the
+        // Raised from 12s → 25s, and Users/Log fetches thinned to every 5th tick — per urgent
+        // report that the Apps Script backend itself was intermittently returning Google Drive-
+        // level "ไม่สามารถเปิดไฟล์ได้ในเวลานี้" errors (confirmed live: repeated direct API calls
+        // got HTTP 404 after 27-45s, not a JSON {ok:false} from our own error handling — this is
+        // Apps Script's execution/concurrency quota under load, not an app bug). Every tick here
+        // fired 3 full-sheet Apps Script executions (Repairs + Users + Log, all uncached, all
+        // reading everything) — with 800+ Repairs rows that's real, non-trivial server work,
+        // repeated by every open tab every 12s. Users/Log change far less often than Repairs and
+        // don't need sub-minute freshness, so they're now only refetched on the same reduced
+        // cadence as the periodic reconciliation tick, cutting total backend load roughly 5-8x.
+        // This is safe against search/typing because autoRefreshTick() never touches the
         // #searchInput element itself, only re-renders the table body via filterData(), which
         // re-reads the search box's CURRENT value fresh on every tick (see getFilteredRepairs).
         // So a keystroke typed mid-refresh is never lost or overwritten — the tick just picks
         // up whatever's in the box by the time it resolves. It also fully skips itself while
         // any modal is open, so it can't clobber an in-flight edit either.
-        const AUTO_REFRESH_MS = 12000;
+        const AUTO_REFRESH_MS = 25000;
+        const USERS_LOG_REFRESH_EVERY_N_TICKS = 5;
         let autoRefreshTimer = null;
+        let autoRefreshTickCount = 0;
 
         function startAutoRefresh() {
             if (autoRefreshTimer) return;
@@ -4081,14 +4129,23 @@
             if (document.querySelector('.fixed.inset-0.z-50:not(.hidden)')) return;
 
             try {
+                autoRefreshTickCount++;
+                const refreshUsersLog = autoRefreshTickCount % USERS_LOG_REFRESH_EVERY_N_TICKS === 1;
                 const [newRepairs, newUsers, newLog] = await Promise.all([
-                    apiGetAll('Repairs'), apiGetAll('Users'), apiGetAll('Log')
+                    apiGetAll('Repairs'),
+                    refreshUsersLog ? apiGetAll('Users') : Promise.resolve(null),
+                    refreshUsersLog ? apiGetAll('Log') : Promise.resolve(null),
                 ]);
                 detectAndNotify(newRepairs || []);
                 repairs = migrateRepairsData(newRepairs || []);
                 resolveDuplicateDocNos();
-                users = newUsers || [];
-                auditLog = (newLog || []).slice().reverse();
+                // Only overwrite when this tick actually fetched fresh data — on a skipped tick,
+                // newUsers/newLog are null, so leave the existing users/auditLog untouched
+                // rather than wiping them to [].
+                if (refreshUsersLog) {
+                    users = newUsers || [];
+                    auditLog = (newLog || []).slice().reverse();
+                }
 
                 // Re-apply whatever search/filter is currently active instead of a bare
                 // renderTable() (which defaults to the full unfiltered list) — otherwise every
@@ -5597,6 +5654,52 @@
             setKpi('kpiCompleted', repairs.filter(r => r.status === 'Received'));
             if (document.getElementById('kpiCancelled')) setKpi('kpiCancelled', repairs.filter(r => r.status === 'Cancelled'));
         }
+        // Plain-text label(s) for whoever needs to act on this record right now, shown under
+        // the Actions column for every viewer regardless of their own role — per "สรุปแจ้งซ่อม
+        // อะไร ใครต้องกด" (users repeatedly unsure who's actually holding a record up). Mirrors
+        // the same status → department mapping renderTableRows uses to decide which action
+        // BUTTON to show (see statusRow below), just without the canXXXAct(currentUser)
+        // permission gate, since this is informational for anyone looking, not just the person
+        // who can act on it.
+        function currentResponsibleLabel(item) {
+            if (item.mergedInto) return 'รวมเข้าใบอื่นแล้ว';
+            if (['Received', 'Cancelled', 'Rejected', 'FMRejected'].includes(item.status)) return '-';
+            const labels = [];
+            if (item.status === 'PendingApproval') {
+                labels.push(isDeptOwnReview(item) ? `${item.dept} (หัวหน้าแผนก)` : 'BU');
+            } else if (item.status === 'PendingFMApproval') {
+                labels.push('PM/FM');
+            } else if (item.status === 'Approved' || item.status === 'MarkerReceived') {
+                labels.push('Marker');
+            } else if (item.status === 'MarkerSent' || item.status === 'CuttingSheetReceived') {
+                labels.push('ใบปูตัด (Cutting Sheet)');
+            } else if (item.status === 'FabricCheckPending' || item.status === 'FabricCheckReceived') {
+                labels.push('เช็คผ้า (Fabric Check)');
+            } else if (item.status === 'PPCFabricPending' || item.status === 'PPCFabricReceived') {
+                labels.push('PPC Fabric');
+            } else if (item.status === 'StockFabricPending' || item.status === 'StockFabricReceived') {
+                labels.push('สต็อคผ้า (Stock Fabric)');
+            } else if (item.status === 'StockFabricSent' || item.status === 'CuttingReceived') {
+                labels.push('แผนกตัด (Cutting)');
+            } else if (item.status === 'CuttingSent') {
+                // Same two groups as embBtns/qcBtns below — every embellishment type still not
+                // done, plus every QC-pending type (already excluding the ACCOnly/HeatTransfer-
+                // ACC cutting-QC stub, which never surfaces a real button either).
+                (item.activeDeptTypes || []).forEach(t => { if (!embTypeDone(item, t)) labels.push(EMB_LABELS[t] || t); });
+                const isCuttingStub = !!(item.cuttingSend && item.cuttingSend.by === 'system');
+                (item.qcPendingTypes || []).filter(t => !(isCuttingStub && t === CUTTING_QC_TYPE))
+                    .forEach(t => labels.push(`QC (${EMB_LABELS[t] || t})`));
+            } else if (item.status === 'SupermarketPending' || item.status === 'SupermarketReceived') {
+                labels.push('Supermarket');
+            } else if (item.status === 'SupermarketSent') {
+                labels.push('ผู้ขอ (ต้นทาง)');
+            }
+            // ACC is a fully independent parallel track (see accActionable's own comment) —
+            // append it whenever it's still owed something, on top of whatever the main
+            // pipeline is waiting on.
+            if ((accActionable(item) || (item.accSend && hasOutstandingAcc(item))) && !labels.includes('ACC')) labels.push('ACC');
+            return labels.length ? labels.join(', ') : '-';
+        }
         function renderTableRows(data) {
             const tbody = document.getElementById('repairTableBody');
             tbody.innerHTML = '';
@@ -5717,7 +5820,17 @@
                 // pipeline's own current action is (if any).
                 if (accActionable(item) && canACCAct(currentUser)) {
                     const accBtn = statusActionBtn(!item.accReceive ? 'รับงาน (ACC)' : '(ACC) ส่งต่อ', `openStageModal('${item.id}','acc')`, 'bg-lime-100 text-lime-800 border border-lime-200 hover:bg-lime-200');
-                    statusRow = statusRow ? statusRow + accBtn : accBtn;
+                    // A mixed Cut-Replace + ACC record can LOOK stuck behind the main fabric/
+                    // cutting pipeline (its status pill above may still say e.g. "รอเช็คผ้า")
+                    // even though ACC's own track is fully independent and already actionable
+                    // right now — per "ถ้าเป็นรายการที่มีทั้งผ้าและ acc...ต้องการให้ ACC กดงาน
+                    // ได้เลยโดยไม่ต้องรอเช็คผ้า...แบบแยกงานกันไปเลย". Only shown for a genuine
+                    // mix (real parts AND ACC content) — pure ACCOnly never has this ambiguity.
+                    const isMixedAcc = item.requestType !== 'ACCOnly' && (item.parts || []).length > 0;
+                    const accIndependentNote = isMixedAcc
+                        ? `<div class="text-[8px] text-lime-700 font-bold leading-tight">🔀 ACC แยกดำเนินการได้เลย ไม่ต้องรอเช็คผ้า/ตัด</div>`
+                        : '';
+                    statusRow = statusRow ? statusRow + accIndependentNote + accBtn : accIndependentNote + accBtn;
                 }
                 // Already sent, but some lines were left "คงค้าง" (pending) — ACC can come
                 // back and finish those specific lines without re-touching the record's
@@ -5850,6 +5963,12 @@
                             ${!item.accIssue && hasOutstandingAcc(item) ? `<div class="text-[9px] font-bold text-amber-700 mt-1 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 inline-block">🟡 ค้างจ่ายบางรายการ (ACC)<span class="block font-normal normal-case">ACC partially unpaid</span></div>` : ''}
                             ${item.approval && item.approval.name ? `<div class="text-[9px] mt-1 font-bold text-slate-500">อนุมัติโดย: ${escapeHtml(item.approval.name)}</div>` : ''}
                             ${item.cuttingReceive && item.cuttingReceive.name ? `<div class="text-[9px] text-slate-500">รับงาน: ${escapeHtml(item.cuttingReceive.name)}</div>` : ''}
+                            <!-- Same "who's holding this up right now" info as the Actions
+                                 column's ผู้รับผิดชอบ line, repeated right under the status pill
+                                 itself — per "ใส่ชื่อตรงสถานะงานเป็นรายชื่อคนปัจจุบันด้วย" — so it's
+                                 visible together with the status without needing to look at (or
+                                 scroll to) the far-right Actions column too. -->
+                            <div class="text-[9px] mt-1 text-indigo-600 font-bold">▸ ${escapeHtml(currentResponsibleLabel(item))}</div>
                         </td>
                         <td class="px-5 py-4 w-44">
                             ${alertBadge}
@@ -5857,6 +5976,7 @@
                         </td>
                         <td class="px-5 py-4 no-print">
                             <div class="flex flex-col items-center min-w-[120px]">${actionBtns}</div>
+                            <div class="text-[9px] text-slate-400 mt-1.5 text-center">ผู้รับผิดชอบ <span class="opacity-70">(Responsible)</span>: <span class="font-bold text-slate-500">${escapeHtml(currentResponsibleLabel(item))}</span></div>
                         </td>
                     </tr>
                 `;
@@ -9027,6 +9147,19 @@
             return !!item.cuttingSend && embellishmentChainDone(item);
         }
         function checkAdvanceToSupermarket(item) {
+            // BUG FIX: mainPipelineDone()/accDone stay true FOREVER once a record has actually
+            // finished (cuttingSend/accSend never get unset) — so calling this again on a
+            // record already past CuttingSent (SupermarketPending/SupermarketSent/Received)
+            // used to silently REVERT its status back to SupermarketPending every time,
+            // overwriting supermarketSend's real timestamp for the ACCOnly branch too. This bit
+            // hardest via reconcileAccDoneAdvancement's unconditional per-record sweep on every
+            // page load/migration — confirmed live: every genuinely completed ("Received")
+            // record was losing that status back to SupermarketPending on every single load,
+            // which is exactly why "ประวัติงานที่เสร็จสมบูรณ์" kept showing empty despite the
+            // underlying Google Sheet data being correct. This function only ever legitimately
+            // ADVANCES a record OUT of CuttingSent, so it must never fire once status has
+            // already left CuttingSent.
+            if (item.status !== 'CuttingSent') return;
             // BUG FIX: a record with no ACC requisition and no embellishment at all
             // (hasAccContent false) never gets an accSend — ACC's own receive/send buttons
             // never even appear for it — so this was requiring a field that could never be
@@ -12280,6 +12413,34 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
             renderChartDetailsList('requestTypeChart', requestTypeLabels, requestTypeData);
+
+            // Which PART is being requested for cut-replace, split by in-house vs supplier —
+            // per "ต้องการให้เป็นกราฟว่าโดยแบ่งเป็นการตัดซ่อม และการตัดซ่อมที่เกิดจากซัพพลายเออร์
+            // โดยต้องการแยกชิ้นส่วนว่าชิ้นส่วนไหนมีการขอตัดซ่อมบ้าง". Counts total pcs per part
+            // NAME (not part+letter — a style's "Front" panel across every part-letter variant
+            // is one bar), same as deptChart/reasonChart's ranked-bar convention.
+            const partPcsByType = (requestType) => {
+                const map = {};
+                repairs.filter(r => (requestType === 'CutReplace' ? reqTypeOf(r) === 'CutReplace' : r.requestType === requestType))
+                    .forEach(r => (r.parts || []).forEach(p => {
+                        const label = PART_NAME_LABELS[p.name] || p.name || '-';
+                        map[label] = (map[label] || 0) + (parseInt(p.qty) || 0);
+                    }));
+                return Object.entries(map).sort((a, b) => b[1] - a[1]);
+            };
+            const renderPartChart = (canvasId, entries, color) => {
+                const labels = entries.length ? entries.map(e => e[0]) : ['-'];
+                const data = entries.length ? entries.map(e => e[1]) : [0];
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                myCharts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels, datasets: [{ label: 'จำนวน (Pcs)', data, backgroundColor: color }] },
+                    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' },
+                });
+                renderChartDetailsList(canvasId, labels, data);
+            };
+            renderPartChart('cutReplacePartChart', partPcsByType('CutReplace'), '#6366f1');
+            renderPartChart('supplierCutReplacePartChart', partPcsByType('SupplierCutReplace'), '#f97316');
 
             renderWipTrendChart();
         }
