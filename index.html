@@ -903,7 +903,15 @@
                      used to say "Outsource" only, which was misleading — the actual routing
                      (currentEmbStage → 'QC' once every ticked type is sent) already gates both. -->
                 <div class="card p-0 overflow-hidden" id="kpiCardQc" data-kpi-tab="qc">
-                    <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest px-3 pt-1.5 pb-1">QC <span class="font-normal normal-case text-slate-300 block">(ตรวจทุกงาน — In-house/Outsource — ก่อนส่งต่อแผนกถัดไป)</span></p>
+                    <!-- QC's own receive-inspect-send queue was removed entirely (a separate ERP
+                         system handles quality inspection now — see removeQcGate()/
+                         embellishmentChainDone()), so the old "รอ QC รับงาน"/"QC กำลังตรวจสอบ"
+                         rows and their per-type In-house/Outsource breakdown table are gone too —
+                         they could only ever show 0 forever now, which is exactly what one user
+                         report flagged as "ยังคงเห็นส่วนของ QC ปรากฎบนหน้าของเว็บ". What's left in
+                         this card (Outsource-by-vendor tracking, and QC's own still-active
+                         cut-replace/vendor-notice follow-up) is unrelated to that removed step. -->
+                    <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest px-3 pt-1.5 pb-1">QC <span class="font-normal normal-case text-slate-300 block">(รองาน Outsource แยกตาม Vendor + ติดตามใบตัดเปลี่ยน/แจ้ง Vendor ที่ QC เปิดเอง)</span></p>
                     <!-- Column header row, per "ต้องการปรับ ให้ใส่เป็นหัวข้อข้างบนที่เป็นจำนวนรายการเบิก,
                          จำนวนชิ้น, และจำนวนของใบขอ และช่วยจัดเป็นคอลัมส่วนให้ดูง่าย" -->
                     <div class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1 bg-slate-50/70 border-t border-slate-100">
@@ -914,77 +922,6 @@
                         <span class="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center">เกิน<span class="block opacity-70 text-[9px] normal-case">(Overdue)</span></span>
                     </div>
                     <div class="flex flex-col divide-y divide-slate-100 border-t border-slate-100">
-                        <!-- Split waiting-vs-in-progress, same as every other department card,
-                             instead of one combined "QC In Progress (Total)" row. -->
-                        <div onclick="filterByKpi('qcWaiting')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-fuchsia-50 transition-colors border-l-2 border-l-fuchsia-300">
-                            <div class="flex items-center gap-2 min-w-0">
-                                <span class="text-base shrink-0">🔍</span>
-                                <p class="text-[10px] font-bold uppercase text-fuchsia-500 leading-tight">รอ QC รับงาน <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Pending QC receipt</span></p>
-                            </div>
-                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiQcWaitingLines">0</span></span>
-                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiQcWaitingQty">0</span></span>
-                            <h4 id="kpiQcWaiting" class="text-sm font-black text-fuchsia-500 leading-none text-center">0</h4>
-                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiQcWaitingOverdue">0</span></span>
-                        </div>
-                        <div onclick="filterByKpi('qc')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-fuchsia-50 transition-colors border-l-2 border-l-fuchsia-400">
-                            <div class="flex items-center gap-2 min-w-0">
-                                <span class="text-base shrink-0">🔍</span>
-                                <p class="text-[10px] font-bold uppercase text-fuchsia-600 leading-tight">QC กำลังตรวจสอบ <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">QC In Progress</span></p>
-                            </div>
-                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiQcLines">0</span></span>
-                            <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiQcQty">0</span></span>
-                            <h4 id="kpiQc" class="text-sm font-black text-fuchsia-600 leading-none text-center">0</h4>
-                            <span class="text-[10px] font-bold text-rose-500 leading-none text-center"><span id="kpiQcOverdue">0</span></span>
-                        </div>
-                        <!-- Per-type breakdown as a real table, In-house/Outsource headers
-                             pinned at the TOP once instead of repeated per row, per "ต้องการให้
-                             ย้ายหัวข้อ In-house และ Outsource ไปไว้ด้านบน และมีรอรับ, ทำงาน, เกิน
-                             เพื่อให้รู้แต่ละส่วนงานเลย". -->
-                        <div class="px-3 py-1.5 border-l-2 border-l-fuchsia-300">
-                            <table class="w-full text-[9px] border-collapse">
-                                <thead>
-                                    <tr>
-                                        <th></th>
-                                        <th colspan="3" class="text-center text-emerald-600 font-black uppercase pb-0.5">In-house</th>
-                                        <th colspan="3" class="text-center text-amber-600 font-black uppercase pb-0.5 border-l border-slate-300">Outsource</th>
-                                    </tr>
-                                    <tr class="text-slate-400 font-bold">
-                                        <th></th>
-                                        <th class="font-normal">รอรับ</th><th class="font-normal">ทำงาน</th><th class="font-normal">เกิน</th>
-                                        <th class="font-normal border-l border-slate-300">ส่งงาน</th><th class="font-normal">รับงานกลับ</th><th class="font-normal">เกิน</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td class="text-fuchsia-600 font-bold whitespace-nowrap">🪡 ปัก<span class="block font-normal normal-case text-slate-400">Embroidery</span></td>
-                                        <td onclick="filterByKpi('qcTypeSource:Emb:inhouse:waiting')" class="text-center cursor-pointer hover:bg-emerald-50"><h4 id="kpiQcEmbInhouseWaiting" class="text-xs font-black text-emerald-500 leading-none">0</h4></td>
-                                        <td onclick="filterByKpi('qcTypeSource:Emb:inhouse:working')" class="text-center cursor-pointer hover:bg-emerald-50"><h4 id="kpiQcEmbInhouseWorking" class="text-xs font-black text-emerald-600 leading-none">0</h4></td>
-                                        <td class="text-center text-rose-500 font-bold"><span id="kpiQcEmbInhouseCombinedOverdue">0</span></td>
-                                        <td onclick="filterByKpi('qcTypeSource:Emb:outsource:waiting')" class="text-center cursor-pointer hover:bg-amber-50 border-l border-slate-300"><h4 id="kpiQcEmbOutsourceWaiting" class="text-xs font-black text-amber-500 leading-none">0</h4></td>
-                                        <td onclick="filterByKpi('qcTypeSource:Emb:outsource:working')" class="text-center cursor-pointer hover:bg-amber-50"><h4 id="kpiQcEmbOutsourceWorking" class="text-xs font-black text-amber-600 leading-none">0</h4></td>
-                                        <td class="text-center text-rose-500 font-bold"><span id="kpiQcEmbOutsourceCombinedOverdue">0</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-fuchsia-600 font-bold whitespace-nowrap">🖨️ พิมพ์<span class="block font-normal normal-case text-slate-400">Pad Print / Screen Print</span></td>
-                                        <td onclick="filterByKpi('qcTypeSource:Print:inhouse:waiting')" class="text-center cursor-pointer hover:bg-emerald-50"><h4 id="kpiQcPrintInhouseWaiting" class="text-xs font-black text-emerald-500 leading-none">0</h4></td>
-                                        <td onclick="filterByKpi('qcTypeSource:Print:inhouse:working')" class="text-center cursor-pointer hover:bg-emerald-50"><h4 id="kpiQcPrintInhouseWorking" class="text-xs font-black text-emerald-600 leading-none">0</h4></td>
-                                        <td class="text-center text-rose-500 font-bold"><span id="kpiQcPrintInhouseCombinedOverdue">0</span></td>
-                                        <td onclick="filterByKpi('qcTypeSource:Print:outsource:waiting')" class="text-center cursor-pointer hover:bg-amber-50 border-l border-slate-300"><h4 id="kpiQcPrintOutsourceWaiting" class="text-xs font-black text-amber-500 leading-none">0</h4></td>
-                                        <td onclick="filterByKpi('qcTypeSource:Print:outsource:working')" class="text-center cursor-pointer hover:bg-amber-50"><h4 id="kpiQcPrintOutsourceWorking" class="text-xs font-black text-amber-600 leading-none">0</h4></td>
-                                        <td class="text-center text-rose-500 font-bold"><span id="kpiQcPrintOutsourceCombinedOverdue">0</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-fuchsia-600 font-bold whitespace-nowrap">🔥 ฮีท<span class="block font-normal normal-case text-slate-400">Heat Transfer</span></td>
-                                        <td onclick="filterByKpi('qcTypeSource:Heat:inhouse:waiting')" class="text-center cursor-pointer hover:bg-emerald-50"><h4 id="kpiQcHeatInhouseWaiting" class="text-xs font-black text-emerald-500 leading-none">0</h4></td>
-                                        <td onclick="filterByKpi('qcTypeSource:Heat:inhouse:working')" class="text-center cursor-pointer hover:bg-emerald-50"><h4 id="kpiQcHeatInhouseWorking" class="text-xs font-black text-emerald-600 leading-none">0</h4></td>
-                                        <td class="text-center text-rose-500 font-bold"><span id="kpiQcHeatInhouseCombinedOverdue">0</span></td>
-                                        <td onclick="filterByKpi('qcTypeSource:Heat:outsource:waiting')" class="text-center cursor-pointer hover:bg-amber-50 border-l border-slate-300"><h4 id="kpiQcHeatOutsourceWaiting" class="text-xs font-black text-amber-500 leading-none">0</h4></td>
-                                        <td onclick="filterByKpi('qcTypeSource:Heat:outsource:working')" class="text-center cursor-pointer hover:bg-amber-50"><h4 id="kpiQcHeatOutsourceWorking" class="text-xs font-black text-amber-600 leading-none">0</h4></td>
-                                        <td class="text-center text-rose-500 font-bold"><span id="kpiQcHeatOutsourceCombinedOverdue">0</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
                         <!-- Outsource-by-vendor breakdown, merged into this same card/table
                              style instead of living as a separate standalone card below, per
                              "รายการข้อมูลที่รองาน outsource ในตารางล่างสามารถนำไปรวมกับตารางบนได้
@@ -1049,7 +986,7 @@
                         <div onclick="filterByKpi('waitingAccOnly')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-500">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
-                                <p class="text-[10px] font-bold uppercase text-orange-600 leading-tight">รอ ACC เท่านั้น <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Emb/QC done — waiting on ACC only</span></p>
+                                <p class="text-[10px] font-bold uppercase text-orange-600 leading-tight">รอ ACC เท่านั้น <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Embellishment done — waiting on ACC only</span></p>
                             </div>
                             <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitingAccOnlyLines">0</span></span>
                             <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitingAccOnlyQty">0</span></span>
@@ -1059,7 +996,7 @@
                         <div onclick="filterByKpi('waitingMainPipelineOnly')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-orange-50 transition-colors border-l-2 border-l-orange-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
-                                <p class="text-[10px] font-bold uppercase text-orange-500 leading-tight">รอตกแต่ง/QC เท่านั้น <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">ACC done — waiting on Emb/QC only</span></p>
+                                <p class="text-[10px] font-bold uppercase text-orange-500 leading-tight">รอตกแต่งเท่านั้น <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">ACC done — waiting on Embellishment only</span></p>
                             </div>
                             <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitingMainOnlyLines">0</span></span>
                             <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitingMainOnlyQty">0</span></span>
@@ -1069,7 +1006,7 @@
                         <div onclick="filterByKpi('waitingBoth')" class="grid grid-cols-[1fr_56px_56px_56px_50px] items-center gap-2 pl-3 pr-10 py-1.5 w-full cursor-pointer hover:bg-red-50 transition-colors border-l-2 border-l-red-400">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-base shrink-0">📦</span>
-                                <p class="text-[10px] font-bold uppercase text-red-500 leading-tight">รอทั้ง ACC และตกแต่ง/QC <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Waiting on both ACC and Emb/QC</span></p>
+                                <p class="text-[10px] font-bold uppercase text-red-500 leading-tight">รอทั้ง ACC และตกแต่ง <span class="font-normal normal-case text-slate-400 text-[8px] align-middle">Waiting on both ACC and Embellishment</span></p>
                             </div>
                             <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitingBothLines">0</span></span>
                             <span class="text-xs font-bold text-slate-600 text-center"><span id="kpiWaitingBothQty">0</span></span>
@@ -5941,56 +5878,11 @@
             setKpi('kpiAcc', active.filter(r => accActionable(r) && r.accReceive));
             setKpi('kpiAccPending', active.filter(r => r.accIssue));
             setKpi('kpiAccFulfillmentPending', active.filter(r => hasOutstandingAcc(r)));
-            setKpi('kpiQcWaiting', active.filter(r => (r.qcPendingTypes || []).some(t => !((r.qcInspection && r.qcInspection.visits && r.qcInspection.visits[t]) || {}).receive)));
-            setKpi('kpiQc', active.filter(r => (r.qcPendingTypes || []).some(t => ((r.qcInspection && r.qcInspection.visits && r.qcInspection.visits[t]) || {}).receive)));
-            // QC inspects outsourced AND in-house work, broken down by the same 3 decoration
-            // categories the pipeline used to gate on (ปัก=Emb, พิมพ์=PadPrint/ScreenPrint,
-            // ฮีท=Heat) — a record can count toward more than one bucket if it has more than
-            // one type ticked. Each type row splits by In-house vs Outsource, AND (per
-            // "ต้องการแยกรายการทำงานของ QC ในการตรวจงานห้มีทุกสเตตัสที่รอรับงานและทำงานด้วย
-            // เหมือนแผนกอื่นในทุกรายการ") by waiting-to-receive vs working, just like every
-            // other department's rows — itemHasEmbTypeSource correlates type AND source
-            // together on the SAME entry, since itemHasEmbSource alone can't tell you which
-            // type that source belongs to when an item has more than one decoration type
-            // ticked with different sources.
-            const qcTypeSourceGroups = [
-                ['Emb', 'kpiQcEmbInhouse', 'kpiQcEmbOutsource', ['Emb']],
-                ['Print', 'kpiQcPrintInhouse', 'kpiQcPrintOutsource', ['PadPrint', 'ScreenPrint']],
-                ['Heat', 'kpiQcHeatInhouse', 'kpiQcHeatOutsource', ['Heat']]
-            ];
-            qcTypeSourceGroups.forEach(([key, inId, outId, types]) => {
-                // Only ONE type is actually being inspected per QC visit now — restrict to
-                // records whose current visit's type matches this bucket, instead of any
-                // ticked type the item happens to have (which would double-count an item
-                // into every one of its types' buckets while only one is really at QC).
-                const atQc = active.filter(r => (r.qcPendingTypes || []).some(t => types.includes(t)));
-                const inhouse = atQc.filter(r => itemHasEmbTypeSource(r, types, 'inhouse'));
-                const outsource = atQc.filter(r => itemHasEmbTypeSource(r, types, 'outsource'));
-                // BUG FIX: for the merged "Print" bucket (PadPrint+ScreenPrint together), a
-                // record can now genuinely have ONE type still waiting to be received at QC
-                // while the OTHER is already being worked on (the two no longer block each
-                // other, even on the same piece) — treating "working" as simply "not waiting"
-                // forced such a record entirely into the Waiting count and made it silently
-                // vanish from Working. Each record is checked independently against both
-                // conditions instead, so a genuinely mixed record correctly counts toward both.
-                const waiting = r => {
-                    const visits = (r.qcInspection && r.qcInspection.visits) || {};
-                    return (r.qcPendingTypes || []).filter(t => types.includes(t)).some(t => !(visits[t] && visits[t].receive));
-                };
-                const working = r => {
-                    const visits = (r.qcInspection && r.qcInspection.visits) || {};
-                    return (r.qcPendingTypes || []).filter(t => types.includes(t)).some(t => visits[t] && visits[t].receive);
-                };
-                setKpi(inId + 'Waiting', inhouse.filter(waiting));
-                setKpi(inId + 'Working', inhouse.filter(working));
-                setKpi(outId + 'Waiting', outsource.filter(waiting));
-                setKpi(outId + 'Working', outsource.filter(working));
-                // One combined "เกิน" per source (waiting + working together), matching
-                // "มีรอรับ, ทำงาน, เกิน" — a single overdue count per column, not one per state.
-                const setOverdue = (id, group) => { const el = document.getElementById(id); if (el) el.innerText = group.filter(r => alertInfo(r)).length; };
-                setOverdue(inId + 'CombinedOverdue', inhouse);
-                setOverdue(outId + 'CombinedOverdue', outsource);
-            });
+            // QC's own receive-inspect-send queue (waiting/working counts + the per-type
+            // In-house/Outsource breakdown) was removed along with the workflow step itself —
+            // see the matching comment on the kpiCardQc HTML above. Only its still-active
+            // follow-up items (cut-replace/vendor-notice, both unrelated to that removed step)
+            // are tracked here now.
             setKpi('kpiQcCutReplace', active.filter(r => r.qcCutReplace && !r.qcCutReplace.resolved));
             setKpi('kpiQcNotifyVendor', active.filter(r => r.qcNotifyVendor && !r.qcNotifyVendor.resolved));
             setKpi('kpiWaitingFabric', active.filter(r => r.status === 'PPCFabricReceived' && r.ppcFabric && !r.ppcFabric.actualArrivalDate));
@@ -6644,8 +6536,6 @@
             SupermarketPending: { label: 'รอซุปเปอร์มาร์เก็ต', test: r => r.status === 'SupermarketPending' },
             accWaitingReceive: { label: 'ACC รอรับงาน', test: r => accActionable(r) && !r.accReceive },
             acc: { label: 'ACC กำลังทำงาน', test: r => accActionable(r) && r.accReceive },
-            qcWaiting: { label: 'QC รอรับงาน', test: r => (r.qcPendingTypes || []).some(t => !((r.qcInspection && r.qcInspection.visits && r.qcInspection.visits[t]) || {}).receive) },
-            qc: { label: 'QC กำลังทำงาน', test: r => (r.qcPendingTypes || []).some(t => ((r.qcInspection && r.qcInspection.visits && r.qcInspection.visits[t]) || {}).receive) },
             qcCutReplacePending: { label: 'QC รอตัดเปลี่ยนใหม่', test: r => r.qcCutReplace && !r.qcCutReplace.resolved },
             qcNotifyVendorPending: { label: 'QC รอแจ้ง Vendor', test: r => r.qcNotifyVendor && !r.qcNotifyVendor.resolved },
             waitingAccOnly: { label: 'รอ ACC เท่านั้น', test: r => r.status === 'CuttingSent' && mainPipelineDone(r) && !r.accSend },
@@ -6675,27 +6565,6 @@
         // filterByKpi() to fall through to the plain status-code path instead.
         function buildKpiPredicate(status) {
             if (KPI_PREDICATES[status]) return KPI_PREDICATES[status];
-            if (status && status.startsWith('qcTypeSource:')) {
-                const QC_OUTSOURCE_TYPES = { Emb: ['Emb'], Print: ['PadPrint', 'ScreenPrint'], Heat: ['Heat'] };
-                const [, typeKey, source, state] = status.split(':');
-                const types = QC_OUTSOURCE_TYPES[typeKey] || [];
-                return {
-                    label: `QC ${typeKey} — ${source === 'inhouse' ? 'In-house' : 'Outsource'} (${state === 'waiting' ? 'รอรับ' : 'กำลังทำงาน'})`,
-                    test: r => {
-                        const pendingInBucket = (r.qcPendingTypes || []).filter(t => types.includes(t));
-                        if (!pendingInBucket.length) return false;
-                        if (!itemHasEmbTypeSource(r, types, source)) return false;
-                        // Must mirror the count-side fix in the KPI dashboard build (search
-                        // "genuinely mixed record correctly counts toward both") — a record with
-                        // one pending type still waiting and another already received must match
-                        // BOTH the waiting and working filters, not get forced into only one.
-                        const visits = (r.qcInspection && r.qcInspection.visits) || {};
-                        if (state === 'waiting') return pendingInBucket.some(t => !(visits[t] && visits[t].receive));
-                        if (state === 'working') return pendingInBucket.some(t => visits[t] && visits[t].receive);
-                        return true;
-                    },
-                };
-            }
             if (status && status.startsWith('embWaiting:')) {
                 const type = status.slice('embWaiting:'.length);
                 return { label: `${EMB_LABELS[type] || type} — รอรับงาน`, test: r => (r.activeDeptTypes || []).includes(type) && !(r.embStages && r.embStages[type] && r.embStages[type].receive) };
